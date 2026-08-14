@@ -18,10 +18,14 @@ export default function LoginPage() {
     setError('');
 
     // Supabase'e giriş isteği atıyoruz
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({
+  email,
+  password,
+});
+
+if (error) {
+  alert("Supabase Hatası: " + error.message); // Hatanın aslını burada göreceğiz
+}
 
     if (error) {
       setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
