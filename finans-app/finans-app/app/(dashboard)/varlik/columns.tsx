@@ -1,27 +1,26 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 
-export type Transaction = {
+export type Asset = {
   id: string;
-  date: string;
-  description: string;
-  amount: number;
-  type: 'gelir' | 'gider';
-  category_id: string | null;
-  category: { name: string; color: string } | null; // Supabase join ile gelir
+  asset_name: string;
+  asset_type: string | null;
+  current_value: number;
+  currency: string;
+  notes: string | null;
 };
 
-type TransactionTableMeta = {
-  onEdit: (row: Transaction) => void;
+type AssetTableMeta = {
+  onEdit: (row: Asset) => void;
   onDelete: (id: string) => void;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
   const [open, setOpen] = useState(false);
-  const meta = table.options.meta as TransactionTableMeta | undefined;
+  const meta = table.options.meta as AssetTableMeta | undefined;
 
   return (
     <div className="relative">
@@ -54,44 +53,39 @@ function ActionsCell({ row, table }: { row: any; table: any }) {
   );
 }
 
-export const columns: ColumnDef<Transaction>[] = [
+export const columns: ColumnDef<Asset>[] = [
   {
-    accessorKey: "date",
-    header: "Tarih",
-    cell: ({ row }) => new Date(row.getValue("date")).toLocaleDateString("tr-TR"),
+    accessorKey: "asset_name",
+    header: "Varlık Adı",
+    cell: ({ row }) => <span className="font-medium text-slate-900">{row.getValue("asset_name")}</span>,
   },
-  { accessorKey: "description", header: "Açıklama" },
   {
-    accessorKey: "category",
-    header: "Kategori",
+    accessorKey: "asset_type",
+    header: "Tür",
     cell: ({ row }) => {
-      const category = row.original.category;
-      if (!category) return <span className="text-slate-400 text-sm">-</span>;
-      return (
-        <span
-          className="px-2 py-1 rounded-full text-xs font-medium"
-          style={{ backgroundColor: `${category.color}20`, color: category.color }}
-        >
-          {category.name}
-        </span>
-      );
+      const type = row.getValue("asset_type") as string | null;
+      return type ? <span className="text-slate-600 text-sm">{type}</span> : <span className="text-slate-400">-</span>;
     },
   },
   {
-    accessorKey: "amount",
-    header: "Tutar",
+    accessorKey: "current_value",
+    header: "Güncel Değer",
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
-      const type = row.original.type;
+      const value = parseFloat(row.getValue("current_value"));
+      const currency = row.original.currency;
       const formatted = new Intl.NumberFormat("tr-TR", {
         style: "currency",
-        currency: "TRY",
-      }).format(amount);
-      return (
-        <div className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {type === 'gelir' ? '+' : '-'}{formatted}
-        </div>
-      );
+        currency: currency || "TRY",
+      }).format(value);
+      return <span className="font-semibold text-slate-900">{formatted}</span>;
+    },
+  },
+  {
+    accessorKey: "notes",
+    header: "Not",
+    cell: ({ row }) => {
+      const notes = row.getValue("notes") as string | null;
+      return notes ? <span className="text-slate-500 text-sm">{notes}</span> : <span className="text-slate-400">-</span>;
     },
   },
   {
