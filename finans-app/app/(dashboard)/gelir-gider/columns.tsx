@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "@/components/data-table/editable-cell";
 
 export type Transaction = {
   id: string;
@@ -17,6 +18,7 @@ export type Transaction = {
 type TransactionTableMeta = {
   onEdit: (row: Transaction) => void;
   onDelete: (id: string) => void;
+  onCellEdit: (id: string, field: 'description' | 'amount' | 'date', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -58,9 +60,32 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "date",
     header: "Tarih",
-    cell: ({ row }) => new Date(row.getValue("date")).toLocaleDateString("tr-TR"),
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as TransactionTableMeta | undefined;
+      const raw = row.original.date; // 'YYYY-MM-DD'
+      return (
+        <EditableCell
+          type="date"
+          value={raw}
+          display={new Date(raw).toLocaleDateString("tr-TR")}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'date', v)}
+        />
+      );
+    },
   },
-  { accessorKey: "description", header: "Açıklama" },
+  {
+    accessorKey: "description",
+    header: "Açıklama",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as TransactionTableMeta | undefined;
+      return (
+        <EditableCell
+          value={row.original.description}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'description', v)}
+        />
+      );
+    },
+  },
   {
     accessorKey: "category",
     header: "Kategori",
@@ -80,17 +105,26 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "amount",
     header: "Tutar",
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as TransactionTableMeta | undefined;
+      const amount = row.original.amount;
       const type = row.original.type;
       const formatted = new Intl.NumberFormat("tr-TR", {
         style: "currency",
         currency: "TRY",
       }).format(amount);
       return (
-        <div className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {type === 'gelir' ? '+' : '-'}{formatted}
-        </div>
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={amount}
+          display={
+            <span className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {type === 'gelir' ? '+' : '-'}{formatted}
+            </span>
+          }
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
+        />
       );
     },
   },

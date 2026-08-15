@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "@/components/data-table/editable-cell";
 
 export type Asset = {
   id: string;
@@ -16,6 +17,7 @@ export type Asset = {
 type AssetTableMeta = {
   onEdit: (row: Asset) => void;
   onDelete: (id: string) => void;
+  onCellEdit: (id: string, field: 'asset_name' | 'current_value', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -57,7 +59,16 @@ export const columns: ColumnDef<Asset>[] = [
   {
     accessorKey: "asset_name",
     header: "Varlık Adı",
-    cell: ({ row }) => <span className="font-medium text-slate-900">{row.getValue("asset_name")}</span>,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as AssetTableMeta | undefined;
+      return (
+        <EditableCell
+          value={row.original.asset_name}
+          className="font-medium text-slate-900"
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'asset_name', v)}
+        />
+      );
+    },
   },
   {
     accessorKey: "asset_type",
@@ -70,14 +81,23 @@ export const columns: ColumnDef<Asset>[] = [
   {
     accessorKey: "current_value",
     header: "Güncel Değer",
-    cell: ({ row }) => {
-      const value = parseFloat(row.getValue("current_value"));
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as AssetTableMeta | undefined;
+      const value = row.original.current_value;
       const currency = row.original.currency;
       const formatted = new Intl.NumberFormat("tr-TR", {
         style: "currency",
         currency: currency || "TRY",
       }).format(value);
-      return <span className="font-semibold text-slate-900">{formatted}</span>;
+      return (
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={value}
+          display={<span className="font-semibold text-slate-900">{formatted}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'current_value', v)}
+        />
+      );
     },
   },
   {

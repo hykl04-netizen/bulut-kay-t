@@ -77,6 +77,16 @@ export default function YatirimPage() {
     }
   };
 
+  const handleCellEdit = async (id: string, field: 'quantity' | 'avg_cost' | 'current_price', value: string) => {
+    const payload: Record<string, number | null> = { [field]: value === '' ? null : parseFloat(value) };
+    const { error } = await supabase.from('investments').update(payload).eq('id', id);
+    if (error) {
+      alert('Güncellenemedi: ' + error.message);
+      throw error;
+    }
+    fetchInvestments();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -132,7 +142,7 @@ export default function YatirimPage() {
           <DataTable
             columns={columns}
             data={data}
-            meta={{ onEdit: handleEdit, onDelete: handleDelete }}
+            meta={{ onEdit: handleEdit, onDelete: handleDelete, onCellEdit: handleCellEdit }}
           />
         )}
       </div>

@@ -12,9 +12,15 @@ Her görev, tek bir sohbet mesajı alışverişinde (yaklaşık mesaj bütçesin
 ---
 
 ## Şu an buradayız
-👉 **Faz 7 / Görev 7.1 — Kategori yönetim arayüzü (uygulama içinden ekle/sil)**
+👉 **Faz 7 / Görev 7.3 — Optimistic UI + debounce**
 
-_(Not: Faz 2-6'daki tüm kodlar teslim edildi ve `[x]` işaretlendi. Kapsamlı uçtan uca test henüz yapılmadı — bir şey bozuk çıkarsa ilgili görevi tekrar `[~]`'ye çevirip düzeltiriz.)_
+_(Not: 7.1 ve 7.2 kod olarak teslim edildi, `next build` ile derleme hatasız doğrulandı — ama tarayıcıda gerçek Supabase verisiyle uçtan uca elle test edilmedi, o yüzden `[~]` işaretli.)_
+
+### Bilinen geçmiş hatalar (Faz 2-6 döneminden, sonradan bulunup düzeltildi)
+- `app/(dashboard)/layout.tsx` içinde sidebar linkinde eksik `<a` etiketi → tüm dashboard sayfaları 500 hatası veriyordu. Düzeltildi.
+- Kategoriler sayfası klasörü `katagoriler` yazılmıştı (nav `kategoriler`'e gidiyordu) → 404. Klasör adı düzeltildi.
+- 5 ayrı `columns.tsx` dosyasında birbiriyle çakışan global `declare module '@tanstack/react-table'` blokları → `next build` (production) hata veriyordu. Kaldırılıp yerine dosyaya özel yerel tipler kondu.
+- **Ders:** "tamamlandı" işaretlemeden önce en az bir kez gerçek `npm run build` çalıştırılmalı; `npm run dev` bu hataların bir kısmını göstermiyor.
 
 ---
 
@@ -60,8 +66,8 @@ _(Not: Faz 2-6'daki tüm kodlar teslim edildi ve `[x]` işaretlendi. Kapsamlı u
 ## ✅ İskelet tamamlandı — sıradaki fazlar aşağıda
 
 ## Faz 7 — Detaylar & Geliştirmeler
-- [ ] 7.1 — Kategori yönetim arayüzü (uygulama içinden ekle/sil, dashboard'a gitmeden)
-- [ ] 7.2 — Inline cell editing (çift tıkla → düzenle)
+- [~] 7.1 — Kategori yönetim arayüzü (uygulama içinden ekle/sil, dashboard'a gitmeden)
+- [~] 7.2 — Inline cell editing (çift tıkla → düzenle) — Gelir/Gider, Borç/Alacak, Fatura/Masraf, Yatırım, Varlık'ın hepsinde `EditableCell` bileşeni ile uygulandı. Enter=kaydet, Escape=vazgeç, blur=kaydet. Hata durumunda input kırmızı çerçeveyle uyarı verir.
 - [ ] 7.3 — Optimistic UI + debounce
 - [ ] 7.4 — Toplu satır ekleme / Excel'den yapıştırma
 

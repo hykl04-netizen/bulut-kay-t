@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Trash2, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "@/components/data-table/editable-cell";
 
 export type Debt = {
   id: string;
@@ -18,6 +19,7 @@ export type Debt = {
 type DebtTableMeta = {
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: 'acik' | 'kapandi') => void;
+  onCellEdit: (id: string, field: 'counterparty' | 'amount' | 'due_date', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -75,26 +77,52 @@ export const columns: ColumnDef<Debt>[] = [
   {
     accessorKey: "counterparty",
     header: "Kime / Kimden",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as DebtTableMeta | undefined;
+      return (
+        <EditableCell
+          value={row.original.counterparty}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'counterparty', v)}
+        />
+      );
+    },
   },
   {
     accessorKey: "amount",
     header: "Tutar",
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as DebtTableMeta | undefined;
+      const amount = row.original.amount;
       const currency = row.original.currency;
       const formatted = new Intl.NumberFormat("tr-TR", {
         style: "currency",
         currency: currency || "TRY",
       }).format(amount);
-      return <div className="font-medium text-slate-900">{formatted}</div>;
+      return (
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={amount}
+          display={<span className="font-medium text-slate-900">{formatted}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
+        />
+      );
     },
   },
   {
     accessorKey: "due_date",
     header: "Vade Tarihi",
-    cell: ({ row }) => {
-      const date = row.getValue("due_date") as string | null;
-      return date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400">-</span>;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as DebtTableMeta | undefined;
+      const date = row.original.due_date;
+      return (
+        <EditableCell
+          type="date"
+          value={date ?? ''}
+          display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400">-</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
+        />
+      );
     },
   },
   {

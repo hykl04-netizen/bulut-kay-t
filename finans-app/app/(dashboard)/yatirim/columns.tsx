@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "@/components/data-table/editable-cell";
 
 export type Investment = {
   id: string;
@@ -33,6 +34,7 @@ const assetTypeColors: Record<string, string> = {
 type InvestmentTableMeta = {
   onEdit: (row: Investment) => void;
   onDelete: (id: string) => void;
+  onCellEdit: (id: string, field: 'quantity' | 'avg_cost' | 'current_price', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -91,27 +93,54 @@ export const columns: ColumnDef<Investment>[] = [
   {
     accessorKey: "quantity",
     header: "Miktar",
-    cell: ({ row }) => {
-      const quantity = parseFloat(row.getValue("quantity"));
-      return <span className="text-slate-700">{quantity.toLocaleString("tr-TR", { maximumFractionDigits: 8 })}</span>;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as InvestmentTableMeta | undefined;
+      const quantity = row.original.quantity;
+      return (
+        <EditableCell
+          type="number"
+          step="any"
+          value={quantity}
+          display={<span className="text-slate-700">{quantity.toLocaleString("tr-TR", { maximumFractionDigits: 8 })}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'quantity', v)}
+        />
+      );
     },
   },
   {
     accessorKey: "avg_cost",
     header: "Ort. Maliyet",
-    cell: ({ row }) => {
-      const cost = row.getValue("avg_cost") as number | null;
-      if (cost === null) return <span className="text-slate-400">-</span>;
-      return <span className="text-slate-600">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(cost)}</span>;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as InvestmentTableMeta | undefined;
+      const cost = row.original.avg_cost;
+      return (
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={cost ?? ''}
+          placeholder="Gir"
+          display={cost === null ? <span className="text-slate-400">-</span> : <span className="text-slate-600">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(cost)}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'avg_cost', v)}
+        />
+      );
     },
   },
   {
     accessorKey: "current_price",
     header: "Güncel Fiyat",
-    cell: ({ row }) => {
-      const price = row.getValue("current_price") as number | null;
-      if (price === null) return <span className="text-slate-400">Girilmedi</span>;
-      return <span className="font-medium text-slate-900">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(price)}</span>;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as InvestmentTableMeta | undefined;
+      const price = row.original.current_price;
+      return (
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={price ?? ''}
+          placeholder="Gir"
+          display={price === null ? <span className="text-slate-400">Girilmedi</span> : <span className="font-medium text-slate-900">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(price)}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'current_price', v)}
+        />
+      );
     },
   },
   {

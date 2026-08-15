@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Trash2, CheckCircle2, Repeat } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "@/components/data-table/editable-cell";
 
 export type Bill = {
   id: string;
@@ -17,6 +18,7 @@ export type Bill = {
 type BillTableMeta = {
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: 'odendi' | 'odenmedi') => void;
+  onCellEdit: (id: string, field: 'title' | 'amount' | 'due_date', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -60,35 +62,59 @@ export const columns: ColumnDef<Bill>[] = [
   {
     accessorKey: "title",
     header: "Başlık",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-slate-900">{row.getValue("title")}</span>
-        {row.original.is_recurring && (
-          <span className="flex items-center gap-1 text-xs text-slate-400" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
-            <Repeat className="w-3 h-3" />
-          </span>
-        )}
-      </div>
-    ),
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as BillTableMeta | undefined;
+      return (
+        <div className="flex items-center gap-2">
+          <EditableCell
+            value={row.original.title}
+            className="font-medium text-slate-900"
+            onSave={(v) => meta!.onCellEdit(row.original.id, 'title', v)}
+          />
+          {row.original.is_recurring && (
+            <span className="flex items-center gap-1 text-xs text-slate-400 shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
+              <Repeat className="w-3 h-3" />
+            </span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "amount",
     header: "Tutar",
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as BillTableMeta | undefined;
+      const amount = row.original.amount;
       const formatted = new Intl.NumberFormat("tr-TR", {
         style: "currency",
         currency: "TRY",
       }).format(amount);
-      return <div className="font-medium text-slate-900">{formatted}</div>;
+      return (
+        <EditableCell
+          type="number"
+          step="0.01"
+          value={amount}
+          display={<span className="font-medium text-slate-900">{formatted}</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
+        />
+      );
     },
   },
   {
     accessorKey: "due_date",
     header: "Vade Tarihi",
-    cell: ({ row }) => {
-      const date = row.getValue("due_date") as string | null;
-      return date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400">-</span>;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as BillTableMeta | undefined;
+      const date = row.original.due_date;
+      return (
+        <EditableCell
+          type="date"
+          value={date ?? ''}
+          display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400">-</span>}
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
+        />
+      );
     },
   },
   {

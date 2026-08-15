@@ -75,6 +75,16 @@ export default function GelirGiderPage() {
     }
   };
 
+  const handleCellEdit = async (id: string, field: 'description' | 'amount' | 'date', value: string) => {
+    const payload: Record<string, string | number> = field === 'amount' ? { amount: parseFloat(value) } : { [field]: value };
+    const { error } = await supabase.from('transactions').update(payload).eq('id', id);
+    if (error) {
+      alert('Güncellenemedi: ' + error.message);
+      throw error;
+    }
+    fetchTransactions();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,7 +140,7 @@ export default function GelirGiderPage() {
           <DataTable
             columns={columns}
             data={data}
-            meta={{ onEdit: handleEdit, onDelete: handleDelete }}
+            meta={{ onEdit: handleEdit, onDelete: handleDelete, onCellEdit: handleCellEdit }}
           />
         )}
       </div>

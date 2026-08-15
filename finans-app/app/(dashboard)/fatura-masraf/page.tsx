@@ -89,6 +89,17 @@ export default function FaturaMasrafPage() {
     }
   };
 
+  const handleCellEdit = async (id: string, field: 'title' | 'amount' | 'due_date', value: string) => {
+    const payload: Record<string, string | number | null> =
+      field === 'amount' ? { amount: parseFloat(value) } : { [field]: value || null };
+    const { error } = await supabase.from('bills').update(payload).eq('id', id);
+    if (error) {
+      alert('Güncellenemedi: ' + error.message);
+      throw error;
+    }
+    fetchBills();
+  };
+
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -114,7 +125,7 @@ export default function FaturaMasrafPage() {
           <DataTable
             columns={columns}
             data={data}
-            meta={{ onDelete: handleDelete, onToggleStatus: handleToggleStatus }}
+            meta={{ onDelete: handleDelete, onToggleStatus: handleToggleStatus, onCellEdit: handleCellEdit }}
           />
         )}
       </div>

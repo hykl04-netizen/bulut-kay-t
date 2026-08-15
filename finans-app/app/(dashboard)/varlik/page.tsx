@@ -66,6 +66,17 @@ export default function VarlikPage() {
     }
   };
 
+  const handleCellEdit = async (id: string, field: 'asset_name' | 'current_value', value: string) => {
+    const payload: Record<string, string | number> =
+      field === 'current_value' ? { current_value: parseFloat(value) } : { [field]: value };
+    const { error } = await supabase.from('assets').update(payload).eq('id', id);
+    if (error) {
+      alert('Güncellenemedi: ' + error.message);
+      throw error;
+    }
+    fetchAssets();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -131,7 +142,7 @@ export default function VarlikPage() {
           <DataTable
             columns={columns}
             data={data}
-            meta={{ onEdit: handleEdit, onDelete: handleDelete }}
+            meta={{ onEdit: handleEdit, onDelete: handleDelete, onCellEdit: handleCellEdit }}
           />
         )}
       </div>

@@ -89,6 +89,17 @@ export default function BorcAlacakPage() {
     }
   };
 
+  const handleCellEdit = async (id: string, field: 'counterparty' | 'amount' | 'due_date', value: string) => {
+    const payload: Record<string, string | number | null> =
+      field === 'amount' ? { amount: parseFloat(value) } : { [field]: value || null };
+    const { error } = await supabase.from('debts').update(payload).eq('id', id);
+    if (error) {
+      alert('Güncellenemedi: ' + error.message);
+      throw error;
+    }
+    fetchDebts();
+  };
+
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -114,7 +125,7 @@ export default function BorcAlacakPage() {
           <DataTable
             columns={columns}
             data={data}
-            meta={{ onDelete: handleDelete, onToggleStatus: handleToggleStatus }}
+            meta={{ onDelete: handleDelete, onToggleStatus: handleToggleStatus, onCellEdit: handleCellEdit }}
           />
         )}
       </div>
