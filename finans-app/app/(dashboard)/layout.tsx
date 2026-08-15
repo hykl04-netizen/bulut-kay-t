@@ -13,11 +13,13 @@ import {
   PiggyBank,
   Tags,
   BarChart3,
+  FileText,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { CalculatorWidget } from '@/components/calculator-widget';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
   { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
   { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
+  { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet },
+  { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
   { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
 ];
@@ -46,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/login'); // Giriş yapmamışsa kov :)
+        router.push('/login');
       } else {
         setLoading(false);
       }
@@ -71,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <h2 className="text-xl font-bold">FinansApp</h2>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4">
+      <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -145,9 +149,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Ana İçerik Alanı */}
-      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8">
+      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8 overflow-y-auto">
         {children}
       </main>
+
+      {/* Yüzen Hesap Makinesi */}
+      <CalculatorWidget />
     </div>
   );
 }

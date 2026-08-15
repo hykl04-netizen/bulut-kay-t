@@ -1,0 +1,116 @@
+// components/file-upload.tsx
+'use client';
+
+import { useState, useRef } from 'react';
+import { UploadCloud, Loader2, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+
+interface FileUploadProps {
+  onUploadSuccess: (url: string) => void;
+  label?: string;
+}
+
+export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı Ekle" }: FileUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Sadece görsel ve PDF'lere izin ver
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      setError('Lütfen sadece görsel veya PDF yükleyin.');
+      return;
+    }
+
+    // 5MB Sınırı
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Dosya boyutu 5MB sınırını aşamaz.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+
+    try {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setUploadedUrl(data.secure_url);
+        onUploadSuccess(data.secure_url);
+      } else {
+        setError('Yükleme başarısız oldu. Lütfen tekrar deneyin.');
+      }
+    } catch (err) {
+      setError('Bağlantı hatası oluştu.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        {label}
+      </label>
+      
+      {!uploadedUrl ? (
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-6 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+        >
+          {isUploading ? (
+            <div className="flex flex-col items-center text-emerald-600">
+              <Loader2 className="mb-2 h-6 w-6 animate-spin" />
+              <span className="text-sm font-medium">Yükleniyor...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center text-slate-500 dark:text-slate-400">
+              <UploadCloud className="mb-2 h-6 w-6" />
+              <span className="text-sm">Tıklayın veya dokunun</span>
+              <span className="text-xs mt-1">PNG, JPG, PDF (Max. 5MB)</span>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isUploading}
+          />
+        </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-900/20">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="h-5 w-5" />
+            <span className="text-sm font-medium">Dosya başarıyla eklendi</span>
+          </div>
+          <a 
+            href={uploadedUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-100"
+          >
+            <ImageIcon className="h-4 w-4" />
+            Görüntüle
+          </a>
+        </div>
+      )}
+      
+      {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
+    </div>
+  );
+}
