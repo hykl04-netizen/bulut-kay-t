@@ -16,7 +16,16 @@ Her görev, tek bir sohbet mesajı alışverişinde (yaklaşık mesaj bütçesin
 
 _(Not: 7.4 sadece Gelir-Gider modülünde uygulandı; kod olarak teslim edildi, `next build` ile derleme hatasız doğrulandı — ama tarayıcıda gerçek Supabase verisiyle uçtan uca elle test edilmedi, o yüzden `[~]` işaretli. Diğer modüllere (borç-alacak, fatura-masraf, yatırım, varlık) istenirse aynı `lib/parsing.ts` yardımcıları ve `BulkPasteModal` deseni kopyalanarak eklenebilir — ayrı bir görev olarak planlanmalı.)_
 
-### 7.3 ile ilgili düzeltme (bu oturumda bulundu ve giderildi)
+### 🔴 KRİTİK düzeltme (bu oturumda bulundu ve giderildi) — Faz 7 hiç bağlanmamıştı
+Önceki oturumda `columns.tsx`, `editable-cell.tsx`, `data-table/data-table.tsx` ve `bulk-paste-modal.tsx` dosyaları yazılmış ama **hiçbir modülün gerçek `page.tsx`'i bunları import etmiyordu.** Yani 7.2/7.3/7.4 için "yazıldı" denilen davranışların hiçbiri kullanıcıya ulaşmıyordu; 5 modül de hâlâ Faz 2 tarzı düz `<table>` + modal (tam `fetchData()` ile yeniden çekim) kullanıyordu.
+
+Bu oturumda düzeltildi: 5 modülün de (`gelir-gider`, `borc-alacak`, `fatura-masraf`, `yatirim`, `varlik`) `page.tsx`'i artık `DataTable` + kendi `columns.tsx`'ini kullanıyor; `onCellEdit` optimistic olarak local state güncelliyor (hata olursa eski değere dönüyor, tam refetch yok); modal üzerinden ekleme/düzenleme de artık `insert().select()` / `update().select()` ile optimistic. Gelir-Gider'de "Excel'den Yapıştır" butonu artık `BulkPasteModal`'ı gerçekten açıyor. Ayrıca `gelir-gider` ve `fatura-masraf`'ta eskiden var olup `columns.tsx`'te unutulmuş "Belge" (fiş/fatura görüntüleme) sütunu geri eklendi, kayıp özellik olmasın diye. `next build` ve `tsc --noEmit` bu değişikliklerle hatasız geçti.
+
+**Hâlâ doğrulanmadı:** Tarayıcıda gerçek Supabase verisiyle uçtan uca elle test — bu yüzden 7.2/7.3/7.4 hâlâ `[~]` bırakıldı, `[x]` yapılmadı. Bir sonraki oturumda öncelik: gerçek veriyle her modülde çift-tıkla-düzenle + autosave + bulk paste'i tarayıcıda deneyip doğrulamak.
+
+**Kapsam dışı bırakılanlar (ayrı görev olarak planlanmalı):** `app/(dashboard)/katagoriler` klasörü (yanlış yazımlı eski kopya, `kategoriler` ile birebir aynı içerik) hâlâ silinmedi — dead code olarak duruyor. `bordro` ve `belgeler` sayfaları (`payrolls`/`documents` tabloları) ve Cloudinary bağımlılığı roadmap'te hiç dokümante değildi, bu oturumun kapsamına girmedi.
+
+### 7.3 ile ilgili düzeltme (önceki oturumda bulundu ve giderildi)
 Bu dosyaya yüklenen zip'te 7.3 "yazıldı" olarak işaretliydi ama gerçek kod, açıklamadaki iki davranışı da içermiyordu:
 - Autosave (yazarken 600ms sonra otomatik kaydetme) yoktu, sadece Enter/Escape/blur ile kaydediyordu.
 - Tüm 5 modülün `handleCellEdit` fonksiyonu her kayıttan sonra `fetchXxx()` ile **tüm listeyi yeniden çekiyordu** — optimistic local state güncellemesi yoktu.
