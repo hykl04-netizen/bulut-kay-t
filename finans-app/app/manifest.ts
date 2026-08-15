@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Gelir/gider, borç/alacak, fatura, yatırım ve varlıklarınızı tek yerden takip edin.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#f8fafc',
-    theme_color: '#0f172a',
+    background_color: '#ffffff',
+    theme_color: '#0b1e3d',
     orientation: 'portrait-primary',
     lang: 'tr',
     icons: [
