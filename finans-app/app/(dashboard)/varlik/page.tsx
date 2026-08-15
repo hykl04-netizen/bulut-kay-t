@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ClipboardPaste } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, Asset } from './columns';
 import { supabase } from '@/lib/supabase/client';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 export default function VarlikPage() {
   const [data, setData] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [assetName, setAssetName] = useState('');
   const [assetType, setAssetType] = useState('');
@@ -35,6 +38,9 @@ export default function VarlikPage() {
 
   useEffect(() => {
     fetchAssets();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
   }, []);
 
   const resetForm = () => {
@@ -115,35 +121,60 @@ export default function VarlikPage() {
 
   const totalValue = data.reduce((sum, a) => sum + (a.current_value || 0), 0);
 
+  const handleBulkImport = async (
+    rows: { user_id: string; asset_name: string; asset_type: string | null; current_value: number; currency: string; notes: string | null; updated_at: string }[]
+  ) => {
+    const { data: inserted, error } = await supabase.from('assets').insert(rows).select();
+    if (error) {
+      alert('Toplu ekleme sırasında bir hata oluştu: ' + error.message);
+      throw error;
+    }
+    if (inserted) {
+      setData((prev) => [...(inserted as Asset[]), ...prev]);
+    }
+  };
+
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Varlık ve Birikimler</h1>
-          <p className="text-slate-500 mt-1">Ev, araba, altın gibi maddi varlıklarınızı buradan takip edin.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Varlık ve Birikimler</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Ev, araba, altın gibi maddi varlıklarınızı buradan takip edin.</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Varlık Ekle
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (!userId) { alert('Kullanıcı bilgisi yükleniyor, birazdan tekrar deneyin.'); return; }
+              setIsBulkModalOpen(true);
+            }}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <ClipboardPaste className="w-4 h-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Yeni Varlık Ekle
+          </button>
+        </div>
       </div>
 
       {data.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-          <p className="text-sm text-slate-500">Toplam Varlık Değeri</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+          <p className="text-sm text-slate-500 dark:text-slate-400">Toplam Varlık Değeri</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 mt-1">
             {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(totalValue)}
           </p>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <p className="text-slate-500">Veriler yükleniyor...</p>
+            <p className="text-slate-500 dark:text-slate-400">Veriler yükleniyor...</p>
           </div>
         ) : (
           <DataTable
@@ -154,43 +185,51 @@ export default function VarlikPage() {
         )}
       </div>
 
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
+      )}
+
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
                 {editingId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}
               </h2>
-              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Varlık Adı</label>
-                <input type="text" required value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Örn: Ev, Araba, Altın..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Varlık Adı</label>
+                <input type="text" required value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: Ev, Araba, Altın..." />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tür (opsiyonel)</label>
-                <input type="text" value={assetType} onChange={(e) => setAssetType(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Örn: Gayrimenkul, Araç, Değerli Maden..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tür (opsiyonel)</label>
+                <input type="text" value={assetType} onChange={(e) => setAssetType(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: Gayrimenkul, Araç, Değerli Maden..." />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Güncel Değer</label>
-                  <input type="number" step="0.01" required value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="0.00" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Güncel Değer</label>
+                  <input type="number" step="0.01" required value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="0.00" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Para Birimi</label>
-                  <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="TRY" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Para Birimi</label>
+                  <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="TRY" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Not (opsiyonel)</label>
-                <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Ek bilgi..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Not (opsiyonel)</label>
+                <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Ek bilgi..." />
               </div>
 
               <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg mt-4 transition-colors">

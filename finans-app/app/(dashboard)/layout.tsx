@@ -12,8 +12,12 @@ import {
   Receipt,
   PiggyBank,
   Tags,
+  BarChart3,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
@@ -22,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
   { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
   { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
+  { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
 ];
 
@@ -29,6 +34,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Sayfa değişince mobil menüyü otomatik kapat
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   // Güvenlik Duvarı: Oturum kontrolü
   useEffect(() => {
@@ -49,49 +60,92 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50">Yükleniyor...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">Yükleniyor...</div>;
   }
 
+  // Sidebar içeriği hem masaüstü hem mobil panelde ortak kullanılıyor
+  const navContent = (
+    <>
+      <div className="p-6 flex items-center gap-3 text-white">
+        <Wallet className="w-8 h-8" />
+        <h2 className="text-xl font-bold">FinansApp</h2>
+      </div>
+
+      <nav className="flex-1 px-4 space-y-1 mt-4">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-slate-800 text-white'
+                  : 'hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {item.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-slate-800 space-y-1">
+        <ThemeToggle />
+        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-slate-800 transition">
+          <LogOut className="w-5 h-5" />
+          Çıkış Yap
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Sol Menü (Sidebar) */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex">
-        <div className="p-6 flex items-center gap-3 text-white">
-          <Wallet className="w-8 h-8" />
-          <h2 className="text-xl font-bold">FinansApp</h2>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-1 mt-4">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-slate-800 text-white'
-                    : 'hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                {item.label}
-              </a>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-slate-800">
-          <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-slate-800 transition">
-            <LogOut className="w-5 h-5" />
-            Çıkış Yap
-          </button>
-        </div>
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Sol Menü (Sidebar) — masaüstü, md ve üzeri */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex">
+        {navContent}
       </aside>
 
+      {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-slate-900 text-white px-4 h-14 md:hidden">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-6 h-6" />
+          <span className="font-bold">FinansApp</span>
+        </div>
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Menüyü aç"
+          className="p-2 -mr-2 text-slate-300 hover:text-white"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobil kayan menü paneli + karartma */}
+      {mobileNavOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-slate-900/50"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="relative w-64 bg-slate-900 text-slate-300 flex flex-col h-full shadow-xl">
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Menüyü kapat"
+              className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {navContent}
+          </aside>
+        </div>
+      )}
+
       {/* Ana İçerik Alanı */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8">
         {children}
       </main>
     </div>

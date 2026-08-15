@@ -4,96 +4,94 @@ import { useMemo, useState } from 'react';
 import { X, Check, AlertCircle, ClipboardPaste } from 'lucide-react';
 import { parseFlexibleAmount, parseFlexibleDate, splitPastedRows } from '@/lib/parsing';
 
-type Category = { id: string; name: string; color: string; type: string };
-
 type ParsedRow = {
   lineNumber: number;
   rawCells: string[];
-  date: string | null;
-  description: string;
+  direction: 'borc' | 'alacak' | null;
+  counterparty: string;
   amount: number | null;
-  type: 'gelir' | 'gider' | null;
-  categoryName: string;
-  categoryId: string | null;
+  dueDate: string | null;
+  notes: string;
   errors: string[];
 };
 
-type NewTransactionPayload = {
+type NewDebtPayload = {
   user_id: string;
-  type: 'gelir' | 'gider';
+  direction: 'borc' | 'alacak';
+  counterparty: string;
   amount: number;
-  description: string;
-  date: string;
-  category_id: string | null;
+  due_date: string | null;
+  notes: string | null;
+  status: 'acik';
 };
 
 type Props = {
-  categories: Category[];
   userId: string;
   onClose: () => void;
-  onImport: (rows: NewTransactionPayload[]) => Promise<void>;
+  onImport: (rows: NewDebtPayload[]) => Promise<void>;
 };
 
-const EXAMPLE = `2026-01-15\tMarket alışverişi\t450,00\tgider\tMarket
-2026-01-16\tMaaş\t35000\tgelir\tMaaş`;
+const EXAMPLE = `borc\tAhmet\t1500,00\t2026-02-01\tKira avansı
+alacak\tABC Şirketi\t3200\t01.03.2026\t`;
 
-function buildRows(raw: string, categories: Category[]): ParsedRow[] {
+function buildRows(raw: string): ParsedRow[] {
   const lines = splitPastedRows(raw);
 
   return lines.map(({ cells, delimiterFound }, idx) => {
     const lineNumber = idx + 1;
     const errors: string[] = [];
 
-    if (!delimiterFound || cells.length < 4) {
+    if (!delimiterFound || cells.length < 3) {
       return {
         lineNumber,
         rawCells: cells,
-        date: null,
-        description: '',
+        direction: null,
+        counterparty: '',
         amount: null,
-        type: null,
-        categoryName: '',
-        categoryId: null,
-        errors: ['Sütunlar Tab veya ; ile ayrılmalı (en az 4 sütun: Tarih, Açıklama, Tutar, Tip).'],
+        dueDate: null,
+        notes: '',
+        errors: ['Sütunlar Tab veya ; ile ayrılmalı (en az 3 sütun: Tür, Kime/Kimden, Tutar).'],
       };
     }
 
-    const [rawDate, rawDescription, rawAmount, rawType, rawCategory = ''] = cells;
+    const [rawDirection, rawCounterparty, rawAmount, rawDueDate = '', rawNotes = ''] = cells;
 
-    const date = parseFlexibleDate(rawDate);
-    if (!date) errors.push(`Tarih anlaşılamadı: "${rawDate}"`);
+    const normalizedDirection = rawDirection.trim().toLowerCase();
+    const direction: 'borc' | 'alacak' | null =
+      normalizedDirection === 'borc' ? 'borc' : normalizedDirection === 'alacak' ? 'alacak' : null;
+    if (!direction) errors.push(`Tür "borc" veya "alacak" olmalı: "${rawDirection}"`);
 
-    const description = rawDescription.trim();
-    if (!description) errors.push('Açıklama boş olamaz.');
+    const counterparty = rawCounterparty.trim();
+    if (!counterparty) errors.push('Kime/Kimden boş olamaz.');
 
     const amount = parseFlexibleAmount(rawAmount);
     if (amount === null || amount <= 0) errors.push(`Tutar geçersiz: "${rawAmount}"`);
 
-    const normalizedType = rawType.trim().toLowerCase();
-    const type: 'gelir' | 'gider' | null =
-      normalizedType === 'gelir' ? 'gelir' : normalizedType === 'gider' ? 'gider' : null;
-    if (!type) errors.push(`Tip "gelir" veya "gider" olmalı: "${rawType}"`);
-
-    const categoryName = rawCategory.trim();
-    let categoryId: string | null = null;
-    if (categoryName && type) {
-      const match = categories.find(
-        (c) => c.type === type && c.name.toLowerCase() === categoryName.toLowerCase()
-      );
-      categoryId = match?.id ?? null;
-      // Kategori eşleşmezse hata değil, sadece kategorisiz eklenir (uyarı preview'da gösterilir)
+    let dueDate: string | null = null;
+    if (rawDueDate.trim()) {
+      dueDate = parseFlexibleDate(rawDueDate);
+      if (!dueDate) errors.push(`Vade tarihi anlaşılamadı: "${rawDueDate}"`);
     }
 
-    return { lineNumber, rawCells: cells, date, description, amount, type, categoryName, categoryId, errors };
+    return {
+      lineNumber,
+      rawCells: cells,
+      direction,
+      counterparty,
+      amount,
+      dueDate,
+      notes: rawNotes.trim(),
+      errors,
+    };
   });
 }
 
-export function BulkPasteModal({ categories, userId, onClose, onImport }: Props) {
+export function BulkPasteModal({ userId, onClose, onImport }: Props) {
   const [raw, setRaw] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
 
-  const parsedRows = useMemo(() => (raw.trim() ? buildRows(raw, categories) : []), [raw, categories]);
+  const parsedRows = useMemo(() => (raw.trim() ? buildRows(raw) : []), [raw]);
   const validRows = parsedRows.filter((r) => r.errors.length === 0);
   const invalidCount = parsedRows.length - validRows.length;
 
@@ -101,13 +99,14 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
     if (validRows.length === 0) return;
     setImporting(true);
     try {
-      const payload: NewTransactionPayload[] = validRows.map((r) => ({
+      const payload: NewDebtPayload[] = validRows.map((r) => ({
         user_id: userId,
-        type: r.type as 'gelir' | 'gider',
+        direction: r.direction as 'borc' | 'alacak',
+        counterparty: r.counterparty,
         amount: r.amount as number,
-        description: r.description,
-        date: r.date as string,
-        category_id: r.categoryId,
+        due_date: r.dueDate,
+        notes: r.notes || null,
+        status: 'acik',
       }));
       await onImport(payload);
       setResult({ success: payload.length, failed: invalidCount });
@@ -135,7 +134,7 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
               <Check className="w-7 h-7 text-emerald-600" />
             </div>
             <p className="text-lg font-medium text-slate-900 dark:text-slate-50">
-              {result.success} işlem başarıyla eklendi.
+              {result.success} kayıt başarıyla eklendi.
             </p>
             {result.failed > 0 && (
               <p className="text-sm text-rose-600">{result.failed} satır hatalı olduğu için atlandı.</p>
@@ -151,7 +150,7 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
           <>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
               Excel&apos;den kopyaladığınız satırları aşağıya yapıştırın. Sütun sırası:{' '}
-              <span className="font-medium text-slate-700 dark:text-slate-300">Tarih, Açıklama, Tutar, Tip (gelir/gider), Kategori (opsiyonel)</span>.
+              <span className="font-medium text-slate-700 dark:text-slate-300">Tür (borc/alacak), Kime/Kimden, Tutar, Vade Tarihi (opsiyonel), Not (opsiyonel)</span>.
             </p>
             <details className="mb-3 text-xs text-slate-500 dark:text-slate-400">
               <summary className="cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 select-none">Örnek biçim</summary>
@@ -182,11 +181,11 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
                     <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700 sticky top-0">
                       <tr>
                         <th className="p-2 font-medium text-slate-500 dark:text-slate-400 w-8"></th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tarih</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Açıklama</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tür</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Kime / Kimden</th>
                         <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tutar</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tip</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Kategori</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Vade Tarihi</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Not</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -206,27 +205,21 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
                           ) : (
                             <>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
-                                {new Date(row.date as string).toLocaleDateString('tr-TR')}
+                                {row.direction === 'borc' ? 'Borç' : 'Alacak'}
                               </td>
-                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.description}</td>
+                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.counterparty}</td>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
                                 {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(
                                   row.amount as number
                                 )}
                               </td>
-                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.type}</td>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
-                                {row.categoryName ? (
-                                  row.categoryId ? (
-                                    row.categoryName
-                                  ) : (
-                                    <span className="text-amber-600" title="Bu isimde kategori bulunamadı, kategorisiz eklenecek">
-                                      {row.categoryName} (eşleşmedi)
-                                    </span>
-                                  )
-                                ) : (
+                                {row.dueDate ? new Date(row.dueDate).toLocaleDateString('tr-TR') : (
                                   <span className="text-slate-400 dark:text-slate-500">-</span>
                                 )}
+                              </td>
+                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">
+                                {row.notes || <span className="text-slate-400 dark:text-slate-500">-</span>}
                               </td>
                             </>
                           )}

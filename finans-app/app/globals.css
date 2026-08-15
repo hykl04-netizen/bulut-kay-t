@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Tailwind v4'te dark: varyantı varsayılan olarak prefers-color-scheme media
+   query'sine bağlıdır. Kullanıcının açıp kapatabildiği bir tema anahtarı
+   istediğimiz için bunu <html> üzerindeki .dark sınıfına bağlıyoruz. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +17,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 body {

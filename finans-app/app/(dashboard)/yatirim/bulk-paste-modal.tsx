@@ -2,98 +2,113 @@
 
 import { useMemo, useState } from 'react';
 import { X, Check, AlertCircle, ClipboardPaste } from 'lucide-react';
-import { parseFlexibleAmount, parseFlexibleDate, splitPastedRows } from '@/lib/parsing';
+import { parseFlexibleAmount, splitPastedRows } from '@/lib/parsing';
 
-type Category = { id: string; name: string; color: string; type: string };
+const ASSET_TYPES = ['hisse', 'doviz', 'kripto', 'fon', 'altin'] as const;
+type AssetType = typeof ASSET_TYPES[number];
+
+const assetTypeLabels: Record<AssetType, string> = {
+  hisse: 'Hisse',
+  doviz: 'Döviz',
+  kripto: 'Kripto',
+  fon: 'Fon',
+  altin: 'Altın',
+};
 
 type ParsedRow = {
   lineNumber: number;
   rawCells: string[];
-  date: string | null;
-  description: string;
-  amount: number | null;
-  type: 'gelir' | 'gider' | null;
-  categoryName: string;
-  categoryId: string | null;
+  assetType: AssetType | null;
+  symbol: string;
+  quantity: number | null;
+  avgCost: number | null;
+  currentPrice: number | null;
+  currency: string;
   errors: string[];
 };
 
-type NewTransactionPayload = {
+type NewInvestmentPayload = {
   user_id: string;
-  type: 'gelir' | 'gider';
-  amount: number;
-  description: string;
-  date: string;
-  category_id: string | null;
+  asset_type: AssetType;
+  symbol: string;
+  quantity: number;
+  avg_cost: number | null;
+  current_price: number | null;
+  currency: string;
+  updated_at: string;
 };
 
 type Props = {
-  categories: Category[];
   userId: string;
   onClose: () => void;
-  onImport: (rows: NewTransactionPayload[]) => Promise<void>;
+  onImport: (rows: NewInvestmentPayload[]) => Promise<void>;
 };
 
-const EXAMPLE = `2026-01-15\tMarket alışverişi\t450,00\tgider\tMarket
-2026-01-16\tMaaş\t35000\tgelir\tMaaş`;
+const EXAMPLE = `hisse\tTHYAO\t100\t245,50\t260,00\tTRY
+kripto\tBTC\t0.05\t\t\tUSD
+doviz\tUSD\t500\t32,10\t\tTRY`;
 
-function buildRows(raw: string, categories: Category[]): ParsedRow[] {
+function buildRows(raw: string): ParsedRow[] {
   const lines = splitPastedRows(raw);
 
   return lines.map(({ cells, delimiterFound }, idx) => {
     const lineNumber = idx + 1;
     const errors: string[] = [];
 
-    if (!delimiterFound || cells.length < 4) {
+    if (!delimiterFound || cells.length < 3) {
       return {
         lineNumber,
         rawCells: cells,
-        date: null,
-        description: '',
-        amount: null,
-        type: null,
-        categoryName: '',
-        categoryId: null,
-        errors: ['Sütunlar Tab veya ; ile ayrılmalı (en az 4 sütun: Tarih, Açıklama, Tutar, Tip).'],
+        assetType: null,
+        symbol: '',
+        quantity: null,
+        avgCost: null,
+        currentPrice: null,
+        currency: 'TRY',
+        errors: ['Sütunlar Tab veya ; ile ayrılmalı (en az 3 sütun: Varlık Türü, Sembol, Miktar).'],
       };
     }
 
-    const [rawDate, rawDescription, rawAmount, rawType, rawCategory = ''] = cells;
-
-    const date = parseFlexibleDate(rawDate);
-    if (!date) errors.push(`Tarih anlaşılamadı: "${rawDate}"`);
-
-    const description = rawDescription.trim();
-    if (!description) errors.push('Açıklama boş olamaz.');
-
-    const amount = parseFlexibleAmount(rawAmount);
-    if (amount === null || amount <= 0) errors.push(`Tutar geçersiz: "${rawAmount}"`);
+    const [rawType, rawSymbol, rawQuantity, rawAvgCost = '', rawCurrentPrice = '', rawCurrency = ''] = cells;
 
     const normalizedType = rawType.trim().toLowerCase();
-    const type: 'gelir' | 'gider' | null =
-      normalizedType === 'gelir' ? 'gelir' : normalizedType === 'gider' ? 'gider' : null;
-    if (!type) errors.push(`Tip "gelir" veya "gider" olmalı: "${rawType}"`);
-
-    const categoryName = rawCategory.trim();
-    let categoryId: string | null = null;
-    if (categoryName && type) {
-      const match = categories.find(
-        (c) => c.type === type && c.name.toLowerCase() === categoryName.toLowerCase()
-      );
-      categoryId = match?.id ?? null;
-      // Kategori eşleşmezse hata değil, sadece kategorisiz eklenir (uyarı preview'da gösterilir)
+    const assetType = (ASSET_TYPES as readonly string[]).includes(normalizedType)
+      ? (normalizedType as AssetType)
+      : null;
+    if (!assetType) {
+      errors.push(`Varlık türü "${ASSET_TYPES.join('/')}" olmalı: "${rawType}"`);
     }
 
-    return { lineNumber, rawCells: cells, date, description, amount, type, categoryName, categoryId, errors };
+    const symbol = rawSymbol.trim().toUpperCase();
+    if (!symbol) errors.push('Sembol boş olamaz.');
+
+    const quantity = parseFlexibleAmount(rawQuantity);
+    if (quantity === null || quantity <= 0) errors.push(`Miktar geçersiz: "${rawQuantity}"`);
+
+    let avgCost: number | null = null;
+    if (rawAvgCost.trim()) {
+      avgCost = parseFlexibleAmount(rawAvgCost);
+      if (avgCost === null) errors.push(`Ort. maliyet geçersiz: "${rawAvgCost}"`);
+    }
+
+    let currentPrice: number | null = null;
+    if (rawCurrentPrice.trim()) {
+      currentPrice = parseFlexibleAmount(rawCurrentPrice);
+      if (currentPrice === null) errors.push(`Güncel fiyat geçersiz: "${rawCurrentPrice}"`);
+    }
+
+    const currency = rawCurrency.trim() ? rawCurrency.trim().toUpperCase() : 'TRY';
+
+    return { lineNumber, rawCells: cells, assetType, symbol, quantity, avgCost, currentPrice, currency, errors };
   });
 }
 
-export function BulkPasteModal({ categories, userId, onClose, onImport }: Props) {
+export function BulkPasteModal({ userId, onClose, onImport }: Props) {
   const [raw, setRaw] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
 
-  const parsedRows = useMemo(() => (raw.trim() ? buildRows(raw, categories) : []), [raw, categories]);
+  const parsedRows = useMemo(() => (raw.trim() ? buildRows(raw) : []), [raw]);
   const validRows = parsedRows.filter((r) => r.errors.length === 0);
   const invalidCount = parsedRows.length - validRows.length;
 
@@ -101,13 +116,15 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
     if (validRows.length === 0) return;
     setImporting(true);
     try {
-      const payload: NewTransactionPayload[] = validRows.map((r) => ({
+      const payload: NewInvestmentPayload[] = validRows.map((r) => ({
         user_id: userId,
-        type: r.type as 'gelir' | 'gider',
-        amount: r.amount as number,
-        description: r.description,
-        date: r.date as string,
-        category_id: r.categoryId,
+        asset_type: r.assetType as AssetType,
+        symbol: r.symbol,
+        quantity: r.quantity as number,
+        avg_cost: r.avgCost,
+        current_price: r.currentPrice,
+        currency: r.currency,
+        updated_at: new Date().toISOString(),
       }));
       await onImport(payload);
       setResult({ success: payload.length, failed: invalidCount });
@@ -135,7 +152,7 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
               <Check className="w-7 h-7 text-emerald-600" />
             </div>
             <p className="text-lg font-medium text-slate-900 dark:text-slate-50">
-              {result.success} işlem başarıyla eklendi.
+              {result.success} yatırım başarıyla eklendi.
             </p>
             {result.failed > 0 && (
               <p className="text-sm text-rose-600">{result.failed} satır hatalı olduğu için atlandı.</p>
@@ -151,7 +168,7 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
           <>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
               Excel&apos;den kopyaladığınız satırları aşağıya yapıştırın. Sütun sırası:{' '}
-              <span className="font-medium text-slate-700 dark:text-slate-300">Tarih, Açıklama, Tutar, Tip (gelir/gider), Kategori (opsiyonel)</span>.
+              <span className="font-medium text-slate-700 dark:text-slate-300">Varlık Türü ({ASSET_TYPES.join('/')}), Sembol, Miktar, Ort. Maliyet (opsiyonel), Güncel Fiyat (opsiyonel), Para Birimi (opsiyonel, varsayılan TRY)</span>.
             </p>
             <details className="mb-3 text-xs text-slate-500 dark:text-slate-400">
               <summary className="cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 select-none">Örnek biçim</summary>
@@ -182,11 +199,11 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
                     <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700 sticky top-0">
                       <tr>
                         <th className="p-2 font-medium text-slate-500 dark:text-slate-400 w-8"></th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tarih</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Açıklama</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tutar</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tip</th>
-                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Kategori</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Tür</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Sembol</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Miktar</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Ort. Maliyet</th>
+                        <th className="p-2 font-medium text-slate-500 dark:text-slate-400">Güncel Fiyat</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -205,28 +222,16 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
                             </td>
                           ) : (
                             <>
+                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{assetTypeLabels[row.assetType as AssetType]}</td>
+                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.symbol}</td>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
-                                {new Date(row.date as string).toLocaleDateString('tr-TR')}
+                                {(row.quantity as number).toLocaleString('tr-TR', { maximumFractionDigits: 8 })}
                               </td>
-                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.description}</td>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
-                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(
-                                  row.amount as number
-                                )}
+                                {row.avgCost !== null ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: row.currency }).format(row.avgCost) : <span className="text-slate-400 dark:text-slate-500">-</span>}
                               </td>
-                              <td className="p-2 align-top text-slate-700 dark:text-slate-300">{row.type}</td>
                               <td className="p-2 align-top text-slate-700 dark:text-slate-300">
-                                {row.categoryName ? (
-                                  row.categoryId ? (
-                                    row.categoryName
-                                  ) : (
-                                    <span className="text-amber-600" title="Bu isimde kategori bulunamadı, kategorisiz eklenecek">
-                                      {row.categoryName} (eşleşmedi)
-                                    </span>
-                                  )
-                                ) : (
-                                  <span className="text-slate-400 dark:text-slate-500">-</span>
-                                )}
+                                {row.currentPrice !== null ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: row.currency }).format(row.currentPrice) : <span className="text-slate-400 dark:text-slate-500">-</span>}
                               </td>
                             </>
                           )}

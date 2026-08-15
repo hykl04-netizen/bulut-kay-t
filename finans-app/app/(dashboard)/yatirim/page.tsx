@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ClipboardPaste } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, Investment } from './columns';
 import { supabase } from '@/lib/supabase/client';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 const ASSET_TYPES = [
   { value: 'hisse', label: 'Hisse' },
@@ -18,7 +19,9 @@ export default function YatirimPage() {
   const [data, setData] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [assetType, setAssetType] = useState<typeof ASSET_TYPES[number]['value']>('hisse');
   const [symbol, setSymbol] = useState('');
@@ -44,6 +47,9 @@ export default function YatirimPage() {
 
   useEffect(() => {
     fetchInvestments();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
   }, []);
 
   const resetForm = () => {
@@ -124,26 +130,51 @@ export default function YatirimPage() {
     }
   };
 
+  const handleBulkImport = async (
+    rows: { user_id: string; asset_type: typeof ASSET_TYPES[number]['value']; symbol: string; quantity: number; avg_cost: number | null; current_price: number | null; currency: string; updated_at: string }[]
+  ) => {
+    const { data: inserted, error } = await supabase.from('investments').insert(rows).select();
+    if (error) {
+      alert('Toplu ekleme sırasında bir hata oluştu: ' + error.message);
+      throw error;
+    }
+    if (inserted) {
+      setData((prev) => [...(inserted as Investment[]), ...prev]);
+    }
+  };
+
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Yatırım Portföyü</h1>
-          <p className="text-slate-500 mt-1">Hisse, döviz, kripto ve diğer yatırımlarınızı buradan yönetin.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Yatırım Portföyü</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Hisse, döviz, kripto ve diğer yatırımlarınızı buradan yönetin.</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Yatırım Ekle
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (!userId) { alert('Kullanıcı bilgisi yükleniyor, birazdan tekrar deneyin.'); return; }
+              setIsBulkModalOpen(true);
+            }}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <ClipboardPaste className="w-4 h-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Yeni Yatırım Ekle
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <p className="text-slate-500">Veriler yükleniyor...</p>
+            <p className="text-slate-500 dark:text-slate-400">Veriler yükleniyor...</p>
           </div>
         ) : (
           <DataTable
@@ -154,25 +185,33 @@ export default function YatirimPage() {
         )}
       </div>
 
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
+      )}
+
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
                 {editingId ? 'Yatırımı Düzenle' : 'Yeni Yatırım Ekle'}
               </h2>
-              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Varlık Türü</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Varlık Türü</label>
                 <select
                   value={assetType}
                   onChange={(e) => setAssetType(e.target.value as typeof assetType)}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100"
                 >
                   {ASSET_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -181,29 +220,29 @@ export default function YatirimPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Sembol</label>
-                <input type="text" required value={symbol} onChange={(e) => setSymbol(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Örn: THYAO, USD, BTC..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sembol</label>
+                <input type="text" required value={symbol} onChange={(e) => setSymbol(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: THYAO, USD, BTC..." />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Miktar</label>
-                  <input type="number" step="0.00000001" required value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="0" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Miktar</label>
+                  <input type="number" step="0.00000001" required value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="0" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Para Birimi</label>
-                  <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="TRY" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Para Birimi</label>
+                  <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="TRY" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Ort. Maliyet</label>
-                  <input type="number" step="0.0001" value={avgCost} onChange={(e) => setAvgCost(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Opsiyonel" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ort. Maliyet</label>
+                  <input type="number" step="0.0001" value={avgCost} onChange={(e) => setAvgCost(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Opsiyonel" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Güncel Fiyat</label>
-                  <input type="number" step="0.0001" value={currentPrice} onChange={(e) => setCurrentPrice(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Opsiyonel" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Güncel Fiyat</label>
+                  <input type="number" step="0.0001" value={currentPrice} onChange={(e) => setCurrentPrice(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Opsiyonel" />
                 </div>
               </div>
 

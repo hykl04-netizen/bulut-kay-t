@@ -153,8 +153,8 @@ export default function GelirGiderPage() {
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Gelir ve Giderler</h1>
-          <p className="text-slate-500 mt-1">Tüm finansal hareketlerinizi buradan yönetin.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Gelir ve Giderler</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Tüm finansal hareketlerinizi buradan yönetin.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -162,7 +162,7 @@ export default function GelirGiderPage() {
               if (!userId) { alert('Kullanıcı bilgisi yükleniyor, birazdan tekrar deneyin.'); return; }
               setIsBulkModalOpen(true);
             }}
-            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <ClipboardPaste className="w-4 h-4" />
             Excel&apos;den Yapıştır
@@ -177,10 +177,10 @@ export default function GelirGiderPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <p className="text-slate-500">Veriler yükleniyor...</p>
+            <p className="text-slate-500 dark:text-slate-400">Veriler yükleniyor...</p>
           </div>
         ) : (
           <DataTable
@@ -202,25 +202,25 @@ export default function GelirGiderPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
                 {editingId ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}
               </h2>
-              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">İşlem Tipi</label>
-                <div className="flex gap-4 p-1 bg-slate-100 rounded-lg">
-                  <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-white shadow-sm font-medium text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">İşlem Tipi</label>
+                <div className="flex gap-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                  <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-white dark:bg-slate-900 shadow-sm font-medium text-emerald-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                     <input type="radio" className="hidden" checked={type === 'gelir'} onChange={() => { setType('gelir'); setCategoryId(''); }} />
                     Gelir
                   </label>
-                  <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-white shadow-sm font-medium text-rose-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                  <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-white dark:bg-slate-900 shadow-sm font-medium text-rose-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                     <input type="radio" className="hidden" checked={type === 'gider'} onChange={() => { setType('gider'); setCategoryId(''); }} />
                     Gider
                   </label>
@@ -228,11 +228,11 @@ export default function GelirGiderPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategori</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100"
                 >
                   <option value="">Kategori seçin (opsiyonel)</option>
                   {filteredCategories.map((cat) => (
@@ -242,18 +242,18 @@ export default function GelirGiderPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tutar (₺)</label>
-                <input type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="0.00" />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tutar (₺)</label>
+                <input type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="0.00" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Açıklama</label>
-                <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" placeholder="Örn: Market, Maaş..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Açıklama</label>
+                <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: Market, Maaş..." />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tarih</label>
-                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900" />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tarih</label>
+                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" />
               </div>
 
               <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg mt-4 transition-colors">
