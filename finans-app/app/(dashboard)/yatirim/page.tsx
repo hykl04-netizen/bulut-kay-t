@@ -78,13 +78,20 @@ export default function YatirimPage() {
   };
 
   const handleCellEdit = async (id: string, field: 'quantity' | 'avg_cost' | 'current_price', value: string) => {
-    const payload: Record<string, number | null> = { [field]: value === '' ? null : parseFloat(value) };
+    const previous = data.find((item) => item.id === id);
+    if (!previous) return;
+
+    const parsedValue = value === '' ? null : parseFloat(value);
+
+    setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: parsedValue } : item)));
+
+    const payload: Record<string, number | null> = { [field]: parsedValue };
     const { error } = await supabase.from('investments').update(payload).eq('id', id);
     if (error) {
+      setData((prev) => prev.map((item) => (item.id === id ? previous : item)));
       alert('Güncellenemedi: ' + error.message);
       throw error;
     }
-    fetchInvestments();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -90,14 +90,21 @@ export default function BorcAlacakPage() {
   };
 
   const handleCellEdit = async (id: string, field: 'counterparty' | 'amount' | 'due_date', value: string) => {
+    const previous = data.find((item) => item.id === id);
+    if (!previous) return;
+
+    const parsedValue: string | number | null = field === 'amount' ? parseFloat(value) : (value || null);
+
+    setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: parsedValue } : item)));
+
     const payload: Record<string, string | number | null> =
-      field === 'amount' ? { amount: parseFloat(value) } : { [field]: value || null };
+      field === 'amount' ? { amount: parsedValue as number } : { [field]: value || null };
     const { error } = await supabase.from('debts').update(payload).eq('id', id);
     if (error) {
+      setData((prev) => prev.map((item) => (item.id === id ? previous : item)));
       alert('Güncellenemedi: ' + error.message);
       throw error;
     }
-    fetchDebts();
   };
 
   return (

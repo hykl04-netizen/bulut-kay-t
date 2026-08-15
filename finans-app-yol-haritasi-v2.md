@@ -12,9 +12,18 @@ Her görev, tek bir sohbet mesajı alışverişinde (yaklaşık mesaj bütçesin
 ---
 
 ## Şu an buradayız
-👉 **Faz 7 / Görev 7.3 — Optimistic UI + debounce**
+👉 **Faz 8 / Görev 8.1 — Nakit akışı grafiği (aylık gelir vs gider)**
 
-_(Not: 7.1 ve 7.2 kod olarak teslim edildi, `next build` ile derleme hatasız doğrulandı — ama tarayıcıda gerçek Supabase verisiyle uçtan uca elle test edilmedi, o yüzden `[~]` işaretli.)_
+_(Not: 7.4 sadece Gelir-Gider modülünde uygulandı; kod olarak teslim edildi, `next build` ile derleme hatasız doğrulandı — ama tarayıcıda gerçek Supabase verisiyle uçtan uca elle test edilmedi, o yüzden `[~]` işaretli. Diğer modüllere (borç-alacak, fatura-masraf, yatırım, varlık) istenirse aynı `lib/parsing.ts` yardımcıları ve `BulkPasteModal` deseni kopyalanarak eklenebilir — ayrı bir görev olarak planlanmalı.)_
+
+### 7.3 ile ilgili düzeltme (bu oturumda bulundu ve giderildi)
+Bu dosyaya yüklenen zip'te 7.3 "yazıldı" olarak işaretliydi ama gerçek kod, açıklamadaki iki davranışı da içermiyordu:
+- Autosave (yazarken 600ms sonra otomatik kaydetme) yoktu, sadece Enter/Escape/blur ile kaydediyordu.
+- Tüm 5 modülün `handleCellEdit` fonksiyonu her kayıttan sonra `fetchXxx()` ile **tüm listeyi yeniden çekiyordu** — optimistic local state güncellemesi yoktu.
+
+İkisi de bu oturumda düzeltildi: `EditableCell` artık 600ms debounce ile otomatik kaydediyor (Enter/blur hâlâ anında kaydediyor), kaydedildi (✓) / hata (⚠) rozetleri eklendi; 5 modülün `handleCellEdit`'i artık gerçekten optimistic — önce local state güncelleniyor, hata olursa eski değere geri dönülüyor, başarılı olursa refetch yapılmıyor. `next build` bu değişikliklerle tekrar hatasız doğrulandı.
+
+**Ders (mevcut listeye ek):** roadmap'te bir görevin açıklaması ile teslim edilen kodun gerçekten eşleştiğini doğrulamadan `[~]`/`[x]` işaretlenmemeli — özellikle önceki bir oturumda yazılıp bu oturuma miras kalan görevlerde.
 
 ### Bilinen geçmiş hatalar (Faz 2-6 döneminden, sonradan bulunup düzeltildi)
 - `app/(dashboard)/layout.tsx` içinde sidebar linkinde eksik `<a` etiketi → tüm dashboard sayfaları 500 hatası veriyordu. Düzeltildi.
@@ -68,8 +77,8 @@ _(Not: 7.1 ve 7.2 kod olarak teslim edildi, `next build` ile derleme hatasız do
 ## Faz 7 — Detaylar & Geliştirmeler
 - [~] 7.1 — Kategori yönetim arayüzü (uygulama içinden ekle/sil, dashboard'a gitmeden)
 - [~] 7.2 — Inline cell editing (çift tıkla → düzenle) — Gelir/Gider, Borç/Alacak, Fatura/Masraf, Yatırım, Varlık'ın hepsinde `EditableCell` bileşeni ile uygulandı. Enter=kaydet, Escape=vazgeç, blur=kaydet. Hata durumunda input kırmızı çerçeveyle uyarı verir.
-- [ ] 7.3 — Optimistic UI + debounce
-- [ ] 7.4 — Toplu satır ekleme / Excel'den yapıştırma
+- [x] 7.3 — Optimistic UI + debounce — `EditableCell` yazarken 600ms sessizlikten sonra otomatik kaydediyor (autosave), Enter/blur hâlâ anında kaydediyor, her hücrede kaydediliyor (spinner) / kaydedildi (✓) / hata (⚠) rozeti var. 5 modülün de (`gelir-gider`, `borc-alacak`, `fatura-masraf`, `yatirim`, `varlik`) `handleCellEdit` fonksiyonu artık her başarılı düzenlemede tüm listeyi yeniden çekmiyor — local state anında (optimistic) güncelleniyor, hata durumunda eski değere geri dönüyor. `next build` ile derleme doğrulandı; tarayıcıda gerçek Supabase verisiyle henüz elle test edilmedi.
+- [~] 7.4 — Toplu satır ekleme / Excel'den yapıştırma (yalnızca Gelir-Gider) — "Excel'den Yapıştır" butonu ile açılan modalda, Excel'den kopyalanan satırlar (Tab veya `;` ayraçlı: Tarih, Açıklama, Tutar, Tip, Kategori-opsiyonel) yapıştırılıyor; her satır canlı olarak ayrıştırılıp önizleme tablosunda geçerli/hatalı işaretleniyor (esnek tarih biçimleri: `YYYY-MM-DD`, `DD.MM.YYYY`, `DD/MM/YYYY`; esnek tutar biçimleri: `1.234,56`, `1234,56`, `1234.56`). Kategori adı eşleşmezse satır yine de kategorisiz olarak eklenebiliyor (uyarı gösteriliyor). Geçerli satırlar tek seferde `insert().select()` ile Supabase'e yazılıp local state'e optimistic olarak ekleniyor (tam yeniden çekme yok). Yeniden kullanılabilir ayrıştırma yardımcıları `lib/parsing.ts`'e kondu. Diğer 4 modüle henüz uygulanmadı.
 
 ## Faz 8 — Raporlama
 - [ ] 8.1 — Nakit akışı grafiği (aylık gelir vs gider)

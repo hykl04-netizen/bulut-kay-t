@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ClipboardPaste } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, Transaction } from './columns';
 import { supabase } from '@/lib/supabase/client';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 type Category = { id: string; name: string; color: string; type: string };
 
@@ -13,7 +14,9 @@ export default function GelirGiderPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [type, setType] = useState<'gelir' | 'gider'>('gider');
   const [amount, setAmount] = useState('');
@@ -44,6 +47,9 @@ export default function GelirGiderPage() {
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
   }, []);
 
   const resetForm = () => {
@@ -76,13 +82,41 @@ export default function GelirGiderPage() {
   };
 
   const handleCellEdit = async (id: string, field: 'description' | 'amount' | 'date', value: string) => {
-    const payload: Record<string, string | number> = field === 'amount' ? { amount: parseFloat(value) } : { [field]: value };
+    const previous = data.find((item) => item.id === id);
+    if (!previous) return;
+
+    const parsedValue: string | number = field === 'amount' ? parseFloat(value) : value;
+
+    // Optimistic: local state'i anında güncelle
+    setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: parsedValue } : item)));
+
+    const payload: Record<string, string | number> = field === 'amount' ? { amount: parsedValue as number } : { [field]: value };
     const { error } = await supabase.from('transactions').update(payload).eq('id', id);
     if (error) {
+      // Hata: eski değere geri dön
+      setData((prev) => prev.map((item) => (item.id === id ? previous : item)));
       alert('Güncellenemedi: ' + error.message);
       throw error;
     }
-    fetchTransactions();
+  };
+
+  const handleBulkImport = async (
+    rows: { user_id: string; type: 'gelir' | 'gider'; amount: number; description: string; date: string; category_id: string | null }[]
+  ) => {
+    const { data: inserted, error } = await supabase.from('transactions').insert(rows).select();
+    if (error) {
+      alert('Toplu ekleme sırasında bir hata oluştu: ' + error.message);
+      throw error;
+    }
+    if (inserted) {
+      const newRows = (inserted as unknown as Transaction[]).map((t) => ({
+        ...t,
+        category: categories.find((c) => c.id === t.category_id)
+          ? { name: categories.find((c) => c.id === t.category_id)!.name, color: categories.find((c) => c.id === t.category_id)!.color }
+          : null,
+      }));
+      setData((prev) => [...newRows, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1)));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,13 +156,25 @@ export default function GelirGiderPage() {
           <h1 className="text-3xl font-bold text-slate-900">Gelir ve Giderler</h1>
           <p className="text-slate-500 mt-1">Tüm finansal hareketlerinizi buradan yönetin.</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni İşlem Ekle
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (!userId) { alert('Kullanıcı bilgisi yükleniyor, birazdan tekrar deneyin.'); return; }
+              setIsBulkModalOpen(true);
+            }}
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <ClipboardPaste className="w-4 h-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Yeni İşlem Ekle
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
@@ -144,6 +190,15 @@ export default function GelirGiderPage() {
           />
         )}
       </div>
+
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          categories={categories}
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">

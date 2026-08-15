@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Loader2, Check, AlertCircle } from 'lucide-react';
 
 type EditableCellProps = {
   /** Ham değer (input'a konulacak) */
@@ -14,11 +14,16 @@ type EditableCellProps = {
   onSave: (newValue: string) => Promise<void> | void;
   className?: string;
   placeholder?: string;
+  /** Yazmayı bıraktıktan kaç ms sonra otomatik kaydedilsin. 0 verilirse autosave kapanır. */
+  debounceMs?: number;
 };
+
+const AUTOSAVE_DEBOUNCE_MS = 600;
 
 /**
  * Çift tıklayınca düzenlenebilir hale gelen hücre.
- * Enter -> kaydet, Escape -> vazgeç, blur (dışarı tıklama) -> kaydet.
+ * Enter -> hemen kaydet, Escape -> vazgeç, blur -> hemen kaydet,
+ * yazarken 600ms sessizlikten sonra otomatik kaydet (autosave).
  */
 export function EditableCell({
   value,
@@ -28,12 +33,22 @@ export function EditableCell({
   onSave,
   className = '',
   placeholder,
+  debounceMs = AUTOSAVE_DEBOUNCE_MS,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFlashRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorFlashRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // En güncel draft'ı commit() içinde (kapanış yakalamadan) okuyabilmek için ref
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  // Son kaydedilen değeri takip eder (sunucudan gelen `value` henüz güncellenmemiş olabilir)
+  const lastSavedRef = useRef(String(value));
 
   useEffect(() => {
     if (isEditing) {
@@ -42,40 +57,86 @@ export function EditableCell({
     }
   }, [isEditing]);
 
-  // Dışarıdan gelen değer değişirse (ör. yeniden fetch) taslağı senkronize et
+  // Dışarıdan gelen değer değişirse (ör. başka bir yerden güncellendi) taslağı senkronize et
   useEffect(() => {
-    if (!isEditing) setDraft(String(value));
+    if (!isEditing) {
+      setDraft(String(value));
+      lastSavedRef.current = String(value);
+    }
   }, [value, isEditing]);
+
+  // Unmount olurken bekleyen zamanlayıcıları temizle
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedFlashRef.current) clearTimeout(savedFlashRef.current);
+      if (errorFlashRef.current) clearTimeout(errorFlashRef.current);
+    };
+  }, []);
+
+  const clearDebounce = () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+  };
 
   const startEditing = () => {
     setDraft(String(value));
+    lastSavedRef.current = String(value);
     setError(false);
+    setJustSaved(false);
     setIsEditing(true);
   };
 
-  const commit = async () => {
-    if (draft === String(value)) {
-      setIsEditing(false);
+  const commit = useCallback(async () => {
+    clearDebounce();
+    const current = draftRef.current;
+    if (current === lastSavedRef.current) {
       return;
     }
     setSaving(true);
     setError(false);
     try {
-      await onSave(draft);
-      setIsEditing(false);
-    } catch (e) {
+      await onSave(current);
+      lastSavedRef.current = current;
+      setJustSaved(true);
+      if (savedFlashRef.current) clearTimeout(savedFlashRef.current);
+      savedFlashRef.current = setTimeout(() => setJustSaved(false), 1200);
+    } catch {
       setError(true);
-      // Kısa bir süre hata durumunu göster, sonra input açık kalsın ki kullanıcı düzeltsin
-      setTimeout(() => setError(false), 1500);
+      if (errorFlashRef.current) clearTimeout(errorFlashRef.current);
+      errorFlashRef.current = setTimeout(() => setError(false), 1500);
     } finally {
       setSaving(false);
     }
+  }, [onSave]);
+
+  const commitAndClose = async () => {
+    const current = draftRef.current;
+    if (current === lastSavedRef.current) {
+      setIsEditing(false);
+      return;
+    }
+    await commit();
+    setIsEditing(false);
   };
 
   const cancel = () => {
-    setDraft(String(value));
+    clearDebounce();
+    setDraft(lastSavedRef.current);
     setIsEditing(false);
     setError(false);
+  };
+
+  const handleChange = (newDraft: string) => {
+    setDraft(newDraft);
+    clearDebounce();
+    if (debounceMs > 0) {
+      debounceRef.current = setTimeout(() => {
+        commit();
+      }, debounceMs);
+    }
   };
 
   if (isEditing) {
@@ -87,27 +148,35 @@ export function EditableCell({
           step={step}
           value={draft}
           disabled={saving}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
+          onChange={(e) => handleChange(e.target.value)}
+          onBlur={commitAndClose}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              commit();
+              commitAndClose();
             } else if (e.key === 'Escape') {
               e.preventDefault();
               cancel();
             }
           }}
           placeholder={placeholder}
-          className={`w-full px-2 py-1 rounded-md border text-sm focus:outline-none focus:ring-2 ${
+          className={`w-full px-2 py-1 pr-7 rounded-md border text-sm focus:outline-none focus:ring-2 ${
             error
               ? 'border-rose-400 focus:ring-rose-300'
               : 'border-slate-300 focus:ring-slate-900'
           } ${saving ? 'opacity-60' : ''}`}
         />
-        {saving && (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 absolute right-2 top-1/2 -translate-y-1/2" />
-        )}
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+          {saving && (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" aria-label="Kaydediliyor" />
+          )}
+          {!saving && justSaved && (
+            <Check className="w-3.5 h-3.5 text-emerald-500" aria-label="Kaydedildi" />
+          )}
+          {!saving && error && (
+            <AlertCircle className="w-3.5 h-3.5 text-rose-500" aria-label="Hata" />
+          )}
+        </span>
       </div>
     );
   }
