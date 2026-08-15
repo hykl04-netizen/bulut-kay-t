@@ -51,7 +51,44 @@ function monthLabel(key: string): string {
   return `${MONTH_LABELS_TR[idx] ?? month} '${year.slice(2)}`;
 }
 
-/** Gelir/Gider işlemlerini aya göre gruplar (8.1 — Nakit akışı grafiği için). */
+/** 'YYYY-MM' anahtarını bir sonraki aya ilerletir (yıl sınırını doğru geçer). */
+function nextMonthKey(key: string): string {
+  const [year, month] = key.split('-').map(Number);
+  const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 };
+  return `${next.y}-${String(next.m).padStart(2, '0')}`;
+}
+
+/**
+ * `map`'te bulunan en erken ile en geç ay arasındaki tüm ayları (veri olmayanlar
+ * dahil, sıfır değerle) üretir. Bu olmadan grafik yalnızca işlem bulunan ayları
+ * yan yana gösterir ve aradaki boşlukları (ör. hiç işlem girilmemiş aylar) gizler.
+ */
+function fillMonthGaps(map: Map<string, { gelir: number; gider: number }>): MonthlyCashFlow[] {
+  const keys = Array.from(map.keys()).sort();
+  if (keys.length === 0) return [];
+
+  const result: MonthlyCashFlow[] = [];
+  let cursor = keys[0];
+  const last = keys[keys.length - 1];
+
+  while (cursor <= last) {
+    const v = map.get(cursor) ?? { gelir: 0, gider: 0 };
+    result.push({
+      month: cursor,
+      monthLabel: monthLabel(cursor),
+      gelir: v.gelir,
+      gider: v.gider,
+      net: v.gelir - v.gider,
+    });
+    cursor = nextMonthKey(cursor);
+  }
+
+  return result;
+}
+
+/** Gelir/Gider işlemlerini aya göre gruplar (8.1 — Nakit akışı grafiği için).
+ * Veri olmayan aylar da sıfır değerle listeye eklenir, böylece "son 12 ay" gerçekten
+ * ardışık 12 takvim ayını ifade eder — aradaki boş aylar grafikte gizlenmez. */
 export function aggregateMonthlyCashFlow(transactions: ReportTransaction[]): MonthlyCashFlow[] {
   const map = new Map<string, { gelir: number; gider: number }>();
 
@@ -64,15 +101,7 @@ export function aggregateMonthlyCashFlow(transactions: ReportTransaction[]): Mon
     map.set(key, entry);
   }
 
-  return Array.from(map.entries())
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([key, v]) => ({
-      month: key,
-      monthLabel: monthLabel(key),
-      gelir: v.gelir,
-      gider: v.gider,
-      net: v.gelir - v.gider,
-    }));
+  return fillMonthGaps(map);
 }
 
 /**

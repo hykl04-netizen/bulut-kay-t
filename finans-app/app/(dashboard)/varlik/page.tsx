@@ -28,10 +28,6 @@ export default function VarlikPage() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchAssets();
-  }, []);
-
   const fetchAssets = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -49,6 +45,13 @@ export default function VarlikPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchAssets();
+    });
+  }, []);
+
 
   // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
   // local state'e optimistic olarak ekle (tam yeniden çekim yok).

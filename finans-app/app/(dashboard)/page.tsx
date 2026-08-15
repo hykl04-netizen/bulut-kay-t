@@ -10,13 +10,22 @@ function formatTRY(value: number) {
   return TRY_FORMATTER.format(value);
 }
 
+interface RecentTransaction {
+  id: string;
+  type: 'gelir' | 'gider';
+  description: string | null;
+  date: string;
+  amount: number;
+  categories?: { name: string } | null;
+}
+
 interface SummaryData {
   totalTransactionsIncome: number;
   totalTransactionsExpense: number;
   totalInvestments: number;
   totalAssets: number;
   totalOpenDebts: number;
-  recentTransactions: any[];
+  recentTransactions: RecentTransaction[];
 }
 
 export default function DashboardPage() {
@@ -29,10 +38,6 @@ export default function DashboardPage() {
     totalOpenDebts: 0,
     recentTransactions: [],
   });
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -107,6 +112,13 @@ export default function DashboardPage() {
 
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchDashboardData();
+    });
+  }, []);
+
 
   if (loading) {
     return (

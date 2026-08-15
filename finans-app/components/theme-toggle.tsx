@@ -10,7 +10,9 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
+    queueMicrotask(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
   }, []);
 
   const toggle = () => {

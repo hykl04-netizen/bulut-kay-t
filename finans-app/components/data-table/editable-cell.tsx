@@ -44,9 +44,13 @@ export function EditableCell({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedFlashRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorFlashRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // En güncel draft'ı commit() içinde (kapanış yakalamadan) okuyabilmek için ref
+  // En güncel draft'ı commit() içinde (kapanış yakalamadan) okuyabilmek için ref.
+  // Render sırasında ref güncellemek yerine, draft her değiştiğinde bir effect
+  // içinde senkronize ediyoruz (React refs kuralına uygun).
   const draftRef = useRef(draft);
-  draftRef.current = draft;
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
   // Son kaydedilen değeri takip eder (sunucudan gelen `value` henüz güncellenmemiş olabilir)
   const lastSavedRef = useRef(String(value));
 
@@ -57,13 +61,20 @@ export function EditableCell({
     }
   }, [isEditing]);
 
-  // Dışarıdan gelen değer değişirse (ör. başka bir yerden güncellendi) taslağı senkronize et
+  // Dışarıdan gelen değer değişirse (ör. başka bir yerden güncellendi) taslağı senkronize et.
+  // isEditing true iken bu hiç tetiklenmemesi gerektiğinden (kullanıcı yazarken üzerine
+  // yazılmasın diye), setState'i render sırasında (React'ın "adjusting state" deseniyle)
+  // uyguluyoruz — düzenleme modunda değilken value her değiştiğinde draft'ı güncelliyoruz.
+  const [syncedValue, setSyncedValue] = useState(value);
+  if (!isEditing && value !== syncedValue) {
+    setSyncedValue(value);
+    setDraft(String(value));
+  }
   useEffect(() => {
     if (!isEditing) {
-      setDraft(String(value));
-      lastSavedRef.current = String(value);
+      lastSavedRef.current = String(syncedValue);
     }
-  }, [value, isEditing]);
+  }, [syncedValue, isEditing]);
 
   // Unmount olurken bekleyen zamanlayıcıları temizle
   useEffect(() => {

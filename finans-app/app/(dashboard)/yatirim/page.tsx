@@ -29,10 +29,6 @@ export default function YatirimPage() {
   const [currency, setCurrency] = useState('TRY');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchInvestments();
-  }, []);
-
   const fetchInvestments = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -47,6 +43,13 @@ export default function YatirimPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchInvestments();
+    });
+  }, []);
+
 
   // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
   // local state'e optimistic olarak ekle (tam yeniden çekim yok).
@@ -254,7 +257,7 @@ export default function YatirimPage() {
                 <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Varlık Türü</label>
                 <select
                   value={assetType}
-                  onChange={(e) => setAssetType(e.target.value as any)}
+                  onChange={(e) => setAssetType(e.target.value as 'hisse' | 'doviz' | 'kripto' | 'fon' | 'altin')}
                   className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
                 >
                   <option value="hisse" className="dark:bg-slate-900">Hisse Senedi</option>

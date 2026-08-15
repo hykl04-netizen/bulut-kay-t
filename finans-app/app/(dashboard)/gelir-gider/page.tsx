@@ -65,7 +65,9 @@ export default function GelirGiderPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    queueMicrotask(() => {
+      fetchData();
+    });
   }, []);
 
   // Faz 7.2/7.3 — hücre bazlı düzenleme: önce local state'i optimistic güncelle,

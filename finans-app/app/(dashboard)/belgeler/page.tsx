@@ -35,10 +35,6 @@ export default function BelgelerPage() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
   const fetchDocuments = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -55,6 +51,13 @@ export default function BelgelerPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchDocuments();
+    });
+  }, []);
+
 
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();

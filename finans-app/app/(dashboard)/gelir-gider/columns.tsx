@@ -1,6 +1,6 @@
 'use client';
 
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { EditableCell } from "@/components/data-table/editable-cell";
@@ -22,7 +22,7 @@ type TransactionTableMeta = {
   onCellEdit: (id: string, field: 'description' | 'amount' | 'date', value: string) => Promise<void>;
 };
 
-function ActionsCell({ row, table }: { row: any; table: any }) {
+function ActionsCell({ row, table }: { row: Row<Transaction>; table: Table<Transaction> }) {
   const [open, setOpen] = useState(false);
   const meta = table.options.meta as TransactionTableMeta | undefined;
 

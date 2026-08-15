@@ -5,17 +5,17 @@ export interface BackupPayload {
   version: number;
   exportDate: string;
   data: {
-    categories: any[];
-    transactions: any[];
-    debts: any[];
-    bills: any[];
-    investments: any[];
-    assets: any[];
+    categories: Record<string, unknown>[];
+    transactions: Record<string, unknown>[];
+    debts: Record<string, unknown>[];
+    bills: Record<string, unknown>[];
+    investments: Record<string, unknown>[];
+    assets: Record<string, unknown>[];
   };
 }
 
 // 1. JSON Olarak Dışa Aktar (Yedek İndir)
-export async function exportAllDataAsJSON(): Promise<{ success: boolean; error?: any }> {
+export async function exportAllDataAsJSON(): Promise<{ success: boolean; error?: unknown }> {
   try {
     const [
       { data: categories, error: catErr },

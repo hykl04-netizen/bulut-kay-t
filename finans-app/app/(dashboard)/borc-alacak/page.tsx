@@ -22,10 +22,6 @@ export default function BorcAlacakPage() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchDebts();
-  }, []);
-
   const fetchDebts = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -41,6 +37,12 @@ export default function BorcAlacakPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchDebts();
+    });
+  }, []);
 
   // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
   // local state'e optimistic olarak ekle (tam yeniden çekim yok).
@@ -77,7 +79,7 @@ export default function BorcAlacakPage() {
     const newStatus = currentStatus === 'acik' ? 'kapandi' : 'acik';
     const { error } = await supabase.from('debts').update({ status: newStatus }).eq('id', id);
     if (!error) {
-      setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, status: newStatus as any } : d)));
+      setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, status: newStatus as 'acik' | 'kapandi' } : d)));
     }
   };
 

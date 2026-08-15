@@ -29,7 +29,7 @@ export function CalculatorWidget() {
         : Number(result.toFixed(4));
         
       setDisplay(String(formattedResult));
-    } catch (e) {
+    } catch {
       setDisplay('Hata');
     }
   };

@@ -44,10 +44,6 @@ export default function BordroPage() {
   const bes = parseFloat(besDeduction) || 0;
   const calculatedNet = gross - (sgk + income + stamp + bes);
 
-  useEffect(() => {
-    fetchPayrolls();
-  }, []);
-
   const fetchPayrolls = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +60,13 @@ export default function BordroPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchPayrolls();
+    });
+  }, []);
+
 
   const handleAddPayroll = async (e: React.FormEvent) => {
     e.preventDefault();

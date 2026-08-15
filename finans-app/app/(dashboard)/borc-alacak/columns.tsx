@@ -1,6 +1,6 @@
 'use client';
 
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { MoreHorizontal, Trash2, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { EditableCell } from "@/components/data-table/editable-cell";
@@ -22,7 +22,7 @@ type DebtTableMeta = {
   onCellEdit: (id: string, field: 'counterparty' | 'amount' | 'due_date' | 'notes', value: string) => Promise<void>;
 };
 
-function ActionsCell({ row, table }: { row: any; table: any }) {
+function ActionsCell({ row, table }: { row: Row<Debt>; table: Table<Debt> }) {
   const [open, setOpen] = useState(false);
   const meta = table.options.meta as DebtTableMeta | undefined;
   const status = row.original.status;

@@ -37,10 +37,6 @@ export default function FaturaMasrafPage() {
   const [receiptUrl, setReceiptUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +60,13 @@ export default function FaturaMasrafPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchData();
+    });
+  }, []);
+
 
   // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
   // local state'e optimistic olarak ekle (tam yeniden çekim yok).
@@ -186,7 +189,7 @@ export default function FaturaMasrafPage() {
     const newStatus = currentStatus === 'odendi' ? 'odenmedi' : 'odendi';
     const { error } = await supabase.from('bills').update({ status: newStatus }).eq('id', id);
     if (!error) {
-      setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus as any } : b)));
+      setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus as 'odendi' | 'odenmedi' } : b)));
     }
   };
 
@@ -255,6 +258,7 @@ export default function FaturaMasrafPage() {
           columns={columns}
           data={bills}
           meta={{
+            onEdit: handleOpenEditModal,
             onDelete: handleDelete,
             onToggleStatus: handleToggleStatus,
             onCellEdit: handleCellEdit,
@@ -329,7 +333,7 @@ export default function FaturaMasrafPage() {
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Durum</label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
+                    onChange={(e) => setStatus(e.target.value as 'odendi' | 'odenmedi')}
                     className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
                   >
                     <option value="odenmedi" className="dark:bg-slate-900">Ödenmedi</option>

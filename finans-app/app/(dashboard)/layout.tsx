@@ -40,10 +40,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Sayfa değişince mobil menüyü otomatik kapat
-  useEffect(() => {
+  // Sayfa değişince mobil menüyü otomatik kapat.
+  // Render sırasında önceki pathname ile karşılaştırıp state'i ayarlıyoruz
+  // (useEffect içinde senkron setState yerine React'ın önerdiği "adjusting
+  // state when a prop changes" deseni — ekstra render'ı önler).
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setMobileNavOpen(false);
-  }, [pathname]);
+  }
 
   // Asıl oturum koruması artık proxy.ts'te (sunucu tarafı, her istekte
   // çalışır) — bu yüzden burada "yükleniyor" bariyerine gerek yok. Bu

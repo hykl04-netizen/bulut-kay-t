@@ -26,6 +26,7 @@ export default function KategorilerPage() {
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [saving, setSaving] = useState(false);
 
+
   const fetchCategories = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -43,7 +44,9 @@ export default function KategorilerPage() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    queueMicrotask(() => {
+      fetchCategories();
+    });
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
