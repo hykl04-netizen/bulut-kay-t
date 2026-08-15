@@ -1,47 +1,57 @@
+// app/(dashboard)/varlik/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X, ClipboardPaste } from 'lucide-react';
-import { DataTable } from '@/components/data-table/data-table';
-import { columns, Asset } from './columns';
+import { Plus, X, Trash2, Pencil, PiggyBank } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { BulkPasteModal } from './bulk-paste-modal';
+
+interface Asset {
+  id: string;
+  asset_name: string;
+  asset_type: string | null;
+  current_value: number;
+  currency: string;
+  notes: string | null;
+}
+
+const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
+function formatTRY(value: number) {
+  return TRY_FORMATTER.format(value);
+}
 
 export default function VarlikPage() {
   const [data, setData] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   const [assetName, setAssetName] = useState('');
   const [assetType, setAssetType] = useState('');
   const [currentValue, setCurrentValue] = useState('');
   const [currency, setCurrency] = useState('TRY');
   const [notes, setNotes] = useState('');
-
-  const fetchAssets = async () => {
-    setLoading(true);
-    const { data: assets, error } = await supabase
-      .from('assets')
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (!error && assets) {
-      setData(assets as Asset[]);
-    } else if (error) {
-      console.error('Varlık veri çekme hatası:', error.message);
-    }
-    setLoading(false);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAssets();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
   }, []);
+
+  const fetchAssets = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: assets, error } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('current_value', { ascending: false });
+
+      if (!error && assets) {
+        setData(assets);
+      }
+    }
+    setLoading(false);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -52,12 +62,12 @@ export default function VarlikPage() {
     setNotes('');
   };
 
-  const handleEdit = (asset: Asset) => {
+  const handleOpenEditModal = (asset: Asset) => {
     setEditingId(asset.id);
     setAssetName(asset.asset_name);
     setAssetType(asset.asset_type ?? '');
     setCurrentValue(String(asset.current_value));
-    setCurrency(asset.currency);
+    setCurrency(asset.currency || 'TRY');
     setNotes(asset.notes ?? '');
     setIsModalOpen(true);
   };
@@ -65,34 +75,16 @@ export default function VarlikPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Bu varlığı silmek istediğinize emin misiniz?')) return;
     const { error } = await supabase.from('assets').delete().eq('id', id);
-    if (error) {
-      alert('Silinemedi: ' + error.message);
+    if (!error) {
+      setData((prev) => prev.filter((a) => a.id !== id));
     } else {
-      fetchAssets();
-    }
-  };
-
-  const handleCellEdit = async (id: string, field: 'asset_name' | 'current_value', value: string) => {
-    const previous = data.find((item) => item.id === id);
-    if (!previous) return;
-
-    const parsedValue: string | number = field === 'current_value' ? parseFloat(value) : value;
-
-    setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: parsedValue } : item)));
-
-    const payload: Record<string, string | number> =
-      field === 'current_value' ? { current_value: parsedValue as number } : { [field]: value };
-    const { error } = await supabase.from('assets').update(payload).eq('id', id);
-    if (error) {
-      setData((prev) => prev.map((item) => (item.id === id ? previous : item)));
-      alert('Güncellenemedi: ' + error.message);
-      throw error;
+      alert('Silinemedi: ' + error.message);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setIsSubmitting(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -100,10 +92,9 @@ export default function VarlikPage() {
       user_id: user.id,
       asset_name: assetName,
       asset_type: assetType || null,
-      current_value: parseFloat(currentValue),
+      current_value: parseFloat(currentValue) || 0,
       currency,
       notes: notes || null,
-      updated_at: new Date().toISOString(),
     };
 
     const { error } = editingId
@@ -113,128 +104,189 @@ export default function VarlikPage() {
     if (!error) {
       setIsModalOpen(false);
       resetForm();
-      fetchAssets();
+      await fetchAssets();
     } else {
-      alert('Kayıt sırasında bir hata oluştu: ' + error.message);
+      alert('Kayıt sırasında hata oluştu: ' + error.message);
     }
+    setIsSubmitting(false);
   };
 
-  const totalValue = data.reduce((sum, a) => sum + (a.current_value || 0), 0);
-
-  const handleBulkImport = async (
-    rows: { user_id: string; asset_name: string; asset_type: string | null; current_value: number; currency: string; notes: string | null; updated_at: string }[]
-  ) => {
-    const { data: inserted, error } = await supabase.from('assets').insert(rows).select();
-    if (error) {
-      alert('Toplu ekleme sırasında bir hata oluştu: ' + error.message);
-      throw error;
-    }
-    if (inserted) {
-      setData((prev) => [...(inserted as Asset[]), ...prev]);
-    }
-  };
+  const totalValue = data.reduce((sum, a) => sum + Number(a.current_value || 0), 0);
 
   return (
-    <div className="space-y-6 relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Varlık ve Birikimler</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Ev, araba, altın gibi maddi varlıklarınızı buradan takip edin.</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              if (!userId) { alert('Kullanıcı bilgisi yükleniyor, birazdan tekrar deneyin.'); return; }
-              setIsBulkModalOpen(true);
-            }}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <ClipboardPaste className="w-4 h-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Yeni Varlık Ekle
-          </button>
-        </div>
-      </div>
-
-      {data.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Toplam Varlık Değeri</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 mt-1">
-            {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(totalValue)}
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
+            Ev, araba, gayrimenkul ve diğer maddi varlıklarınızı buradan takip edin.
           </p>
         </div>
-      )}
-
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-slate-500 dark:text-slate-400">Veriler yükleniyor...</p>
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={data}
-            meta={{ onEdit: handleEdit, onDelete: handleDelete, onCellEdit: handleCellEdit }}
-          />
-        )}
+        <button
+          onClick={() => { resetForm(); setIsModalOpen(true); }}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+        >
+          <Plus className="h-4 w-4" />
+          Yeni Varlık Ekle
+        </button>
       </div>
 
-      {isBulkModalOpen && userId && (
-        <BulkPasteModal
-          userId={userId}
-          onClose={() => setIsBulkModalOpen(false)}
-          onImport={handleBulkImport}
-        />
-      )}
+      {/* Toplam Varlık Özet Kartı */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Toplam Varlık Değeri</span>
+          <PiggyBank className="h-5 w-5 text-purple-500" />
+        </div>
+        <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{formatTRY(totalValue)}</div>
+      </div>
 
+      {/* Tablo Alanı (Taşma sorunu giderilmiş temiz yapı) */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
+              <tr>
+                <th className="px-6 py-4 font-medium">Varlık Adı</th>
+                <th className="px-6 py-4 font-medium">Tür</th>
+                <th className="px-6 py-4 font-medium text-right">Güncel Değer</th>
+                <th className="px-6 py-4 font-medium">Not</th>
+                <th className="px-6 py-4 font-medium text-center">İşlem</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">Yükleniyor...</td>
+                </tr>
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">Kayıtlı varlık bulunmuyor.</td>
+                </tr>
+              ) : (
+                data.map((asset) => (
+                  <tr key={asset.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{asset.asset_name}</td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        {asset.asset_type || '-'}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
+                      {formatTRY(Number(asset.current_value))}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{asset.notes || '-'}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenEditModal(asset)}
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                          title="Düzenle"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(asset.id)}
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
+                          title="Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 dark:border-slate-800">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-                {editingId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}
-              </h2>
-              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <h2 className="text-lg font-bold">{editingId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Varlık Adı</label>
-                <input type="text" required value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: Ev, Araba, Altın..." />
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Varlık Adı</label>
+                <input
+                  type="text"
+                  required
+                  value={assetName}
+                  onChange={(e) => setAssetName(e.target.value)}
+                  placeholder="Örn: Konut, Şirket Aracı, Altın"
+                  className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tür (opsiyonel)</label>
-                <input type="text" value={assetType} onChange={(e) => setAssetType(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Örn: Gayrimenkul, Araç, Değerli Maden..." />
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Tür (Opsiyonel)</label>
+                <input
+                  type="text"
+                  value={assetType}
+                  onChange={(e) => setAssetType(e.target.value)}
+                  placeholder="Örn: Gayrimenkul, Taşıt, Değerli Maden"
+                  className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Güncel Değer</label>
-                  <input type="number" step="0.01" required value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="0.00" />
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Güncel Değer (TL)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={currentValue}
+                    onChange={(e) => setCurrentValue(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Para Birimi</label>
-                  <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="TRY" />
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Para Birimi</label>
+                  <input
+                    type="text"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                    className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Not (opsiyonel)</label>
-                <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-slate-800 dark:text-slate-100" placeholder="Ek bilgi..." />
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Not (Opsiyonel)</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ek açıklamalar..."
+                  className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:text-white"
+                />
               </div>
 
-              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-lg mt-4 transition-colors">
-                {editingId ? 'Güncelle' : 'Kaydet'}
-              </button>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-xl px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                >
+                  {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
