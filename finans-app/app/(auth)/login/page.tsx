@@ -24,7 +24,8 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+      console.error('Giriş hatası:', error);
+      setError(`Giriş başarısız: ${error.message}`);
       setLoading(false);
     } else {
       // Giriş başarılıysa ana sayfaya (dashboard) yönlendir.
