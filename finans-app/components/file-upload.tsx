@@ -3,6 +3,9 @@
 
 import { useState, useRef } from 'react';
 import { UploadCloud, Loader2, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
+
+const STORAGE_BUCKET = 'belgeler';
 
 interface FileUploadProps {
   onUploadSuccess: (url: string) => void;
@@ -36,25 +39,39 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
     setIsUploading(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
-
     try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (data.secure_url) {
-        setUploadedUrl(data.secure_url);
-        onUploadSuccess(data.secure_url);
-      } else {
-        setError('Yükleme başarısız oldu. Lütfen tekrar deneyin.');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
+        setIsUploading(false);
+        return;
       }
+
+      // Kullanıcı bazlı klasör + rastgele dosya adı (çakışmayı önler)
+      const fileExt = file.name.split('.').pop();
+      const randomName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${user.id}/${randomName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) {
+        setError(`Yükleme başarısız oldu: ${uploadError.message}`);
+        setIsUploading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(filePath);
+
+      setUploadedUrl(publicUrlData.publicUrl);
+      onUploadSuccess(publicUrlData.publicUrl);
     } catch {
       setError('Bağlantı hatası oluştu.');
     } finally {
