@@ -2,17 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X, Trash2, Pencil, PiggyBank } from 'lucide-react';
+import { Plus, ClipboardPaste, X, PiggyBank } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-
-interface Asset {
-  id: string;
-  asset_name: string;
-  asset_type: string | null;
-  current_value: number;
-  currency: string;
-  notes: string | null;
-}
+import { DataTable } from '@/components/data-table/data-table';
+import { columns, type Asset } from './columns';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -22,7 +16,9 @@ function formatTRY(value: number) {
 export default function VarlikPage() {
   const [data, setData] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [assetName, setAssetName] = useState('');
@@ -40,6 +36,7 @@ export default function VarlikPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const { data: assets, error } = await supabase
         .from('assets')
         .select('*')
@@ -51,6 +48,33 @@ export default function VarlikPage() {
       }
     }
     setLoading(false);
+  };
+
+  // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
+  // local state'e optimistic olarak ekle (tam yeniden çekim yok).
+  const handleBulkImport = async (
+    rows: {
+      user_id: string;
+      asset_name: string;
+      asset_type: string | null;
+      current_value: number;
+      currency: string;
+      notes: string | null;
+      updated_at: string;
+    }[]
+  ) => {
+    const { data: inserted, error } = await supabase.from('assets').insert(rows).select('*');
+
+    if (error) {
+      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
+      return;
+    }
+
+    if (inserted) {
+      setData((prev) =>
+        [...(inserted as Asset[]), ...prev].sort((a, b) => Number(b.current_value) - Number(a.current_value))
+      );
+    }
   };
 
   const resetForm = () => {
@@ -82,11 +106,35 @@ export default function VarlikPage() {
     }
   };
 
+  // Faz 7.2/7.3 — hücre bazlı optimistic düzenleme
+  const handleCellEdit = async (
+    id: string,
+    field: 'asset_name' | 'current_value',
+    value: string
+  ) => {
+    const previous = data.find((a) => a.id === id);
+    if (!previous) return;
+
+    const parsedValue = field === 'current_value' ? parseFloat(value) || 0 : value;
+
+    setData((prev) => prev.map((a) => (a.id === id ? { ...a, [field]: parsedValue } : a)));
+
+    const { error } = await supabase.from('assets').update({ [field]: parsedValue }).eq('id', id);
+    if (error) {
+      setData((prev) => prev.map((a) => (a.id === id ? previous : a)));
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const payload = {
       user_id: user.id,
@@ -97,16 +145,37 @@ export default function VarlikPage() {
       notes: notes || null,
     };
 
-    const { error } = editingId
-      ? await supabase.from('assets').update(payload).eq('id', editingId)
-      : await supabase.from('assets').insert(payload);
-
-    if (!error) {
-      setIsModalOpen(false);
-      resetForm();
-      await fetchAssets();
+    if (editingId) {
+      // Güncelle — optimistic: tam yeniden çekim yerine local state'i güncelle
+      const { data: updated, error } = await supabase
+        .from('assets')
+        .update(payload)
+        .eq('id', editingId)
+        .select('*')
+        .single();
+      if (!error && updated) {
+        setData((prev) => prev.map((a) => (a.id === editingId ? (updated as Asset) : a)));
+        setIsModalOpen(false);
+        resetForm();
+      } else {
+        alert('Kayıt sırasında hata oluştu: ' + error?.message);
+      }
     } else {
-      alert('Kayıt sırasında hata oluştu: ' + error.message);
+      // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
+      const { data: inserted, error } = await supabase
+        .from('assets')
+        .insert(payload)
+        .select('*')
+        .single();
+      if (!error && inserted) {
+        setData((prev) =>
+          [inserted as Asset, ...prev].sort((a, b) => Number(b.current_value) - Number(a.current_value))
+        );
+        setIsModalOpen(false);
+        resetForm();
+      } else {
+        alert('Kayıt sırasında hata oluştu: ' + error?.message);
+      }
     }
     setIsSubmitting(false);
   };
@@ -122,13 +191,22 @@ export default function VarlikPage() {
             Ev, araba, gayrimenkul ve diğer maddi varlıklarınızı buradan takip edin.
           </p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Varlık Ekle
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Varlık Ekle
+          </button>
+        </div>
       </div>
 
       {/* Toplam Varlık Özet Kartı */}
@@ -140,66 +218,22 @@ export default function VarlikPage() {
         <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{formatTRY(totalValue)}</div>
       </div>
 
-      {/* Tablo Alanı (Taşma sorunu giderilmiş temiz yapı) */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 font-medium">Varlık Adı</th>
-                <th className="px-6 py-4 font-medium">Tür</th>
-                <th className="px-6 py-4 font-medium text-right">Güncel Değer</th>
-                <th className="px-6 py-4 font-medium">Not</th>
-                <th className="px-6 py-4 font-medium text-center">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">Yükleniyor...</td>
-                </tr>
-              ) : data.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">Kayıtlı varlık bulunmuyor.</td>
-                </tr>
-              ) : (
-                data.map((asset) => (
-                  <tr key={asset.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{asset.asset_name}</td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        {asset.asset_type || '-'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
-                      {formatTRY(Number(asset.current_value))}
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{asset.notes || '-'}</td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEditModal(asset)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                          title="Düzenle"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(asset.id)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                          title="Sil"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          Yükleniyor...
         </div>
-      </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data}
+          meta={{
+            onEdit: handleOpenEditModal,
+            onDelete: handleDelete,
+            onCellEdit: handleCellEdit,
+          }}
+        />
+      )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
@@ -290,6 +324,15 @@ export default function VarlikPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel'den Toplu Ekleme Modalı */}
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
       )}
     </div>
   );

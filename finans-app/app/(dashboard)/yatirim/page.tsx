@@ -2,36 +2,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X, Trash2, Pencil, TrendingUp } from 'lucide-react';
+import { Plus, ClipboardPaste, X, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-
-interface Investment {
-  id: string;
-  asset_type: 'hisse' | 'doviz' | 'kripto' | 'fon' | 'altin';
-  symbol: string;
-  quantity: number;
-  avg_cost: number | null;
-  current_price: number | null;
-  currency: string;
-}
+import { DataTable } from '@/components/data-table/data-table';
+import { columns, type Investment } from './columns';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
   return TRY_FORMATTER.format(value);
 }
 
-const assetTypeLabels: Record<string, string> = {
-  hisse: 'Hisse Senedi',
-  doviz: 'Döviz',
-  kripto: 'Kripto Varlık',
-  fon: 'Yatırım Fonu',
-  altin: 'Altın / Kıymetli Maden',
-};
-
 export default function YatirimPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [assetType, setAssetType] = useState<'hisse' | 'doviz' | 'kripto' | 'fon' | 'altin'>('hisse');
@@ -50,6 +37,7 @@ export default function YatirimPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const { data, error } = await supabase
         .from('investments')
         .select('*')
@@ -58,6 +46,32 @@ export default function YatirimPage() {
       if (!error && data) setInvestments(data);
     }
     setLoading(false);
+  };
+
+  // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
+  // local state'e optimistic olarak ekle (tam yeniden çekim yok).
+  const handleBulkImport = async (
+    rows: {
+      user_id: string;
+      asset_type: 'hisse' | 'doviz' | 'kripto' | 'fon' | 'altin';
+      symbol: string;
+      quantity: number;
+      avg_cost: number | null;
+      current_price: number | null;
+      currency: string;
+      updated_at: string;
+    }[]
+  ) => {
+    const { data, error } = await supabase.from('investments').insert(rows).select('*');
+
+    if (error) {
+      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
+      return;
+    }
+
+    if (data) {
+      setInvestments((prev) => [...(data as Investment[]), ...prev]);
+    }
   };
 
   const handleOpenEditModal = (inv: Investment) => {
@@ -79,11 +93,37 @@ export default function YatirimPage() {
     }
   };
 
+  // Faz 7.2/7.3 — hücre bazlı optimistic düzenleme
+  const handleCellEdit = async (
+    id: string,
+    field: 'quantity' | 'avg_cost' | 'current_price',
+    value: string
+  ) => {
+    const previous = investments.find((i) => i.id === id);
+    if (!previous) return;
+
+    const parsedValue =
+      value === '' ? (field === 'quantity' ? 0 : null) : parseFloat(value);
+    if (parsedValue !== null && Number.isNaN(parsedValue)) return;
+
+    setInvestments((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: parsedValue } : i)));
+
+    const { error } = await supabase.from('investments').update({ [field]: parsedValue }).eq('id', id);
+    if (error) {
+      setInvestments((prev) => prev.map((i) => (i.id === id ? previous : i)));
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const payload = {
       user_id: user.id,
@@ -95,21 +135,39 @@ export default function YatirimPage() {
       currency,
     };
 
-    const { error } = editingId
-      ? await supabase.from('investments').update(payload).eq('id', editingId)
-      : await supabase.from('investments').insert(payload);
-
-    if (!error) {
-      setIsModalOpen(false);
-      setEditingId(null);
-      setSymbol('');
-      setQuantity('');
-      setAvgCost('');
-      setCurrentPrice('');
-      await fetchInvestments();
+    if (editingId) {
+      // Güncelle — optimistic: tam yeniden çekim yerine local state'i güncelle
+      const { data, error } = await supabase
+        .from('investments')
+        .update(payload)
+        .eq('id', editingId)
+        .select('*')
+        .single();
+      if (!error && data) {
+        setInvestments((prev) => prev.map((i) => (i.id === editingId ? (data as Investment) : i)));
+        setIsModalOpen(false);
+      } else {
+        alert('Hata oluştu: ' + error?.message);
+      }
     } else {
-      alert('Hata oluştu: ' + error.message);
+      // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
+      const { data, error } = await supabase
+        .from('investments')
+        .insert(payload)
+        .select('*')
+        .single();
+      if (!error && data) {
+        setInvestments((prev) => [data as Investment, ...prev]);
+        setIsModalOpen(false);
+      } else {
+        alert('Hata oluştu: ' + error?.message);
+      }
     }
+    setEditingId(null);
+    setSymbol('');
+    setQuantity('');
+    setAvgCost('');
+    setCurrentPrice('');
     setIsSubmitting(false);
   };
 
@@ -127,20 +185,31 @@ export default function YatirimPage() {
             Hisse senetleri, döviz, kripto varlıklar ve kıymetli madenlerinizi buradan takip edin.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setSymbol('');
-            setQuantity('');
-            setAvgCost('');
-            setCurrentPrice('');
-            setIsModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Yatırım Ekle
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setAssetType('hisse');
+              setSymbol('');
+              setQuantity('');
+              setAvgCost('');
+              setCurrentPrice('');
+              setCurrency('TRY');
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Yatırım Ekle
+          </button>
+        </div>
       </div>
 
       {/* Portföy Özet Kartı */}
@@ -152,78 +221,22 @@ export default function YatirimPage() {
         <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{formatTRY(totalPortfolioValue)}</div>
       </div>
 
-      {/* Tablo Alanı */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 font-medium">Varlık Türü</th>
-                <th className="px-6 py-4 font-medium">Sembol</th>
-                <th className="px-6 py-4 font-medium text-right">Miktar</th>
-                <th className="px-6 py-4 font-medium text-right">Ort. Maliyet</th>
-                <th className="px-6 py-4 font-medium text-right">Güncel Fiyat</th>
-                <th className="px-6 py-4 font-medium text-right">Toplam Değer</th>
-                <th className="px-6 py-4 font-medium text-center">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Yükleniyor...</td>
-                </tr>
-              ) : investments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Kayıtlı yatırım bulunmuyor.</td>
-                </tr>
-              ) : (
-                investments.map((inv) => {
-                  const price = inv.current_price ?? inv.avg_cost ?? 0;
-                  const total = Number(inv.quantity) * Number(price);
-                  return (
-                    <tr key={inv.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          {assetTypeLabels[inv.asset_type] || inv.asset_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{inv.symbol}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right">{inv.quantity}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right">
-                        {inv.avg_cost !== null ? formatTRY(Number(inv.avg_cost)) : '-'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right font-medium">
-                        {inv.current_price !== null ? formatTRY(Number(inv.current_price)) : <span className="text-amber-500 text-xs">Girilemedi</span>}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
-                        {formatTRY(total)}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleOpenEditModal(inv)}
-                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                            title="Düzenle / Fiyat Güncelle"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(inv.id)}
-                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                            title="Sil"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          Yükleniyor...
         </div>
-      </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={investments}
+          meta={{
+            onEdit: handleOpenEditModal,
+            onDelete: handleDelete,
+            onCellEdit: handleCellEdit,
+          }}
+        />
+      )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
@@ -332,6 +345,15 @@ export default function YatirimPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel'den Toplu Ekleme Modalı */}
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
       )}
     </div>
   );

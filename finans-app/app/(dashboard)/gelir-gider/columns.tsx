@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 
@@ -13,6 +13,7 @@ export type Transaction = {
   type: 'gelir' | 'gider';
   category_id: string | null;
   category: { name: string; color: string } | null; // Supabase join ile gelir
+  receipt_url?: string | null;
 };
 
 type TransactionTableMeta = {
@@ -99,6 +100,24 @@ export const columns: ColumnDef<Transaction>[] = [
         >
           {category.name}
         </span>
+      );
+    },
+  },
+  {
+    id: "receipt_url",
+    header: "Belge",
+    cell: ({ row }) => {
+      const url = row.original.receipt_url;
+      if (!url) return <span className="text-xs text-slate-400 dark:text-slate-500">-</span>;
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+        >
+          <ExternalLink className="w-3.5 h-3.5" /> Görüntüle
+        </a>
       );
     },
   },

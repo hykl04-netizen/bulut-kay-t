@@ -7,11 +7,13 @@ import { UploadCloud, Loader2, CheckCircle2, Image as ImageIcon } from 'lucide-r
 interface FileUploadProps {
   onUploadSuccess: (url: string) => void;
   label?: string;
+  /** Düzenleme modunda: kayda daha önce eklenmiş belge varsa URL'i buradan verin. */
+  initialUrl?: string | null;
 }
 
-export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı Ekle" }: FileUploadProps) {
+export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı Ekle", initialUrl = null }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(initialUrl);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +55,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
       } else {
         setError('Yükleme başarısız oldu. Lütfen tekrar deneyin.');
       }
-    } catch (err) {
+    } catch {
       setError('Bağlantı hatası oluştu.');
     } finally {
       setIsUploading(false);
@@ -96,17 +98,28 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
         <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-900/20">
           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="h-5 w-5" />
-            <span className="text-sm font-medium">Dosya başarıyla eklendi</span>
+            <span className="text-sm font-medium">
+              {initialUrl && uploadedUrl === initialUrl ? 'Belge ekli' : 'Dosya başarıyla eklendi'}
+            </span>
           </div>
-          <a 
-            href={uploadedUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-100"
-          >
-            <ImageIcon className="h-4 w-4" />
-            Görüntüle
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href={uploadedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-100"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Görüntüle
+            </a>
+            <button
+              type="button"
+              onClick={() => setUploadedUrl(null)}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Değiştir
+            </button>
+          </div>
         </div>
       )}
       

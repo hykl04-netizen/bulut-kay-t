@@ -3,20 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Plus, Trash2, Edit3, Receipt, ExternalLink, X, Calendar } from 'lucide-react';
+import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
-
-interface Bill {
-  id: string;
-  title: string;
-  amount: number;
-  due_date: string;
-  is_recurring: boolean;
-  recurrence_period: string;
-  status: 'odendi' | 'odenmedi';
-  receipt_url?: string;
-  categories?: { name: string };
-}
+import { DataTable } from '@/components/data-table/data-table';
+import { columns, type Bill } from './columns';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 interface Category {
   id: string;
@@ -24,18 +15,15 @@ interface Category {
   type: string;
 }
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
-
 export default function FaturaMasrafPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
@@ -57,6 +45,7 @@ export default function FaturaMasrafPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const { data: billData } = await supabase
         .from('bills')
         .select('*, categories(name)')
@@ -74,6 +63,37 @@ export default function FaturaMasrafPage() {
       if (catData) setCategories(catData);
     }
     setLoading(false);
+  };
+
+  // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
+  // local state'e optimistic olarak ekle (tam yeniden çekim yok).
+  const handleBulkImport = async (
+    rows: {
+      user_id: string;
+      title: string;
+      amount: number;
+      due_date: string | null;
+      is_recurring: boolean;
+      recurrence_period: 'aylik' | 'yillik' | null;
+      status: 'odenmedi';
+    }[]
+  ) => {
+    const { data, error } = await supabase.from('bills').insert(rows).select('*, categories(name)');
+
+    if (error) {
+      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
+      return;
+    }
+
+    if (data) {
+      setBills((prev) =>
+        [...(data as Bill[]), ...prev].sort((a, b) => {
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date < b.due_date ? -1 : 1;
+        })
+      );
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -97,6 +117,7 @@ export default function FaturaMasrafPage() {
     setIsRecurring(bill.is_recurring);
     setRecurrencePeriod(bill.recurrence_period || 'aylik');
     setStatus(bill.status);
+    setCategoryId(bill.category_id || '');
     setReceiptUrl(bill.receipt_url || '');
     setIsModalOpen(true);
   };
@@ -106,7 +127,11 @@ export default function FaturaMasrafPage() {
     setIsSubmitting(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const payload = {
       user_id: user.id,
@@ -121,18 +146,35 @@ export default function FaturaMasrafPage() {
     };
 
     if (editingId) {
-      const { error } = await supabase.from('bills').update(payload).eq('id', editingId);
-      if (!error) {
+      // Güncelle — optimistic: tam yeniden çekim yerine local state'i güncelle
+      const { data, error } = await supabase
+        .from('bills')
+        .update(payload)
+        .eq('id', editingId)
+        .select('*, categories(name)')
+        .single();
+      if (!error && data) {
+        setBills((prev) => prev.map((b) => (b.id === editingId ? (data as Bill) : b)));
         setIsModalOpen(false);
-        await fetchData();
       } else {
         alert('Güncellenirken hata oluştu.');
       }
     } else {
-      const { error } = await supabase.from('bills').insert(payload);
-      if (!error) {
+      // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
+      const { data, error } = await supabase
+        .from('bills')
+        .insert(payload)
+        .select('*, categories(name)')
+        .single();
+      if (!error && data) {
+        setBills((prev) =>
+          [data as Bill, ...prev].sort((a, b) => {
+            if (!a.due_date) return 1;
+            if (!b.due_date) return -1;
+            return a.due_date < b.due_date ? -1 : 1;
+          })
+        );
         setIsModalOpen(false);
-        await fetchData();
       } else {
         alert('Eklenirken hata oluştu.');
       }
@@ -156,6 +198,26 @@ export default function FaturaMasrafPage() {
     }
   };
 
+  // Faz 7.2/7.3 — hücre bazlı optimistic düzenleme
+  const handleCellEdit = async (
+    id: string,
+    field: 'title' | 'amount' | 'due_date',
+    value: string
+  ) => {
+    const previous = bills.find((b) => b.id === id);
+    if (!previous) return;
+
+    const parsedValue = field === 'amount' ? parseFloat(value) || 0 : value;
+
+    setBills((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: parsedValue } : b)));
+
+    const { error } = await supabase.from('bills').update({ [field]: parsedValue }).eq('id', id);
+    if (error) {
+      setBills((prev) => prev.map((b) => (b.id === id ? previous : b)));
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -165,101 +227,40 @@ export default function FaturaMasrafPage() {
             Kurumsal faturalarınızı, aboneliklerinizi ve ödeme vadelerinizi buradan yönetin.
           </p>
         </div>
-        <button
-          onClick={handleOpenAddModal}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Fatura/Masraf Ekle
-        </button>
-      </div>
-
-      {/* Tablo Alanı */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 font-medium">Başlık</th>
-                <th className="px-6 py-4 font-medium text-right">Tutar</th>
-                <th className="px-6 py-4 font-medium">Vade Tarihi</th>
-                <th className="px-6 py-4 font-medium">Tekrar</th>
-                <th className="px-6 py-4 font-medium">Durum</th>
-                <th className="px-6 py-4 font-medium text-center">Belge</th>
-                <th className="px-6 py-4 font-medium text-center">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Yükleniyor...</td>
-                </tr>
-              ) : bills.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Kayıtlı fatura bulunmuyor.</td>
-                </tr>
-              ) : (
-                bills.map((bill) => (
-                  <tr key={bill.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{bill.title}</td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
-                      {formatTRY(Number(bill.amount))}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">{bill.due_date}</td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {bill.is_recurring ? `Tekrarlayan (${bill.recurrence_period})` : 'Tek seferlik'}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <button
-                        onClick={() => handleToggleStatus(bill.id, bill.status)}
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold transition ${
-                          bill.status === 'odendi'
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400'
-                            : 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-950/50 dark:text-rose-400'
-                        }`}
-                      >
-                        {bill.status === 'odendi' ? 'Ödendi' : 'Ödenmedi'}
-                      </button>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      {bill.receipt_url ? (
-                        <a
-                          href={bill.receipt_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" /> Görüntüle
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEditModal(bill)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                          title="Düzenle"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(bill.id)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                          title="Sil"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={handleOpenAddModal}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Fatura/Masraf Ekle
+          </button>
         </div>
       </div>
+
+      {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          Yükleniyor...
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={bills}
+          meta={{
+            onDelete: handleDelete,
+            onToggleStatus: handleToggleStatus,
+            onCellEdit: handleCellEdit,
+          }}
+        />
+      )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
@@ -359,6 +360,15 @@ export default function FaturaMasrafPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel'den Toplu Ekleme Modalı */}
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
       )}
     </div>
   );

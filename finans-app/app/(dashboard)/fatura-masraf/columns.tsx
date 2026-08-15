@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Trash2, CheckCircle2, Repeat } from "lucide-react";
+import { MoreHorizontal, Trash2, CheckCircle2, Repeat, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 
@@ -13,6 +13,8 @@ export type Bill = {
   is_recurring: boolean;
   recurrence_period: string | null;
   status: 'odendi' | 'odenmedi';
+  category_id?: string | null;
+  receipt_url?: string | null;
 };
 
 type BillTableMeta = {
@@ -139,6 +141,24 @@ export const columns: ColumnDef<Bill>[] = [
         }`}>
           {status === 'odendi' ? 'Ödendi' : 'Ödenmedi'}
         </span>
+      );
+    },
+  },
+  {
+    id: "receipt_url",
+    header: "Belge",
+    cell: ({ row }) => {
+      const url = row.original.receipt_url;
+      if (!url) return <span className="text-xs text-slate-400 dark:text-slate-500">-</span>;
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+        >
+          <ExternalLink className="w-3.5 h-3.5" /> Görüntüle
+        </a>
       );
     },
   },

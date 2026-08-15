@@ -2,28 +2,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X, Trash2, CheckCircle2, HandCoins, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-
-interface Debt {
-  id: string;
-  direction: 'borc' | 'alacak';
-  counterparty: string;
-  amount: number;
-  due_date: string | null;
-  status: 'acik' | 'kapandi';
-  notes: string | null;
-}
-
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
+import { DataTable } from '@/components/data-table/data-table';
+import { columns, type Debt } from './columns';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 export default function BorcAlacakPage() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const [direction, setDirection] = useState<'borc' | 'alacak'>('alacak');
   const [counterparty, setCounterparty] = useState('');
@@ -40,6 +30,7 @@ export default function BorcAlacakPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const { data, error } = await supabase
         .from('debts')
         .select('*')
@@ -49,6 +40,37 @@ export default function BorcAlacakPage() {
       if (!error && data) setDebts(data);
     }
     setLoading(false);
+  };
+
+  // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
+  // local state'e optimistic olarak ekle (tam yeniden çekim yok).
+  const handleBulkImport = async (
+    rows: {
+      user_id: string;
+      direction: 'borc' | 'alacak';
+      counterparty: string;
+      amount: number;
+      due_date: string | null;
+      notes: string | null;
+      status: 'acik';
+    }[]
+  ) => {
+    const { data, error } = await supabase.from('debts').insert(rows).select('*');
+
+    if (error) {
+      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
+      return;
+    }
+
+    if (data) {
+      setDebts((prev) =>
+        [...(data as Debt[]), ...prev].sort((a, b) => {
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date < b.due_date ? -1 : 1;
+        })
+      );
+    }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
@@ -67,11 +89,38 @@ export default function BorcAlacakPage() {
     }
   };
 
+  // Faz 7.2/7.3 — hücre bazlı optimistic düzenleme
+  const handleCellEdit = async (
+    id: string,
+    field: 'counterparty' | 'amount' | 'due_date' | 'notes',
+    value: string
+  ) => {
+    const previous = debts.find((d) => d.id === id);
+    if (!previous) return;
+
+    // 'due_date' boş string olarak gelirse (kullanıcı tarihi silerse) Postgres'in
+    // `date` kolonuna boş string yazılamaz — null gönderilmeli.
+    const parsedValue =
+      field === 'amount' ? parseFloat(value) || 0 : field === 'due_date' && value === '' ? null : value;
+
+    setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, [field]: parsedValue } : d)));
+
+    const { error } = await supabase.from('debts').update({ [field]: parsedValue }).eq('id', id);
+    if (error) {
+      setDebts((prev) => prev.map((d) => (d.id === id ? previous : d)));
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const payload = {
       user_id: user.id,
@@ -107,84 +156,40 @@ export default function BorcAlacakPage() {
             Kişi ve kurumlara olan borçlarınızı ve alacaklarınızı buradan yönetin.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Kayıt Ekle
-        </button>
-      </div>
-
-      {/* Tablo Alanı */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 font-medium">Yön</th>
-                <th className="px-6 py-4 font-medium">Kişi / Kurum</th>
-                <th className="px-6 py-4 font-medium text-right">Tutar</th>
-                <th className="px-6 py-4 font-medium">Vade Tarihi</th>
-                <th className="px-6 py-4 font-medium">Durum</th>
-                <th className="px-6 py-4 font-medium text-center">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">Yükleniyor...</td>
-                </tr>
-              ) : debts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">Kayıtlı borç veya alacak bulunmuyor.</td>
-                </tr>
-              ) : (
-                debts.map((debt) => (
-                  <tr key={debt.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        debt.direction === 'alacak'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
-                          : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
-                      }`}>
-                        {debt.direction === 'alacak' ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                        {debt.direction.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{debt.counterparty}</td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
-                      {formatTRY(Number(debt.amount))}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">{debt.due_date || '-'}</td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <button
-                        onClick={() => handleToggleStatus(debt.id, debt.status)}
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold transition ${
-                          debt.status === 'kapandi'
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400'
-                            : 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-950/50 dark:text-amber-400'
-                        }`}
-                      >
-                        {debt.status === 'kapandi' ? 'Kapandı' : 'Açık'}
-                      </button>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleDelete(debt.id)}
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                        title="Sil"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Kayıt Ekle
+          </button>
         </div>
       </div>
+
+      {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          Yükleniyor...
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={debts}
+          meta={{
+            onDelete: handleDelete,
+            onToggleStatus: handleToggleStatus,
+            onCellEdit: handleCellEdit,
+          }}
+        />
+      )}
 
       {/* Ekleme Modalı */}
       {isModalOpen && (
@@ -288,6 +293,15 @@ export default function BorcAlacakPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel'den Toplu Ekleme Modalı */}
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
       )}
     </div>
   );

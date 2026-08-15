@@ -19,19 +19,17 @@ export default function LoginPage() {
 
     // Supabase'e giriş isteği atıyoruz
     const { error } = await supabase.auth.signInWithPassword({
-  email,
-  password,
-});
-
-if (error) {
-  alert("Supabase Hatası: " + error.message); // Hatanın aslını burada göreceğiz
-}
+      email,
+      password,
+    });
 
     if (error) {
       setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
       setLoading(false);
     } else {
-      // Giriş başarılıysa ana sayfaya (dashboard) yönlendir
+      // Giriş başarılıysa ana sayfaya (dashboard) yönlendir.
+      // router.refresh() proxy.ts'in yeni cookie'lerle tekrar çalışmasını
+      // ve sunucu bileşenlerinin taze session ile render olmasını sağlar.
       router.push('/');
       router.refresh();
     }

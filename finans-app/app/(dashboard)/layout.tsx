@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import {
@@ -37,7 +38,6 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Sayfa değişince mobil menüyü otomatik kapat
@@ -45,27 +45,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setMobileNavOpen(false);
   }, [pathname]);
 
-  // Güvenlik Duvarı: Oturum kontrolü
+  // Asıl oturum koruması artık proxy.ts'te (sunucu tarafı, her istekte
+  // çalışır) — bu yüzden burada "yükleniyor" bariyerine gerek yok. Bu
+  // listener sadece bir güvenlik ağı: sayfa açıkken token yenileme
+  // başarısız olursa ya da başka bir sekmede çıkış yapılırsa kullanıcıyı
+  // login'e yönlendirir.
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
         router.push('/login');
-      } else {
-        setLoading(false);
+        router.refresh();
       }
-    };
-    checkUser();
+    });
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
+    router.refresh();
   };
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">Yükleniyor...</div>;
-  }
 
   // Sidebar içeriği hem masaüstü hem mobil panelde ortak kullanılıyor
   const navContent = (
@@ -80,7 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
-            <a
+            <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -91,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Icon className="w-5 h-5" />
               {item.label}
-            </a>
+            </Link>
           );
         })}
       </nav>

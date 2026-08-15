@@ -19,7 +19,7 @@ export type Debt = {
 type DebtTableMeta = {
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: 'acik' | 'kapandi') => void;
-  onCellEdit: (id: string, field: 'counterparty' | 'amount' | 'due_date', value: string) => Promise<void>;
+  onCellEdit: (id: string, field: 'counterparty' | 'amount' | 'due_date' | 'notes', value: string) => Promise<void>;
 };
 
 function ActionsCell({ row, table }: { row: any; table: any }) {
@@ -121,6 +121,22 @@ export const columns: ColumnDef<Debt>[] = [
           value={date ?? ''}
           display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400 dark:text-slate-500">-</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
+        />
+      );
+    },
+  },
+  {
+    accessorKey: "notes",
+    header: "Not",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as DebtTableMeta | undefined;
+      const notes = row.original.notes;
+      return (
+        <EditableCell
+          value={notes ?? ''}
+          display={notes ? notes : <span className="text-slate-400 dark:text-slate-500">-</span>}
+          placeholder="Not ekle..."
+          onSave={(v) => meta!.onCellEdit(row.original.id, 'notes', v)}
         />
       );
     },

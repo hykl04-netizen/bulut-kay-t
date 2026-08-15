@@ -3,38 +3,30 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Plus, Trash2, Edit3, ArrowRightLeft, Calendar, FileText, ExternalLink, X } from 'lucide-react';
+import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
-
-interface Transaction {
-  id: string;
-  date: string;
-  type: 'gelir' | 'gider';
-  amount: number;
-  description: string;
-  category_id: string;
-  receipt_url?: string;
-  categories?: { name: string; color: string };
-}
+import { DataTable } from '@/components/data-table/data-table';
+import { columns, type Transaction } from './columns';
+import { BulkPasteModal } from './bulk-paste-modal';
 
 interface Category {
   id: string;
   name: string;
   type: string;
+  color: string;
 }
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
+const SELECT_WITH_CATEGORY = '*, category:categories(name, color)';
 
 export default function GelirGiderPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
@@ -46,22 +38,20 @@ export default function GelirGiderPage() {
   const [receiptUrl, setReceiptUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
+
       // İşlemleri çek
       const { data: txData } = await supabase
         .from('transactions')
-        .select('*, categories(name, color)')
+        .select(SELECT_WITH_CATEGORY)
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (txData) setTransactions(txData);
+      if (txData) setTransactions(txData as unknown as Transaction[]);
 
       // Kategorileri çek
       const { data: catData } = await supabase
@@ -72,6 +62,64 @@ export default function GelirGiderPage() {
       if (catData) setCategories(catData);
     }
     setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Faz 7.2/7.3 — hücre bazlı düzenleme: önce local state'i optimistic güncelle,
+  // hata olursa eski değere geri dön, başarılı olursa tam yeniden çekim YAPMA.
+  const handleCellEdit = async (
+    id: string,
+    field: 'description' | 'amount' | 'date',
+    value: string
+  ) => {
+    const previous = transactions.find((t) => t.id === id);
+    if (!previous) return;
+
+    const parsedValue = field === 'amount' ? parseFloat(value) || 0 : value;
+
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, [field]: parsedValue } : t))
+    );
+
+    const { error } = await supabase.from('transactions').update({ [field]: parsedValue }).eq('id', id);
+
+    if (error) {
+      // Eski değere geri dön
+      setTransactions((prev) => prev.map((t) => (t.id === id ? previous : t)));
+      throw error;
+    }
+  };
+
+  // Faz 7.4 — Excel'den toplu yapıştırma: satırları tek seferde insert edip
+  // local state'e optimistic olarak ekle (tam yeniden çekim yok).
+  const handleBulkImport = async (
+    rows: {
+      user_id: string;
+      type: 'gelir' | 'gider';
+      amount: number;
+      description: string;
+      date: string;
+      category_id: string | null;
+    }[]
+  ) => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert(rows)
+      .select(SELECT_WITH_CATEGORY);
+
+    if (error) {
+      alert('Toplu ekleme sırasında hata oluştu.');
+      return;
+    }
+
+    if (data) {
+      setTransactions((prev) =>
+        [...(data as unknown as Transaction[]), ...prev].sort((a, b) => (a.date < b.date ? 1 : -1))
+      );
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -114,20 +162,33 @@ export default function GelirGiderPage() {
     };
 
     if (editingId) {
-      // Güncelle
-      const { error } = await supabase.from('transactions').update(payload).eq('id', editingId);
-      if (!error) {
+      // Güncelle — optimistic: tam yeniden çekim yerine local state'i güncelle
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(payload)
+        .eq('id', editingId)
+        .select(SELECT_WITH_CATEGORY)
+        .single();
+      if (!error && data) {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === editingId ? (data as unknown as Transaction) : t))
+        );
         setIsModalOpen(false);
-        await fetchData();
       } else {
         alert('Güncellenirken hata oluştu.');
       }
     } else {
-      // Yeni Ekle
-      const { error } = await supabase.from('transactions').insert(payload);
-      if (!error) {
+      // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert(payload)
+        .select(SELECT_WITH_CATEGORY)
+        .single();
+      if (!error && data) {
+        setTransactions((prev) =>
+          [data as unknown as Transaction, ...prev].sort((a, b) => (a.date < b.date ? 1 : -1))
+        );
         setIsModalOpen(false);
-        await fetchData();
       } else {
         alert('Eklenirken hata oluştu.');
       }
@@ -154,102 +215,40 @@ export default function GelirGiderPage() {
             Finansal hareketlerinizi profesyonel kategorilerle takip edin, faturalarınızı ekleyin.
           </p>
         </div>
-        <button
-          onClick={handleOpenAddModal}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni İşlem Ekle
-        </button>
-      </div>
-
-      {/* Liste Tablosu */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/50">
-              <tr>
-                <th className="px-6 py-4 font-medium">Tarih</th>
-                <th className="px-6 py-4 font-medium">Tür</th>
-                <th className="px-6 py-4 font-medium">Kategori</th>
-                <th className="px-6 py-4 font-medium">Açıklama</th>
-                <th className="px-6 py-4 font-medium text-right">Tutar</th>
-                <th className="px-6 py-4 font-medium text-center">Belge</th>
-                <th className="px-6 py-4 font-medium text-center">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Yükleniyor...</td>
-                </tr>
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">Henüz kayıtlı işlem bulunmuyor.</td>
-                </tr>
-              ) : (
-                transactions.map((tx) => (
-                  <tr key={tx.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="whitespace-nowrap px-6 py-4">{tx.date}</td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        tx.type === 'gelir' 
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' 
-                          : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
-                      }`}>
-                        {tx.type.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        {tx.categories?.name || 'Kategorisiz'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{tx.description || '-'}</td>
-                    <td className={`whitespace-nowrap px-6 py-4 text-right font-bold ${
-                      tx.type === 'gelir' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
-                    }`}>
-                      {tx.type === 'gelir' ? '+' : '-'}{formatTRY(Number(tx.amount))}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      {tx.receipt_url ? (
-                        <a
-                          href={tx.receipt_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" /> Görüntüle
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEditModal(tx)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                          title="Düzenle"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(tx.id)}
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                          title="Sil"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Excel&apos;den Yapıştır
+          </button>
+          <button
+            onClick={handleOpenAddModal}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni İşlem Ekle
+          </button>
         </div>
       </div>
+
+      {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          Yükleniyor...
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={transactions}
+          meta={{
+            onEdit: handleOpenEditModal,
+            onDelete: handleDelete,
+            onCellEdit: handleCellEdit,
+          }}
+        />
+      )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
@@ -344,7 +343,11 @@ export default function GelirGiderPage() {
               </div>
 
               {/* Fiş / Belge Yükleme Bileşeni */}
-              <FileUpload onUploadSuccess={(url) => setReceiptUrl(url)} label="Fiş / Fatura / Belge Ekle (Opsiyonel)" />
+              <FileUpload
+                onUploadSuccess={(url) => setReceiptUrl(url)}
+                label="Fiş / Fatura / Belge Ekle (Opsiyonel)"
+                initialUrl={editingId ? receiptUrl : null}
+              />
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
@@ -365,6 +368,16 @@ export default function GelirGiderPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel'den Toplu Ekleme Modalı */}
+      {isBulkModalOpen && userId && (
+        <BulkPasteModal
+          categories={categories}
+          userId={userId}
+          onClose={() => setIsBulkModalOpen(false)}
+          onImport={handleBulkImport}
+        />
       )}
     </div>
   );
