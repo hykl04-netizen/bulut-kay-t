@@ -60,8 +60,7 @@ export default function BorcAlacakPage() {
     const { data, error } = await supabase.from('debts').insert(rows).select('*');
 
     if (error) {
-      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
@@ -134,17 +133,28 @@ export default function BorcAlacakPage() {
       status: 'acik',
     };
 
-    const { error } = await supabase.from('debts').insert(payload);
-    if (!error) {
+    const { data, error } = await supabase
+      .from('debts')
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (!error && data) {
+      setDebts((prev) =>
+        [data as Debt, ...prev].sort((a, b) => {
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date < b.due_date ? -1 : 1;
+        })
+      );
       setIsModalOpen(false);
       setDirection('alacak');
       setCounterparty('');
       setAmount('');
       setDueDate('');
       setNotes('');
-      await fetchDebts();
     } else {
-      alert('Hata oluştu: ' + error.message);
+      alert('Hata oluştu: ' + error?.message);
     }
     setIsSubmitting(false);
   };

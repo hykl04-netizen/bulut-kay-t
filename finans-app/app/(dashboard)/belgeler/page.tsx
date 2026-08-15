@@ -68,7 +68,11 @@ export default function BelgelerPage() {
 
     setIsSubmitting(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const { error } = await supabase.from('documents').insert({
       user_id: user.id,

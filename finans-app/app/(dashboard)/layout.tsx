@@ -18,9 +18,11 @@ import {
   LogOut,
   Menu,
   X,
+  DownloadCloud,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
+import { BackupModal } from '@/components/backup-modal';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
@@ -39,6 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   // Sayfa değişince mobil menüyü otomatik kapat.
   // Render sırasında önceki pathname ile karşılaştırıp state'i ayarlıyoruz
@@ -104,6 +107,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="p-4 border-t border-slate-800 space-y-1">
         <ThemeToggle />
+        <button
+          onClick={() => setIsBackupOpen(true)}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition"
+        >
+          <DownloadCloud className="w-5 h-5" />
+          Yedek Al
+        </button>
         <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-slate-800 transition">
           <LogOut className="w-5 h-5" />
           Çıkış Yap
@@ -161,6 +171,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Yüzen Hesap Makinesi */}
       <CalculatorWidget />
+
+      {/* Veri Yedekleme Modalı */}
+      <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
     </div>
   );
 }

@@ -84,8 +84,7 @@ export default function FaturaMasrafPage() {
     const { data, error } = await supabase.from('bills').insert(rows).select('*, categories(name)');
 
     if (error) {
-      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
@@ -210,7 +209,12 @@ export default function FaturaMasrafPage() {
     const previous = bills.find((b) => b.id === id);
     if (!previous) return;
 
-    const parsedValue = field === 'amount' ? parseFloat(value) || 0 : value;
+    const parsedValue =
+      field === 'amount'
+        ? parseFloat(value) || 0
+        : field === 'due_date' && value === ''
+        ? null
+        : value;
 
     setBills((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: parsedValue } : b)));
 

@@ -42,7 +42,10 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     // 1. Gelir-Giderler
     const { data: txData } = await supabase

@@ -111,6 +111,8 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
       }));
       await onImport(payload);
       setResult({ success: payload.length, failed: invalidCount });
+    } catch (err) {
+      alert('Toplu ekleme sırasında hata oluştu: ' + (err instanceof Error ? err.message : ''));
     } finally {
       setImporting(false);
     }

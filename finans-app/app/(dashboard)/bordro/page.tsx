@@ -73,7 +73,11 @@ export default function BordroPage() {
     setIsSubmitting(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const { error } = await supabase.from('payrolls').insert({
       user_id: user.id,

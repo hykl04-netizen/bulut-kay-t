@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ReportShareButton } from '@/components/report-share-button';
 import {
   BarChart,
   Bar,
@@ -38,10 +39,13 @@ function tooltipValueFormatter(value: unknown) {
   return Number.isFinite(num) ? formatTRY(num) : String(value ?? '');
 }
 
-function ChartCard({ title, subtitle, children, empty }: { title: string; subtitle?: string; children: React.ReactNode; empty: boolean }) {
+function ChartCard({ id, title, subtitle, children, empty }: { id: string; title: string; subtitle?: string; children: React.ReactNode; empty: boolean }) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
-      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">{title}</h2>
+    <div id={id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">{title}</h2>
+        <ReportShareButton targetElementId={id} reportTitle={title} />
+      </div>
       {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">{subtitle}</p>}
       {empty ? (
         <div className="flex items-center justify-center h-64 text-slate-400 dark:text-slate-500 text-sm">
@@ -118,6 +122,7 @@ export default function RaporlarPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard
+          id="chart-cash-flow"
           title="Nakit Akışı"
           subtitle="Aylık gelir ve gider karşılaştırması (son 12 ay)."
           empty={monthlyCashFlow.length === 0}
@@ -136,6 +141,7 @@ export default function RaporlarPage() {
         </ChartCard>
 
         <ChartCard
+          id="chart-cumulative-net"
           title="Nakit Bakiyesi Zaman Çizelgesi"
           subtitle="Kaydedilen gelir-gider işlemlerinin birikimli bakiyesi (son 12 ay). Varlık/yatırım değerlerini içermez."
           empty={cumulativeNet.length === 0}
@@ -152,6 +158,7 @@ export default function RaporlarPage() {
         </ChartCard>
 
         <ChartCard
+          id="chart-portfolio"
           title="Portföy Dağılımı"
           subtitle="Güncel fiyatı girilmiş yatırımların varlık türüne göre dağılımı."
           empty={portfolioDistribution.length === 0}
@@ -179,6 +186,7 @@ export default function RaporlarPage() {
         </ChartCard>
 
         <ChartCard
+          id="chart-expense-category"
           title="Kategori Bazlı Harcamalar"
           subtitle="Giderlerin kategorilere göre kırılımı (ilk 8 kategori)."
           empty={expenseByCategory.length === 0}

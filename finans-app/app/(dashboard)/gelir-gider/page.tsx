@@ -113,8 +113,7 @@ export default function GelirGiderPage() {
       .select(SELECT_WITH_CATEGORY);
 
     if (error) {
-      alert('Toplu ekleme sırasında hata oluştu.');
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
@@ -151,7 +150,11 @@ export default function GelirGiderPage() {
     setIsSubmitting(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setIsSubmitting(false);
+      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      return;
+    }
 
     const payload = {
       user_id: user.id,

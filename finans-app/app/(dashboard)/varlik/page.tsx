@@ -69,8 +69,7 @@ export default function VarlikPage() {
     const { data: inserted, error } = await supabase.from('assets').insert(rows).select('*');
 
     if (error) {
-      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (inserted) {

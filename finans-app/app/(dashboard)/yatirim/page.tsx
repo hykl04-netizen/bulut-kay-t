@@ -68,8 +68,7 @@ export default function YatirimPage() {
     const { data, error } = await supabase.from('investments').insert(rows).select('*');
 
     if (error) {
-      alert('Toplu ekleme sırasında hata oluştu: ' + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
