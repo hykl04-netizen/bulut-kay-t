@@ -159,7 +159,8 @@ export default function FaturaMasrafPage() {
         setBills((prev) => prev.map((b) => (b.id === editingId ? (data as Bill) : b)));
         setIsModalOpen(false);
       } else {
-        alert('Güncellenirken hata oluştu.');
+        console.error('Fatura güncellenirken hata:', error);
+        alert(`Güncellenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     } else {
       // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
@@ -178,7 +179,8 @@ export default function FaturaMasrafPage() {
         );
         setIsModalOpen(false);
       } else {
-        alert('Eklenirken hata oluştu.');
+        console.error('Fatura eklenirken hata:', error);
+        alert(`Eklenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     }
     setIsSubmitting(false);

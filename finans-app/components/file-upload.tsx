@@ -30,9 +30,9 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
       return;
     }
 
-    // 5MB Sınırı
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Dosya boyutu 5MB sınırını aşamaz.');
+    // 50MB Sınırı
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Dosya boyutu 50MB sınırını aşamaz.');
       return;
     }
 
@@ -99,7 +99,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
             <div className="flex flex-col items-center text-slate-500 dark:text-slate-400">
               <UploadCloud className="mb-2 h-6 w-6" />
               <span className="text-sm">Tıklayın veya dokunun</span>
-              <span className="text-xs mt-1">PNG, JPG, PDF (Max. 5MB)</span>
+              <span className="text-xs mt-1">PNG, JPG, PDF (Max. 50MB)</span>
             </div>
           )}
           <input
