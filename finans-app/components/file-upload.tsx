@@ -66,12 +66,18 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
         return;
       }
 
-      const { data: publicUrlData } = supabase.storage
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from(STORAGE_BUCKET)
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 yıl geçerli
 
-      setUploadedUrl(publicUrlData.publicUrl);
-      onUploadSuccess(publicUrlData.publicUrl);
+      if (signedUrlError || !signedUrlData) {
+        setError(`Link oluşturulamadı: ${signedUrlError?.message ?? 'Bilinmeyen hata'}`);
+        setIsUploading(false);
+        return;
+      }
+
+      setUploadedUrl(signedUrlData.signedUrl);
+      onUploadSuccess(signedUrlData.signedUrl);
     } catch {
       setError('Bağlantı hatası oluştu.');
     } finally {
