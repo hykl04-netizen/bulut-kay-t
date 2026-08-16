@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FileDown, FileSpreadsheet } from 'lucide-react';
 import { ReportShareButton } from '@/components/report-share-button';
+import { toast } from '@/components/ui/toaster';
+import { exportReportToPDF, exportReportToExcel } from '@/lib/report-export';
 import {
   BarChart,
   Bar,
@@ -24,6 +27,7 @@ import {
   aggregateCumulativeNet,
   aggregatePortfolioDistribution,
   aggregateExpenseByCategory,
+  projectCashFlow,
   ReportTransaction,
   ReportInvestment,
 } from '@/lib/reports';
@@ -62,6 +66,8 @@ export default function RaporlarPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<ReportTransaction[]>([]);
   const [investments, setInvestments] = useState<ReportInvestment[]>([]);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const isDark = useIsDarkMode();
 
   // recharts SVG renklerini Tailwind dark: sınıflarıyla değil doğrudan prop
@@ -82,7 +88,14 @@ export default function RaporlarPage() {
         supabase.from('investments').select('*'),
       ]);
 
-      if (!txRes.error && txRes.data) setTransactions(txRes.data as unknown as ReportTransaction[]);
+      if (!txRes.error && txRes.data) {
+        // Raporlar döviz cinsinden işlemleri de TL karşılığı üzerinden toplar.
+        const mapped = (txRes.data as Array<Record<string, unknown>>).map((t) => ({
+          ...t,
+          amount: Number((t.try_equivalent as number | null) ?? (t.amount as number)),
+        }));
+        setTransactions(mapped as unknown as ReportTransaction[]);
+      }
       else if (txRes.error) console.error('Rapor için işlem verisi çekme hatası:', txRes.error.message);
 
       if (!invRes.error && invRes.data) setInvestments(invRes.data as ReportInvestment[]);
@@ -98,6 +111,33 @@ export default function RaporlarPage() {
   const cumulativeNet = aggregateCumulativeNet(monthlyCashFlow);
   const portfolioDistribution = aggregatePortfolioDistribution(investments);
   const expenseByCategory = aggregateExpenseByCategory(transactions).slice(0, 8);
+  const cashFlowForecast = projectCashFlow(monthlyCashFlow, 3, 3);
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await exportReportToPDF({ monthlyCashFlow, expenseByCategory, portfolioDistribution });
+      toast.success('Rapor PDF olarak indirildi.');
+    } catch (err) {
+      console.error('PDF dışa aktarma hatası:', err);
+      toast.error('Rapor PDF olarak oluşturulamadı.');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await exportReportToExcel({ monthlyCashFlow, expenseByCategory, portfolioDistribution });
+      toast.success('Rapor Excel olarak indirildi.');
+    } catch (err) {
+      console.error('Excel dışa aktarma hatası:', err);
+      toast.error('Rapor Excel olarak oluşturulamadı.');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -115,9 +155,29 @@ export default function RaporlarPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
-        <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+          >
+            <FileDown className="h-4 w-4" />
+            {exportingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}
+          </button>
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel}
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            {exportingExcel ? 'Hazırlanıyor...' : 'Excel İndir'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -153,6 +213,27 @@ export default function RaporlarPage() {
               <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} width={80} />
               <Tooltip formatter={tooltipValueFormatter} labelStyle={tooltipLabelStyle} contentStyle={tooltipContentStyle} />
               <Line type="monotone" dataKey="cumulative" name="Birikimli Bakiye" stroke={lineStroke} strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard
+          id="chart-cash-flow-forecast"
+          title="Nakit Akışı Tahmini"
+          subtitle="Son 3 ayın ortalamasına göre önümüzdeki 3 ay için basit projeksiyon (kesikli çizgiler)."
+          empty={cashFlowForecast.length === 0}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={cashFlowForecast} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: tickFill }} />
+              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} width={80} />
+              <Tooltip formatter={tooltipValueFormatter} labelStyle={tooltipLabelStyle} contentStyle={tooltipContentStyle} />
+              <Legend />
+              <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+              <Line type="monotone" dataKey="gider" name="Gider" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+              <Line type="monotone" dataKey="gelirTahmin" name="Gelir (Tahmin)" stroke="#10b981" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} connectNulls />
+              <Line type="monotone" dataKey="giderTahmin" name="Gider (Tahmin)" stroke="#f43f5e" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>

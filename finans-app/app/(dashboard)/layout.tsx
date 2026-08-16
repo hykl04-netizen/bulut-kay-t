@@ -19,19 +19,25 @@ import {
   Menu,
   X,
   DownloadCloud,
+  Target,
+  Landmark,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
 import { BackupModal } from '@/components/backup-modal';
+import { runRecurringAutomation } from '@/lib/recurring';
+import { toast } from '@/components/ui/toaster';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
   { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
   { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
   { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
+  { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
   { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
   { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
   { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet },
+  { href: '/butce', label: 'Bütçe', icon: Target },
   { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
   { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
@@ -69,6 +75,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
     return () => subscription.unsubscribe();
   }, [router]);
+
+  // Tekrarlayan fatura/gelir otomasyonu — kullanıcı oturum açıp panele her
+  // geldiğinde (sekme/sayfa yenilemede) vadesi geçmiş tekrarlayan kayıtları
+  // kontrol edip eksik dönemleri otomatik oluşturur. İşlem idempotent olduğu
+  // için tekrar tekrar çalışması sorun yaratmaz.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const result = await runRecurringAutomation(user.id);
+      if (cancelled) return;
+      const total = result.billsCreated + result.transactionsCreated;
+      if (total > 0) {
+        toast.info(
+          `Tekrarlayan kayıtlar güncellendi: ${result.billsCreated} fatura, ${result.transactionsCreated} gelir/gider kaydı otomatik oluşturuldu.`
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

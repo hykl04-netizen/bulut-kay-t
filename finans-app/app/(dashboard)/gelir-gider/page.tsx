@@ -10,6 +10,7 @@ import { columns, type Transaction } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { SUPPORTED_CURRENCIES, SupportedCurrency, fetchRateToTRY, convertToTRY, formatCurrency } from '@/lib/currency';
 
 interface Category {
   id: string;
@@ -39,6 +40,41 @@ export default function GelirGiderPage() {
   const [description, setDescription] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Tekrarlayan işlem otomasyonu (maaş, kira geliri, abonelik gideri vb.)
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePeriod, setRecurrencePeriod] = useState('aylik');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+
+  // Çoklu para birimi
+  const [currency, setCurrency] = useState<SupportedCurrency>('TRY');
+  const [exchangeRate, setExchangeRate] = useState('1');
+  const [isFetchingRate, setIsFetchingRate] = useState(false);
+
+  useEffect(() => {
+    if (currency === 'TRY') return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setIsFetchingRate(true);
+    });
+    fetchRateToTRY(currency).then((rate) => {
+      if (cancelled) return;
+      setIsFetchingRate(false);
+      if (rate !== null) {
+        setExchangeRate(rate.toFixed(4));
+      } else {
+        toast.info('Güncel kur çekilemedi, lütfen kuru elle girin.');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currency]);
+
+  const handleCurrencyChange = (value: SupportedCurrency) => {
+    setCurrency(value);
+    if (value === 'TRY') setExchangeRate('1');
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -84,11 +120,20 @@ export default function GelirGiderPage() {
 
     const parsedValue = field === 'amount' ? parseFloat(value) || 0 : value;
 
+    // Tutar hücre üzerinden değiştirilirse, kayıtta saklı kur ile TL karşılığını
+    // (try_equivalent) da güncel tutuyoruz — aksi halde döviz cinsinden işlemlerde
+    // rapor/özet toplamları yanlış kalır.
+    const updatePayload: Record<string, unknown> = { [field]: parsedValue };
+    if (field === 'amount') {
+      const rate = previous.exchange_rate ?? 1;
+      updatePayload.try_equivalent = convertToTRY(parsedValue as number, rate);
+    }
+
     setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, [field]: parsedValue } : t))
+      prev.map((t) => (t.id === id ? { ...t, ...updatePayload } : t))
     );
 
-    const { error } = await supabase.from('transactions').update({ [field]: parsedValue }).eq('id', id);
+    const { error } = await supabase.from('transactions').update(updatePayload).eq('id', id);
 
     if (error) {
       // Eski değere geri dön
@@ -133,6 +178,11 @@ export default function GelirGiderPage() {
     setDate(new Date().toISOString().split('T')[0]);
     setDescription('');
     setReceiptUrl('');
+    setIsRecurring(false);
+    setRecurrencePeriod('aylik');
+    setRecurrenceEndDate('');
+    setCurrency('TRY');
+    setExchangeRate('1');
     setIsModalOpen(true);
   };
 
@@ -144,6 +194,11 @@ export default function GelirGiderPage() {
     setDate(tx.date);
     setDescription(tx.description || '');
     setReceiptUrl(tx.receipt_url || '');
+    setIsRecurring(tx.is_recurring ?? false);
+    setRecurrencePeriod(tx.recurrence_period || 'aylik');
+    setRecurrenceEndDate(tx.recurrence_end_date || '');
+    setCurrency((tx.currency as SupportedCurrency) || 'TRY');
+    setExchangeRate((tx.exchange_rate ?? 1).toString());
     setIsModalOpen(true);
   };
 
@@ -158,14 +213,23 @@ export default function GelirGiderPage() {
       return;
     }
 
+    const parsedAmount = parseFloat(amount) || 0;
+    const parsedRate = parseFloat(exchangeRate) || 1;
+
     const payload = {
       user_id: user.id,
       type,
       category_id: categoryId || null,
-      amount: parseFloat(amount) || 0,
+      amount: parsedAmount,
       date,
       description,
       receipt_url: receiptUrl || null,
+      is_recurring: isRecurring,
+      recurrence_period: isRecurring ? recurrencePeriod : null,
+      recurrence_end_date: isRecurring && recurrenceEndDate ? recurrenceEndDate : null,
+      currency,
+      exchange_rate: currency === 'TRY' ? 1 : parsedRate,
+      try_equivalent: convertToTRY(parsedAmount, currency === 'TRY' ? 1 : parsedRate),
     };
 
     if (editingId) {
@@ -313,18 +377,52 @@ export default function GelirGiderPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Tutar (TL)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
-                  />
+                  <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Tutar</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    />
+                    <select
+                      value={currency}
+                      onChange={(e) => handleCurrencyChange(e.target.value as SupportedCurrency)}
+                      className="w-24 shrink-0 rounded-xl border border-border bg-transparent px-2 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code} className="dark:bg-primary">{c.code}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
+
+              {currency !== 'TRY' && (
+                <div className="grid grid-cols-2 gap-4 rounded-xl border border-border p-3 dark:border-border">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+                      Kur (1 {currency} = ? TL) {isFetchingRate && <span className="italic">güncelleniyor...</span>}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={exchangeRate}
+                      onChange={(e) => setExchangeRate(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <span className="text-xs text-muted-foreground dark:text-muted-foreground">TL Karşılığı</span>
+                    <span className="font-medium text-foreground dark:text-foreground">
+                      {formatCurrency(convertToTRY(parseFloat(amount) || 0, parseFloat(exchangeRate) || 1), 'TRY')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -347,6 +445,43 @@ export default function GelirGiderPage() {
                     className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* Tekrarlayan işlem otomasyonu */}
+              <div className="rounded-xl border border-border p-3 dark:border-border">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  Bu işlem tekrarlansın (maaş, kira, abonelik vb.)
+                </label>
+                {isRecurring && (
+                  <div className="mt-3 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Sıklık</label>
+                      <select
+                        value={recurrencePeriod}
+                        onChange={(e) => setRecurrencePeriod(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                      >
+                        <option value="aylik" className="dark:bg-primary">Aylık</option>
+                        <option value="yillik" className="dark:bg-primary">Yıllık</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
+                      <input
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Fiş / Belge Yükleme Bileşeni */}

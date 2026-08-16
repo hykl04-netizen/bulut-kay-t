@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
+import { KdvCalculator } from '@/components/kdv-calculator';
 import { columns, type Bill } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
@@ -34,6 +35,7 @@ export default function FaturaMasrafPage() {
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrencePeriod, setRecurrencePeriod] = useState('aylik');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [status, setStatus] = useState<'odendi' | 'odenmedi'>('odenmedi');
   const [categoryId, setCategoryId] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
@@ -107,6 +109,7 @@ export default function FaturaMasrafPage() {
     setDueDate(new Date().toISOString().split('T')[0]);
     setIsRecurring(false);
     setRecurrencePeriod('aylik');
+    setRecurrenceEndDate('');
     setStatus('odenmedi');
     setCategoryId('');
     setReceiptUrl('');
@@ -120,6 +123,7 @@ export default function FaturaMasrafPage() {
     setDueDate(bill.due_date || '');
     setIsRecurring(bill.is_recurring);
     setRecurrencePeriod(bill.recurrence_period || 'aylik');
+    setRecurrenceEndDate(bill.recurrence_end_date || '');
     setStatus(bill.status);
     setCategoryId(bill.category_id || '');
     setReceiptUrl(bill.receipt_url || '');
@@ -144,6 +148,7 @@ export default function FaturaMasrafPage() {
       due_date: dueDate,
       is_recurring: isRecurring,
       recurrence_period: isRecurring ? recurrencePeriod : null,
+      recurrence_end_date: isRecurring && recurrenceEndDate ? recurrenceEndDate : null,
       status,
       category_id: categoryId || null,
       receipt_url: receiptUrl || null,
@@ -300,7 +305,10 @@ export default function FaturaMasrafPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Tutar (TL)</label>
+                <div className="mb-1 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-foreground dark:text-muted-foreground">Tutar (TL)</label>
+                    <KdvCalculator onApply={(gross) => setAmount(gross.toFixed(2))} />
+                  </div>
                   <input
                     type="number"
                     step="0.01"
@@ -348,6 +356,46 @@ export default function FaturaMasrafPage() {
                     <option value="odendi" className="dark:bg-primary">Ödendi</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Tekrarlayan fatura otomasyonu */}
+              <div className="rounded-xl border border-border p-3 dark:border-border">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  Bu fatura tekrarlansın (kira, abonelik vb.)
+                </label>
+                {isRecurring && (
+                  <div className="mt-3 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Sıklık</label>
+                      <select
+                        value={recurrencePeriod}
+                        onChange={(e) => setRecurrencePeriod(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                      >
+                        <option value="aylik" className="dark:bg-primary">Aylık</option>
+                        <option value="yillik" className="dark:bg-primary">Yıllık</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
+                      <input
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">
+                  Vade tarihi geçtiğinde bir sonraki dönemin faturası otomatik olarak oluşturulur.
+                </p>
               </div>
 
               {/* Fatura Belgesi Yükleme */}

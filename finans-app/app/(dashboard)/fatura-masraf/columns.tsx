@@ -13,6 +13,7 @@ export type Bill = {
   due_date: string | null;
   is_recurring: boolean;
   recurrence_period: string | null;
+  recurrence_end_date?: string | null;
   status: 'odendi' | 'odenmedi';
   category_id?: string | null;
   receipt_url?: string | null;

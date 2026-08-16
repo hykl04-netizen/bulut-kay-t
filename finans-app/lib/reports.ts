@@ -119,6 +119,65 @@ export function aggregateCumulativeNet(monthly: MonthlyCashFlow[]): CumulativeNe
   });
 }
 
+export type CashFlowForecastPoint = {
+  month: string;
+  monthLabel: string;
+  gelir: number | null;
+  gider: number | null;
+  gelirTahmin: number | null;
+  giderTahmin: number | null;
+};
+
+/**
+ * Geçmiş aylık nakit akışına dayanarak gelecek ayları tahmin eder (basit
+ * hareketli ortalama — son `windowSize` ayın ortalaması alınır). Grafik
+ * gerçek ve tahmini serileri aynı eksende ayrı renklerle gösterebilsin diye
+ * gerçek son ay hem `gelir/gider` hem `gelirTahmin/giderTahmin` alanlarında
+ * tekrarlanır (çizgilerin kopuk görünmemesi için bağlantı noktası).
+ */
+export function projectCashFlow(
+  monthly: MonthlyCashFlow[],
+  monthsAhead = 3,
+  windowSize = 3
+): CashFlowForecastPoint[] {
+  const actual: CashFlowForecastPoint[] = monthly.map((m) => ({
+    month: m.month,
+    monthLabel: m.monthLabel,
+    gelir: m.gelir,
+    gider: m.gider,
+    gelirTahmin: null,
+    giderTahmin: null,
+  }));
+
+  if (monthly.length === 0) return actual;
+
+  const recent = monthly.slice(-windowSize);
+  const avgGelir = recent.reduce((sum, m) => sum + m.gelir, 0) / recent.length;
+  const avgGider = recent.reduce((sum, m) => sum + m.gider, 0) / recent.length;
+
+  // Son gerçek noktayı tahmin serisine de ekleyip çizgiyi birbirine bağlıyoruz.
+  const last = actual[actual.length - 1];
+  last.gelirTahmin = last.gelir;
+  last.giderTahmin = last.gider;
+
+  const forecast: CashFlowForecastPoint[] = [];
+  let cursor = monthly[monthly.length - 1].month;
+  for (let i = 0; i < monthsAhead; i++) {
+    cursor = nextMonthKey(cursor);
+    forecast.push({
+      month: cursor,
+      monthLabel: monthLabel(cursor),
+      gelir: null,
+      gider: null,
+      gelirTahmin: Math.round(avgGelir),
+      giderTahmin: Math.round(avgGider),
+    });
+  }
+
+  return [...actual, ...forecast];
+}
+
+
 const ASSET_TYPE_LABELS_TR: Record<string, string> = {
   hisse: 'Hisse',
   doviz: 'Döviz',

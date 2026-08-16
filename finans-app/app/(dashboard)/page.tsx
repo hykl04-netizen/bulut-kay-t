@@ -4,8 +4,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { Wallet, TrendingUp, PiggyBank, HandCoins, ArrowUpRight, ArrowDownRight, ShieldCheck, Activity, CalendarClock, Receipt } from 'lucide-react';
+import { Wallet, TrendingUp, PiggyBank, HandCoins, ArrowUpRight, ArrowDownRight, ShieldCheck, Activity, CalendarClock, Receipt, AlertTriangle } from 'lucide-react';
 import { getDueInfo, DUE_TONE_CLASSES } from '@/lib/due-date';
+import { buildBudgetRows, BUDGET_TONE_CLASSES, BudgetRow } from '@/lib/budget';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -38,6 +39,7 @@ interface SummaryData {
   totalOpenDebts: number;
   recentTransactions: RecentTransaction[];
   upcomingPayments: UpcomingPayment[];
+  overBudgetRows: BudgetRow[];
 }
 
 export default function DashboardPage() {
@@ -50,6 +52,7 @@ export default function DashboardPage() {
     totalOpenDebts: 0,
     recentTransactions: [],
     upcomingPayments: [],
+    overBudgetRows: [],
   });
 
   const fetchDashboardData = async () => {
@@ -71,8 +74,11 @@ export default function DashboardPage() {
     let expense = 0;
     if (txData) {
       txData.forEach(tx => {
-        if (tx.type === 'gelir') income += Number(tx.amount);
-        else expense += Number(tx.amount);
+        // Döviz cinsinden işlemler için TL karşılığını (try_equivalent) kullan;
+        // TRY işlemlerde bu zaten amount'a eşittir.
+        const tryAmount = Number(tx.try_equivalent ?? tx.amount);
+        if (tx.type === 'gelir') income += tryAmount;
+        else expense += tryAmount;
       });
     }
 
@@ -156,6 +162,26 @@ export default function DashboardPage() {
       (a, b) => a.dueDate.localeCompare(b.dueDate)
     );
 
+    // 6. Bütçe aşımları — sadece gider kategorileri ve bu ayki harcamalar.
+    const { data: budgetData } = await supabase
+      .from('budgets')
+      .select('category_id, monthly_limit')
+      .eq('user_id', user.id);
+
+    const { data: giderCategories } = await supabase
+      .from('categories')
+      .select('id, name, color')
+      .eq('user_id', user.id)
+      .eq('type', 'gider');
+
+    const overBudgetRows = budgetData && giderCategories
+      ? buildBudgetRows(
+          giderCategories,
+          budgetData.map((b) => ({ category_id: b.category_id, monthly_limit: Number(b.monthly_limit) })),
+          (txData ?? []).map((t) => ({ type: t.type, amount: Number(t.amount), date: t.date, category_id: t.category_id }))
+        ).filter((r) => r.tone === 'over')
+      : [];
+
     setSummary({
       totalTransactionsIncome: income,
       totalTransactionsExpense: expense,
@@ -164,6 +190,7 @@ export default function DashboardPage() {
       totalOpenDebts: debtsTotal,
       recentTransactions: txData ? txData.slice(0, 5) : [],
       upcomingPayments,
+      overBudgetRows,
     });
 
     setLoading(false);
@@ -321,6 +348,32 @@ export default function DashboardPage() {
           </div>
         );
       })()}
+
+      {/* Bütçe Aşımları */}
+      {summary.overBudgetRows.length > 0 && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/60 shadow-sm dark:border-rose-900 dark:bg-rose-950/20">
+          <div className="flex items-center gap-2 border-b border-rose-200 px-6 py-4 dark:border-rose-900">
+            <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+            <h2 className="text-base font-bold text-rose-700 dark:text-rose-400">Bütçe Aşımları</h2>
+            <Link href="/butce" className="ml-auto text-xs font-medium text-rose-600 hover:underline dark:text-rose-400">
+              Bütçeyi görüntüle
+            </Link>
+          </div>
+          <div className="divide-y divide-rose-200/60 p-2 dark:divide-rose-900/60">
+            {summary.overBudgetRows.map((row) => (
+              <div key={row.categoryId} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row.categoryColor }} />
+                  <span className="text-sm font-semibold text-foreground dark:text-white truncate">{row.categoryName}</span>
+                </div>
+                <span className={`text-sm font-bold ${BUDGET_TONE_CLASSES.over.text}`}>
+                  {formatTRY(row.spent)} / {formatTRY(row.limit)} (%{row.percent})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Son İşlemler Tablosu (Yumuşak Geçişler & Kurumsal Rozetler) */}
       <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border dark:bg-primary">

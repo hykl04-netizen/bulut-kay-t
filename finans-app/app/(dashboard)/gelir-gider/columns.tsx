@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef, Row, Table } from "@tanstack/react-table";
-import { Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, Repeat } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
 
@@ -14,6 +14,12 @@ export type Transaction = {
   category_id: string | null;
   category: { name: string; color: string } | null; // Supabase join ile gelir
   receipt_url?: string | null;
+  is_recurring?: boolean;
+  recurrence_period?: string | null;
+  recurrence_end_date?: string | null;
+  currency?: string;
+  exchange_rate?: number;
+  try_equivalent?: number | null;
 };
 
 type TransactionTableMeta = {
@@ -70,10 +76,17 @@ export const columns: ColumnDef<Transaction>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta as TransactionTableMeta | undefined;
       return (
-        <EditableCell
-          value={row.original.description}
-          onSave={(v) => meta!.onCellEdit(row.original.id, 'description', v)}
-        />
+        <div className="flex items-center gap-2">
+          <EditableCell
+            value={row.original.description}
+            onSave={(v) => meta!.onCellEdit(row.original.id, 'description', v)}
+          />
+          {row.original.is_recurring && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground dark:text-muted-foreground shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
+              <Repeat className="w-3 h-3" />
+            </span>
+          )}
+        </div>
       );
     },
   },
@@ -118,19 +131,31 @@ export const columns: ColumnDef<Transaction>[] = [
       const meta = table.options.meta as TransactionTableMeta | undefined;
       const amount = row.original.amount;
       const type = row.original.type;
-      const formatted = new Intl.NumberFormat("tr-TR", {
-        style: "currency",
-        currency: "TRY",
-      }).format(amount);
+      const currency = row.original.currency ?? 'TRY';
+      const isForeign = currency !== 'TRY';
+      let formatted: string;
+      try {
+        formatted = new Intl.NumberFormat("tr-TR", { style: "currency", currency }).format(amount);
+      } catch {
+        formatted = amount.toFixed(2);
+      }
+      const tryEquivalent = row.original.try_equivalent ?? amount;
       return (
         <EditableCell
           type="number"
           step="0.01"
           value={amount}
           display={
-            <span className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {type === 'gelir' ? '+' : '-'}{formatted}
-            </span>
+            <div className="flex flex-col">
+              <span className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {type === 'gelir' ? '+' : '-'}{formatted}
+              </span>
+              {isForeign && (
+                <span className="text-xs text-muted-foreground dark:text-muted-foreground">
+                  ≈ {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(tryEquivalent)}
+                </span>
+              )}
+            </div>
           }
           onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
         />

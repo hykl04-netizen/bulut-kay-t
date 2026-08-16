@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Wallet, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client'; // Supabase bağlantımız
@@ -74,9 +75,17 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">
-              Şifre
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground">
+                Şifre
+              </label>
+              <Link
+                href="/sifremi-unuttum"
+                className="text-xs font-medium text-primary hover:underline dark:text-brand-gold-light"
+              >
+                Şifremi Unuttum
+              </Link>
+            </div>
             <input
               type="password"
               value={password}
