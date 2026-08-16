@@ -34,13 +34,13 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-x-auto">
+    <div className="rounded-md border border-border dark:border-border bg-card dark:bg-primary overflow-x-auto">
       <table className="w-full text-sm text-left">
-        <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
+        <thead className="bg-muted dark:bg-primary border-b border-border dark:border-border">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-slate-500 dark:text-slate-400">
+                <th key={header.id} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground dark:text-muted-foreground">
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -57,10 +57,10 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="border-b border-border dark:border-border transition-colors hover:bg-muted dark:hover:bg-secondary"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-4 align-middle text-slate-700 dark:text-slate-300">
+                  <td key={cell.id} className="p-4 align-middle text-foreground dark:text-muted-foreground">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -68,7 +68,7 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="h-24 text-center text-slate-500 dark:text-slate-400">
+              <td colSpan={columns.length} className="h-24 text-center text-muted-foreground dark:text-muted-foreground">
                 Henüz veri eklenmemiş.
               </td>
             </tr>

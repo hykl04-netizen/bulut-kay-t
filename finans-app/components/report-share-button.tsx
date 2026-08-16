@@ -30,7 +30,7 @@ export function ReportShareButton({ targetElementId, reportTitle = 'Finansal Rap
   return (
     <button
       onClick={handleShareOrDownload}
-      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+      className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
     >
       <Download className="h-4 w-4" />
       Grafiği İndir

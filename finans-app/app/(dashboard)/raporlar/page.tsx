@@ -41,14 +41,14 @@ function tooltipValueFormatter(value: unknown) {
 
 function ChartCard({ id, title, subtitle, children, empty }: { id: string; title: string; subtitle?: string; children: React.ReactNode; empty: boolean }) {
   return (
-    <div id={id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">
+    <div id={id} className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">{title}</h2>
+        <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
         <ReportShareButton targetElementId={id} reportTitle={title} />
       </div>
-      {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>}
       {empty ? (
-        <div className="flex items-center justify-center h-64 text-slate-400 dark:text-slate-500 text-sm">
+        <div className="flex items-center justify-center h-64 text-muted-foreground dark:text-muted-foreground text-sm">
           Gösterilecek yeterli veri yok.
         </div>
       ) : (
@@ -103,11 +103,11 @@ export default function RaporlarPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Raporlar</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Finansal durumunuzun grafiklerle özeti.</p>
+          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center justify-center h-40">
-          <p className="text-slate-500 dark:text-slate-400">Veriler yükleniyor...</p>
+        <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6 flex items-center justify-center h-40">
+          <p className="text-muted-foreground dark:text-muted-foreground">Veriler yükleniyor...</p>
         </div>
       </div>
     );
@@ -116,8 +116,8 @@ export default function RaporlarPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Raporlar</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Finansal durumunuzun grafiklerle özeti.</p>
+        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
+        <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

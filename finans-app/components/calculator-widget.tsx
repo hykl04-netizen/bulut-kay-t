@@ -42,7 +42,7 @@ export function CalculatorWidget() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg transition-transform hover:scale-105 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105 hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           title="Hesap Makinesi"
         >
           <Calculator className="h-6 w-6" />
@@ -51,33 +51,33 @@ export function CalculatorWidget() {
 
       {/* Açıkken Görünen Hesap Makinesi Paneli */}
       {isOpen && (
-        <div className="w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between bg-slate-100 px-4 py-3 dark:bg-slate-800">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <div className="w-64 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:border-border dark:bg-primary">
+          <div className="flex items-center justify-between bg-secondary px-4 py-3 dark:bg-secondary">
+            <span className="text-sm font-semibold text-foreground dark:text-muted-foreground">
               Hesap Makinesi
             </span>
             <button 
               onClick={() => setIsOpen(false)} 
-              className="text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="text-muted-foreground transition hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
           
           <div className="p-4">
-            <div className="mb-4 flex min-h-[4rem] w-full items-center justify-end overflow-x-auto rounded-lg bg-slate-50 px-3 py-4 text-right font-mono text-2xl tracking-wider text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+            <div className="mb-4 flex min-h-[4rem] w-full items-center justify-end overflow-x-auto rounded-lg bg-muted px-3 py-4 text-right font-mono text-2xl tracking-wider text-foreground dark:bg-primary dark:text-slate-100">
               {display || '0'}
             </div>
 
             <div className="grid grid-cols-4 gap-2">
               {['7', '8', '9', '/'].map((btn) => (
-                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-slate-100 font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">{btn}</button>
+                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-secondary font-medium text-foreground transition hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700">{btn}</button>
               ))}
               {['4', '5', '6', '*'].map((btn) => (
-                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-slate-100 font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">{btn}</button>
+                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-secondary font-medium text-foreground transition hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700">{btn}</button>
               ))}
               {['1', '2', '3', '-'].map((btn) => (
-                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-slate-100 font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">{btn}</button>
+                <button key={btn} onClick={() => handleInput(btn)} className="flex h-10 items-center justify-center rounded-lg bg-secondary font-medium text-foreground transition hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700">{btn}</button>
               ))}
               {['C', '0', '=', '+'].map((btn) => (
                 <button
@@ -92,7 +92,7 @@ export function CalculatorWidget() {
                       ? 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400' 
                       : btn === '=' 
                       ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                      : 'bg-secondary text-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
                   }`}
                 >
                   {btn}

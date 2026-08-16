@@ -94,8 +94,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive
-                  ? 'bg-slate-800 text-white'
-                  : 'hover:bg-slate-800 hover:text-white'
+                  ? 'bg-secondary text-white'
+                  : 'hover:bg-secondary hover:text-white'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -105,16 +105,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800 space-y-1">
+      <div className="p-4 border-t border-border space-y-1">
         <ThemeToggle />
         <button
           onClick={() => setIsBackupOpen(true)}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-muted-foreground hover:bg-secondary hover:text-white transition"
         >
           <DownloadCloud className="w-5 h-5" />
           Yedek Al
         </button>
-        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-slate-800 transition">
+        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-secondary transition">
           <LogOut className="w-5 h-5" />
           Çıkış Yap
         </button>
@@ -123,14 +123,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-muted dark:bg-primary">
       {/* Sol Menü (Sidebar) — masaüstü, md ve üzeri */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex">
+      <aside className="w-64 bg-primary text-muted-foreground flex-col hidden md:flex">
         {navContent}
       </aside>
 
       {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-slate-900 text-white px-4 h-14 md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-primary text-white px-4 h-14 md:hidden">
         <div className="flex items-center gap-2">
           <Wallet className="w-6 h-6" />
           <span className="font-bold">FinansApp</span>
@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Menüyü aç"
-          className="p-2 -mr-2 text-slate-300 hover:text-white"
+          className="p-2 -mr-2 text-muted-foreground hover:text-white"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -148,14 +148,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {mobileNavOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div
-            className="absolute inset-0 bg-slate-900/50"
+            className="absolute inset-0 bg-primary/50"
             onClick={() => setMobileNavOpen(false)}
           />
-          <aside className="relative w-64 bg-slate-900 text-slate-300 flex flex-col h-full shadow-xl">
+          <aside className="relative w-64 bg-primary text-muted-foreground flex flex-col h-full shadow-xl">
             <button
               onClick={() => setMobileNavOpen(false)}
               aria-label="Menüyü kapat"
-              className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-white"
+              className="absolute top-4 right-4 text-muted-foreground dark:text-muted-foreground hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>

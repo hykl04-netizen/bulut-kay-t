@@ -30,7 +30,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     <button
       onClick={toggle}
       aria-label={isDark ? 'Açık temaya geç' : 'Koyu temaya geç'}
-      className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors ${className}`}
+      className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg text-muted-foreground hover:bg-secondary hover:text-white transition-colors ${className}`}
     >
       {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
       {isDark ? 'Açık Tema' : 'Koyu Tema'}

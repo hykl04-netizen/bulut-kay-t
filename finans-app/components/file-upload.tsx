@@ -87,14 +87,14 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
 
   return (
     <div className="w-full">
-      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+      <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">
         {label}
       </label>
       
       {!uploadedUrl ? (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-6 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted py-6 transition-colors hover:bg-secondary dark:border-border dark:bg-primary dark:hover:bg-secondary"
         >
           {isUploading ? (
             <div className="flex flex-col items-center text-emerald-600">
@@ -102,7 +102,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
               <span className="text-sm font-medium">Yükleniyor...</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-slate-500 dark:text-slate-400">
+            <div className="flex flex-col items-center text-muted-foreground dark:text-muted-foreground">
               <UploadCloud className="mb-2 h-6 w-6" />
               <span className="text-sm">Tıklayın veya dokunun</span>
               <span className="text-xs mt-1">PNG, JPG, PDF (Max. 50MB)</span>
@@ -138,7 +138,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
             <button
               type="button"
               onClick={() => setUploadedUrl(null)}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
             >
               Değiştir
             </button>

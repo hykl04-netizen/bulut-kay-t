@@ -24,9 +24,9 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900 dark:text-slate-100">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Veri Yedekleme</h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl dark:bg-primary dark:text-slate-100">
+        <h2 className="text-lg font-bold text-foreground dark:text-white">Veri Yedekleme</h2>
+        <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
           Tüm gelir-gider, borç, fatura ve yatırım verilerinizi tek bir JSON dosyası olarak cihazınıza indirebilirsiniz.
         </p>
 
@@ -46,7 +46,7 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           <button
             onClick={handleExport}
             disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           >
             {loading ? 'İndiriliyor...' : '📥 Tüm Verileri İndir (JSON)'}
           </button>
@@ -55,7 +55,7 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <div className="mt-4 flex justify-end">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
           >
             Kapat
           </button>

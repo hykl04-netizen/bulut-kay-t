@@ -126,7 +126,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="text-sm font-medium text-slate-400">Özet paneli yükleniyor...</div>
+        <div className="text-sm font-medium text-muted-foreground">Özet paneli yükleniyor...</div>
       </div>
     );
   }
@@ -138,12 +138,12 @@ export default function DashboardPage() {
       {/* Üst Başlık & Yönetici Rozeti */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Özet Paneli</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-foreground">Özet Paneli</h1>
+          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
             Finansal durumunuzun genel görünümü ve son hareketleriniz.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-xs font-medium text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm dark:border-border dark:bg-primary dark:text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-emerald-500" />
           <span>Executive Private Terminal</span>
         </div>
@@ -152,71 +152,71 @@ export default function DashboardPage() {
       {/* Üst İstatistik Kartları (Obsidian / Slate & Zarif Kenarlıklar) */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Tahmini Net Değer */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tahmini Net Değer</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Tahmini Net Değer</span>
             <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
               <Wallet className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatTRY(netWorth)}</div>
-          <p className="mt-1 text-xs text-slate-400">Varlıklar + Yatırımlar + Nakit</p>
+          <div className="mt-4 text-2xl font-bold tracking-tight text-foreground dark:text-white">{formatTRY(netWorth)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">Varlıklar + Yatırımlar + Nakit</p>
         </div>
 
         {/* Toplam Yatırımlar */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Toplam Yatırımlar</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Toplam Yatırımlar</span>
             <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatTRY(summary.totalInvestments)}</div>
-          <p className="mt-1 text-xs text-slate-400">Hisse ve Altın portföyü</p>
+          <div className="mt-4 text-2xl font-bold tracking-tight text-foreground dark:text-white">{formatTRY(summary.totalInvestments)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">Hisse ve Altın portföyü</p>
         </div>
 
         {/* Fiziki Varlıklar */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Fiziki Varlıklar</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Fiziki Varlıklar</span>
             <div className="rounded-xl bg-purple-50 p-2 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400">
               <PiggyBank className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatTRY(summary.totalAssets)}</div>
-          <p className="mt-1 text-xs text-slate-400">Araba, Gayrimenkul vb.</p>
+          <div className="mt-4 text-2xl font-bold tracking-tight text-foreground dark:text-white">{formatTRY(summary.totalAssets)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">Araba, Gayrimenkul vb.</p>
         </div>
 
         {/* Net Alacak / Borç */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Net Alacak / Borç</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Net Alacak / Borç</span>
             <div className="rounded-xl bg-amber-50 p-2 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
               <HandCoins className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatTRY(summary.totalOpenDebts)}</div>
-          <p className="mt-1 text-xs text-slate-400">Kişi bazlı açık bakiyeler</p>
+          <div className="mt-4 text-2xl font-bold tracking-tight text-foreground dark:text-white">{formatTRY(summary.totalOpenDebts)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">Kişi bazlı açık bakiyeler</p>
         </div>
       </div>
 
       {/* Son İşlemler Tablosu (Yumuşak Geçişler & Kurumsal Rozetler) */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+      <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border dark:bg-primary">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-border">
           <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-slate-400" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Son Gelir ve Giderler</h2>
+            <Activity className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-base font-bold text-foreground dark:text-slate-100">Son Gelir ve Giderler</h2>
           </div>
-          <span className="text-xs text-slate-400">Son 5 Hareket</span>
+          <span className="text-xs text-muted-foreground">Son 5 Hareket</span>
         </div>
 
         <div className="p-6">
           {summary.recentTransactions.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Henüz işlem bulunmuyor.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">Henüz işlem bulunmuyor.</p>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="divide-y divide-slate-100 dark:divide-border">
               {summary.recentTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-3.5 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-xl">
+                <div key={tx.id} className="flex items-center justify-between py-3.5 transition hover:bg-muted/50 dark:hover:bg-secondary/30 px-2 rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className={`rounded-xl p-2.5 ${
                       tx.type === 'gelir'
@@ -226,10 +226,10 @@ export default function DashboardPage() {
                       {tx.type === 'gelir' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{tx.description || 'Açıklama yok'}</div>
-                      <div className="mt-0.5 text-xs text-slate-400">
+                      <div className="text-sm font-semibold text-foreground dark:text-white">{tx.description || 'Açıklama yok'}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
                         {tx.date} • {tx.categories?.name ? (
-                          <span className="font-medium text-slate-600 dark:text-slate-300">
+                          <span className="font-medium text-muted-foreground dark:text-muted-foreground">
                             {tx.categories.name}
                           </span>
                         ) : 'Kategorisiz'}

@@ -1,9 +1,9 @@
 'use client';
 
 import { ColumnDef, Row, Table } from "@tanstack/react-table";
-import { MoreHorizontal, Trash2, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { Trash2, CheckCircle2 } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
+import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
 
 export type Debt = {
   id: string;
@@ -23,39 +23,29 @@ type DebtTableMeta = {
 };
 
 function ActionsCell({ row, table }: { row: Row<Debt>; table: Table<Debt> }) {
-  const [open, setOpen] = useState(false);
   const meta = table.options.meta as DebtTableMeta | undefined;
   const status = row.original.status;
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
-      >
-        <MoreHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-      </button>
-      {open && (
+    <RowActionsMenu>
+      {(close) => (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-20">
-            <button
-              onClick={() => { meta?.onToggleStatus(row.original.id, status); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {status === 'acik' ? 'Kapandı olarak işaretle' : 'Tekrar aç'}
-            </button>
-            <button
-              onClick={() => { meta?.onDelete(row.original.id); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Sil
-            </button>
-          </div>
+          <button
+            onClick={() => { meta?.onToggleStatus(row.original.id, status); close(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted dark:hover:bg-secondary text-foreground dark:text-muted-foreground"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {status === 'acik' ? 'Kapandı olarak işaretle' : 'Tekrar aç'}
+          </button>
+          <button
+            onClick={() => { meta?.onDelete(row.original.id); close(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Sil
+          </button>
         </>
       )}
-    </div>
+    </RowActionsMenu>
   );
 }
 
@@ -103,7 +93,7 @@ export const columns: ColumnDef<Debt>[] = [
           type="number"
           step="0.01"
           value={amount}
-          display={<span className="font-medium text-slate-900 dark:text-slate-50">{formatted}</span>}
+          display={<span className="font-medium text-foreground dark:text-foreground">{formatted}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
         />
       );
@@ -119,7 +109,7 @@ export const columns: ColumnDef<Debt>[] = [
         <EditableCell
           type="date"
           value={date ?? ''}
-          display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-slate-400 dark:text-slate-500">-</span>}
+          display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
         />
       );
@@ -134,7 +124,7 @@ export const columns: ColumnDef<Debt>[] = [
       return (
         <EditableCell
           value={notes ?? ''}
-          display={notes ? notes : <span className="text-slate-400 dark:text-slate-500">-</span>}
+          display={notes ? notes : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
           placeholder="Not ekle..."
           onSave={(v) => meta!.onCellEdit(row.original.id, 'notes', v)}
         />
@@ -148,7 +138,7 @@ export const columns: ColumnDef<Debt>[] = [
       const status = row.getValue("status") as string;
       return (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          status === 'acik' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+          status === 'acik' ? 'bg-amber-100 text-amber-700' : 'bg-secondary dark:bg-secondary text-muted-foreground dark:text-muted-foreground'
         }`}>
           {status === 'acik' ? 'Açık' : 'Kapandı'}
         </span>
