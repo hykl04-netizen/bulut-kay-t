@@ -6,9 +6,9 @@ import type { MetadataRoute } from 'next';
 // Turbopack'e) hiç dokunmuyoruz.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'FinansApp — Kişisel Finans Yönetimi',
+    name: 'FinansApp — Kurumsal Finans Yönetimi',
     short_name: 'FinansApp',
-    description: 'Gelir/gider, borç/alacak, fatura, yatırım ve varlıklarınızı tek yerden takip edin.',
+    description: 'Gelir/gider, borç/alacak, fatura, yatırım ve varlıklarınızı tek platformdan yönetin.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

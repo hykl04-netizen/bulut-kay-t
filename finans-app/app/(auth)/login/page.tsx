@@ -45,8 +45,8 @@ export default function LoginPage() {
           <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
             <Wallet className="text-white w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">FinansAsistanım</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground text-sm mt-1">Hesabınıza giriş yapın</p>
+          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">FinansApp</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground text-sm mt-1">Kurumsal hesabınıza giriş yapın</p>
         </div>
 
         {/* Hata Mesajı */}

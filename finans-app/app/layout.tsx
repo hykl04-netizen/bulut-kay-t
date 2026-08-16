@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FinansApp — Kişisel Finans Yönetimi",
+  title: "FinansApp — Kurumsal Finans Yönetimi",
   description: "Gelir/gider, borç/alacak, fatura, yatırım ve varlıklarınızı tek yerden takip edin.",
   appleWebApp: {
     capable: true,
