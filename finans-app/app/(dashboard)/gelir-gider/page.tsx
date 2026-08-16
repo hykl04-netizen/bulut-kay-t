@@ -1,16 +1,18 @@
 // app/(dashboard)/gelir-gider/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
+import { AdvancedFilterBar, applyAdvancedFilter, EMPTY_ADVANCED_FILTER, type AdvancedFilterValue } from '@/components/data-table/advanced-filter';
 import { columns, type Transaction } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { SUPPORTED_CURRENCIES, SupportedCurrency, fetchRateToTRY, convertToTRY, formatCurrency } from '@/lib/currency';
+import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 
 interface Category {
   id: string;
@@ -26,6 +28,10 @@ export default function GelirGiderPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Gelişmiş arama ve filtreleme
+  const [filters, setFilters] = useState<AdvancedFilterValue>(EMPTY_ADVANCED_FILTER);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,7 +252,7 @@ export default function GelirGiderPage() {
         );
         setIsModalOpen(false);
       } else {
-        toast.error('Güncellenirken hata oluştu.');
+        toast.error(`Güncellenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     } else {
       // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
@@ -261,7 +267,7 @@ export default function GelirGiderPage() {
         );
         setIsModalOpen(false);
       } else {
-        toast.error('Eklenirken hata oluştu.');
+        toast.error(`Eklenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     }
     setIsSubmitting(false);
@@ -272,10 +278,27 @@ export default function GelirGiderPage() {
     const { error } = await supabase.from('transactions').delete().eq('id', id);
     if (!error) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } else {
+      toast.error(`Silinirken hata oluştu: ${error.message}`);
     }
   };
 
   const filteredCategories = categories.filter((c) => c.type === type);
+
+  const filteredTransactions = useMemo(
+    () =>
+      applyAdvancedFilter(transactions, filters, {
+        dateField: 'date',
+        amountField: 'amount',
+        categoryField: 'category_id',
+        searchFields: ['description'],
+      }),
+    [transactions, filters]
+  );
+
+  // Klavye kısayolları: N = yeni işlem ekle, / = arama kutusuna odaklan
+  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: !isModalOpen && !isBulkModalOpen });
+  useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
 
   return (
     <div className="space-y-6">
@@ -304,21 +327,39 @@ export default function GelirGiderPage() {
         </div>
       </div>
 
+      {/* Arama ve Gelişmiş Filtreleme */}
+      {!loading && (
+        <AdvancedFilterBar
+          value={filters}
+          onChange={setFilters}
+          categories={categories}
+          searchPlaceholder="Açıklamada ara... ( / )"
+          searchInputRef={searchInputRef}
+        />
+      )}
+
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
         <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
           Yükleniyor...
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={transactions}
-          meta={{
-            onEdit: handleOpenEditModal,
-            onDelete: handleDelete,
-            onCellEdit: handleCellEdit,
-          }}
-        />
+        <>
+          {filteredTransactions.length === 0 && transactions.length > 0 && (
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+              Filtrelere uyan kayıt bulunamadı ({transactions.length} kayıttan 0&apos;ı gösteriliyor).
+            </p>
+          )}
+          <DataTable
+            columns={columns}
+            data={filteredTransactions}
+            meta={{
+              onEdit: handleOpenEditModal,
+              onDelete: handleDelete,
+              onCellEdit: handleCellEdit,
+            }}
+          />
+        </>
       )}
 
       {/* Ekleme / Düzenleme Modalı */}

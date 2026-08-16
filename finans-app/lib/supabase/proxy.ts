@@ -16,12 +16,25 @@ const PROTECTED_PREFIXES = [
   '/belgeler',
   '/raporlar',
   '/kategoriler',
+  '/donem-kilitleme',
+  '/aktivite-gecmisi',
+  '/ayarlar',
+  '/oturumlar',
 ]
+
+// Oturum gerektiren API route'ları. Sunucu tarafı iş yapan ve/veya ücretli
+// dış servis çağıran endpoint'ler — cron route'ları hariç (onlar CRON_SECRET
+// ile kendi içlerinde korunuyor, kullanıcı oturumu değil).
+const PROTECTED_API_PREFIXES = ['/api/ocr-fis', '/api/piyasa-fiyati']
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PREFIXES.some((prefix) =>
     prefix === '/' ? pathname === '/' : pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
+}
+
+function isProtectedApiPath(pathname: string) {
+  return PROTECTED_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
 export async function updateSession(request: NextRequest) {
@@ -54,6 +67,14 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // API route'ları için: sayfa gibi /login'e yönlendirmek anlamsız (fetch
+  // isteği bunu takip etmez) — bunun yerine 401 JSON döndürüyoruz. Bu sayede
+  // örn. /api/ocr-fis gibi ücretli dış servis çağıran route'lar oturumsuz
+  // istekleri sunucu tarafında reddeder.
+  if (!user && isProtectedApiPath(pathname)) {
+    return NextResponse.json({ error: 'Bu işlem için giriş yapmanız gerekiyor.' }, { status: 401 })
+  }
 
   if (!user && isProtectedPath(pathname)) {
     const url = request.nextUrl.clone()

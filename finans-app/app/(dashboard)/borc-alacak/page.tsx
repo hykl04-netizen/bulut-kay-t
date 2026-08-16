@@ -89,6 +89,8 @@ export default function BorcAlacakPage() {
     const { error } = await supabase.from('debts').delete().eq('id', id);
     if (!error) {
       setDebts((prev) => prev.filter((d) => d.id !== id));
+    } else {
+      toast.error(`Silinirken hata oluştu: ${error.message}`);
     }
   };
 

@@ -195,3 +195,35 @@ body {
 .gold-top-accent {
   background: linear-gradient(90deg, transparent, var(--brand-gold) 45%, var(--brand-gold-light) 55%, transparent);
 }
+
+/* --- Yazdırma (print-friendly) kuralları ---
+   Raporlar sayfası gibi yerlerde "Yazdır" ile tarayıcıdan doğrudan düzgün
+   çıktı alınabilmesi için: karanlık modda bile kağıda her zaman açık/beyaz
+   zemin + siyah metin basılsın, kart gölgeleri/gradyanlar kaybolsun, bir
+   kart sayfa ortasından bölünmesin. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  .print-hide,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-card {
+    background: #fff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-card * {
+    color: #0f172a !important;
+  }
+}
+

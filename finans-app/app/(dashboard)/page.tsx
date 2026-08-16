@@ -123,18 +123,35 @@ export default function DashboardPage() {
       });
     }
 
-    // 5. Yaklaşan Ödemeler — ödenmemiş faturalar + açık borçlar (alacaklar hariç),
-    // vade tarihi girilmiş olanlar, önümüzdeki 30 gün + gecikmiş olanlar dahil.
-    const { data: billData } = await supabase
-      .from('bills')
-      .select('id, title, amount, due_date')
+    // 4b. Bildirim tercihleri — Yaklaşan Ödemeler / Bütçe Aşımları widget'larının
+    // açık/kapalı olması ve yaklaşan ödemeler ufku (gün) burada belirlenir.
+    // Kayıt yoksa (migration çalıştırılmamış veya kullanıcı hiç ayarlamamış)
+    // varsayılanlar (açık, 30 gün) kullanılır.
+    const { data: notifPrefs } = await supabase
+      .from('notification_preferences')
+      .select('show_upcoming_payments, upcoming_days_threshold, show_budget_alerts')
       .eq('user_id', user.id)
-      .eq('status', 'odenmedi')
-      .not('due_date', 'is', null);
+      .maybeSingle();
+
+    const showUpcomingPayments = notifPrefs?.show_upcoming_payments ?? true;
+    const upcomingDaysThreshold = notifPrefs?.upcoming_days_threshold ?? 30;
+    const showBudgetAlerts = notifPrefs?.show_budget_alerts ?? true;
+
+    // 5. Yaklaşan Ödemeler — ödenmemiş faturalar + açık borçlar (alacaklar hariç),
+    // vade tarihi girilmiş olanlar, kullanıcının belirlediği gün ufku + gecikmiş
+    // olanlar dahil. Widget kapatılmışsa sorguyu atlayıp boş liste döneriz.
+    const { data: billData } = showUpcomingPayments
+      ? await supabase
+          .from('bills')
+          .select('id, title, amount, due_date')
+          .eq('user_id', user.id)
+          .eq('status', 'odenmedi')
+          .not('due_date', 'is', null)
+      : { data: [] as { id: string; title: string; amount: number; due_date: string }[] };
 
     const horizon = new Date();
     horizon.setHours(0, 0, 0, 0);
-    horizon.setDate(horizon.getDate() + 30);
+    horizon.setDate(horizon.getDate() + upcomingDaysThreshold);
 
     const upcomingFromBills: UpcomingPayment[] = (billData ?? [])
       .filter((b) => b.due_date && new Date(b.due_date + 'T00:00:00') <= horizon)
@@ -147,7 +164,9 @@ export default function DashboardPage() {
         href: '/fatura-masraf',
       }));
 
-    const upcomingFromDebts: UpcomingPayment[] = (debtData ?? [])
+    const upcomingFromDebts: UpcomingPayment[] = !showUpcomingPayments
+      ? []
+      : (debtData ?? [])
       .filter((d) => d.direction === 'borc' && d.due_date && new Date(d.due_date + 'T00:00:00') <= horizon)
       .map((d) => ({
         id: `borc-${d.id}`,
@@ -174,7 +193,7 @@ export default function DashboardPage() {
       .eq('user_id', user.id)
       .eq('type', 'gider');
 
-    const overBudgetRows = budgetData && giderCategories
+    const overBudgetRows = showBudgetAlerts && budgetData && giderCategories
       ? buildBudgetRows(
           giderCategories,
           budgetData.map((b) => ({ category_id: b.category_id, monthly_limit: Number(b.monthly_limit) })),

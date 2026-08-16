@@ -18,25 +18,58 @@ export interface ReportExportData {
   portfolioDistribution: DistributionSlice[];
 }
 
+/** Şirket Ayarları sayfasında girilen marka bilgisi — PDF başlığında kullanılır. */
+export interface ReportBranding {
+  companyName?: string | null;
+  /** Şirket Ayarları'nda küçültülmüş halde saklanan base64 data URL (data:image/png;base64,...). */
+  logoDataUrl?: string | null;
+}
+
 function todayFileSuffix(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export async function exportReportToPDF(data: ReportExportData): Promise<void> {
+function logoFormatFromDataUrl(dataUrl: string): 'PNG' | 'JPEG' | null {
+  if (dataUrl.startsWith('data:image/png')) return 'PNG';
+  if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) return 'JPEG';
+  return null;
+}
+
+export async function exportReportToPDF(data: ReportExportData, branding?: ReportBranding): Promise<void> {
   const { jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
 
   const doc = new jsPDF();
   const generatedAt = new Date().toLocaleString('tr-TR');
+  const companyName = branding?.companyName?.trim() || null;
+  const logoFormat = branding?.logoDataUrl ? logoFormatFromDataUrl(branding.logoDataUrl) : null;
+
+  // Logo varsa sol üstte göster, başlık metnini onun yanından başlat.
+  let titleX = 14;
+  if (branding?.logoDataUrl && logoFormat) {
+    try {
+      doc.addImage(branding.logoDataUrl, logoFormat, 14, 10, 18, 18);
+      titleX = 36;
+    } catch (err) {
+      // Bozuk/desteklenmeyen bir data URL raporu tamamen engellemesin.
+      console.error('PDF logosu eklenemedi:', err);
+    }
+  }
 
   doc.setFontSize(16);
-  doc.text('FinansApp — Finansal Rapor', 14, 18);
+  doc.text(companyName ?? 'FinansApp — Finansal Rapor', titleX, companyName ? 17 : 18);
+  if (companyName) {
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text('Finansal Rapor', titleX, 23);
+    doc.setTextColor(0);
+  }
   doc.setFontSize(10);
   doc.setTextColor(120);
-  doc.text(`Oluşturulma tarihi: ${generatedAt}`, 14, 24);
+  doc.text(`Oluşturulma tarihi: ${generatedAt}`, titleX, companyName ? 29 : 24);
   doc.setTextColor(0);
 
-  let cursorY = 32;
+  let cursorY = companyName ? 36 : 32;
 
   if (data.monthlyCashFlow.length > 0) {
     doc.setFontSize(12);
@@ -74,6 +107,14 @@ export async function exportReportToPDF(data: ReportExportData): Promise<void> {
       headStyles: { fillColor: [15, 23, 42] },
       styles: { fontSize: 9 },
     });
+  }
+
+  if (companyName) {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(8);
+    doc.setTextColor(160);
+    doc.text('FinansApp ile oluşturuldu', 14, pageHeight - 8);
+    doc.setTextColor(0);
   }
 
   doc.save(`finansapp-rapor-${todayFileSuffix()}.pdf`);

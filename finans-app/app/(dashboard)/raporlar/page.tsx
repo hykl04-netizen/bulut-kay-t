@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileDown, FileSpreadsheet } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Printer, BarChart3, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { ReportShareButton } from '@/components/report-share-button';
 import { toast } from '@/components/ui/toaster';
-import { exportReportToPDF, exportReportToExcel } from '@/lib/report-export';
+import { exportReportToPDF, exportReportToExcel, type ReportBranding } from '@/lib/report-export';
 import {
   BarChart,
   Bar,
@@ -28,6 +28,9 @@ import {
   aggregatePortfolioDistribution,
   aggregateExpenseByCategory,
   projectCashFlow,
+  compareLastTwoMonths,
+  compareYearOverYear,
+  PeriodComparison,
   ReportTransaction,
   ReportInvestment,
 } from '@/lib/reports';
@@ -43,12 +46,29 @@ function tooltipValueFormatter(value: unknown) {
   return Number.isFinite(num) ? formatTRY(num) : String(value ?? '');
 }
 
-function ChartCard({ id, title, subtitle, children, empty }: { id: string; title: string; subtitle?: string; children: React.ReactNode; empty: boolean }) {
+function ChartCard({
+  id,
+  title,
+  subtitle,
+  children,
+  empty,
+  actions,
+}: {
+  id: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  empty: boolean;
+  actions?: React.ReactNode;
+}) {
   return (
-    <div id={id} className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
-      <div className="flex items-center justify-between">
+    <div id={id} className="print-card bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
-        <ReportShareButton targetElementId={id} reportTitle={title} />
+        <div className="flex items-center gap-2 print:hidden">
+          {actions}
+          <ReportShareButton targetElementId={id} reportTitle={title} />
+        </div>
       </div>
       {subtitle && <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>}
       {empty ? (
@@ -62,12 +82,81 @@ function ChartCard({ id, title, subtitle, children, empty }: { id: string; title
   );
 }
 
+function DeltaBadge({ pct }: { pct: number | null }) {
+  if (pct === null) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground dark:bg-secondary">
+        Karşılaştırılamıyor
+      </span>
+    );
+  }
+  const rounded = Math.round(pct * 10) / 10;
+  if (Math.abs(rounded) < 0.1) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground dark:bg-secondary">
+        <Minus className="h-3 w-3" /> Değişim yok
+      </span>
+    );
+  }
+  const isUp = rounded > 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+        isUp
+          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+          : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
+      }`}
+    >
+      {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+      %{Math.abs(rounded).toFixed(1)}
+    </span>
+  );
+}
+
+function ComparisonCard({ title, subtitle, data }: { title: string; subtitle: string; data: PeriodComparison | null }) {
+  return (
+    <div className="print-card bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+      <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>
+      {data === null ? (
+        <div className="flex items-center justify-center h-32 text-muted-foreground dark:text-muted-foreground text-sm text-center px-4">
+          Karşılaştırma için yeterli geçmiş veri yok (önceki dönemde kayıt bulunamadı).
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {[
+            { label: 'Gelir', curr: data.currentGelir, prev: data.previousGelir, pct: data.gelirDeltaPct },
+            { label: 'Gider', curr: data.currentGider, prev: data.previousGider, pct: data.giderDeltaPct },
+            { label: 'Net', curr: data.currentGelir - data.currentGider, prev: data.previousGelir - data.previousGider, pct: data.netDeltaPct },
+          ].map((row) => (
+            <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 dark:border-border px-4 py-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</div>
+                <div className="mt-0.5 text-sm text-foreground dark:text-slate-100">
+                  <span className="font-bold">{formatTRY(row.curr)}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">({data.currentLabel})</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatTRY(row.prev)} <span className="opacity-70">({data.previousLabel})</span>
+                </div>
+              </div>
+              <DeltaBadge pct={row.pct} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RaporlarPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<ReportTransaction[]>([]);
   const [investments, setInvestments] = useState<ReportInvestment[]>([]);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [branding, setBranding] = useState<ReportBranding>({});
+  const [expenseChartMode, setExpenseChartMode] = useState<'bar' | 'pie'>('bar');
   const isDark = useIsDarkMode();
 
   // recharts SVG renklerini Tailwind dark: sınıflarıyla değil doğrudan prop
@@ -83,10 +172,18 @@ export default function RaporlarPage() {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      const [txRes, invRes] = await Promise.all([
+      const { data: { user } } = await supabase.auth.getUser();
+      const [txRes, invRes, companyRes] = await Promise.all([
         supabase.from('transactions').select('*, category:categories(name, color)').order('date', { ascending: true }),
         supabase.from('investments').select('*'),
+        user
+          ? supabase.from('company_settings').select('company_name, logo_data_url').eq('user_id', user.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
+
+      if (companyRes.data) {
+        setBranding({ companyName: companyRes.data.company_name, logoDataUrl: companyRes.data.logo_data_url });
+      }
 
       if (!txRes.error && txRes.data) {
         // Raporlar döviz cinsinden işlemleri de TL karşılığı üzerinden toplar.
@@ -112,11 +209,13 @@ export default function RaporlarPage() {
   const portfolioDistribution = aggregatePortfolioDistribution(investments);
   const expenseByCategory = aggregateExpenseByCategory(transactions).slice(0, 8);
   const cashFlowForecast = projectCashFlow(monthlyCashFlow, 3, 3);
+  const monthComparison = compareLastTwoMonths(aggregateMonthlyCashFlow(transactions));
+  const yearComparison = compareYearOverYear(transactions);
 
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await exportReportToPDF({ monthlyCashFlow, expenseByCategory, portfolioDistribution });
+      await exportReportToPDF({ monthlyCashFlow, expenseByCategory, portfolioDistribution }, branding);
       toast.success('Rapor PDF olarak indirildi.');
     } catch (err) {
       console.error('PDF dışa aktarma hatası:', err);
@@ -160,7 +259,14 @@ export default function RaporlarPage() {
           <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
           <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
+          >
+            <Printer className="h-4 w-4" />
+            Yazdır
+          </button>
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
@@ -180,7 +286,20 @@ export default function RaporlarPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 print:gap-4">
+        <ComparisonCard
+          title="Bu Ay vs Geçen Ay"
+          subtitle="Son iki ayın gelir/gider/net karşılaştırması."
+          data={monthComparison}
+        />
+        <ComparisonCard
+          title="Bu Yıl vs Geçen Yıl"
+          subtitle="İçinde bulunulan yıl ile bir önceki takvim yılının karşılaştırması."
+          data={yearComparison}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 print:gap-4">
         <ChartCard
           id="chart-cash-flow"
           title="Nakit Akışı"
@@ -271,19 +390,70 @@ export default function RaporlarPage() {
           title="Kategori Bazlı Harcamalar"
           subtitle="Giderlerin kategorilere göre kırılımı (ilk 8 kategori)."
           empty={expenseByCategory.length === 0}
+          actions={
+            <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5 dark:border-border">
+              <button
+                type="button"
+                onClick={() => setExpenseChartMode('bar')}
+                aria-label="Çubuk grafik göster"
+                title="Çubuk grafik"
+                className={`rounded-md p-1.5 transition ${
+                  expenseChartMode === 'bar'
+                    ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-secondary'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpenseChartMode('pie')}
+                aria-label="Pasta grafik göster"
+                title="Pasta grafik"
+                className={`rounded-md p-1.5 transition ${
+                  expenseChartMode === 'pie'
+                    ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-secondary'
+                }`}
+              >
+                <PieChartIcon className="h-4 w-4" />
+              </button>
+            </div>
+          }
         >
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={expenseByCategory} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-              <XAxis type="number" tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: tickFill }} width={100} />
-              <Tooltip formatter={tooltipValueFormatter} contentStyle={tooltipContentStyle} />
-              <Bar dataKey="value" name="Harcama" radius={[0, 4, 4, 0]}>
-                {expenseByCategory.map((slice) => (
-                  <Cell key={slice.name} fill={slice.color} />
-                ))}
-              </Bar>
-            </BarChart>
+            {expenseChartMode === 'bar' ? (
+              <BarChart data={expenseByCategory} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis type="number" tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: tickFill }} width={100} />
+                <Tooltip formatter={tooltipValueFormatter} contentStyle={tooltipContentStyle} />
+                <Bar dataKey="value" name="Harcama" radius={[0, 4, 4, 0]}>
+                  {expenseByCategory.map((slice) => (
+                    <Cell key={slice.name} fill={slice.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : (
+              <PieChart>
+                <Pie
+                  data={expenseByCategory}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={2}
+                >
+                  {expenseByCategory.map((slice) => (
+                    <Cell key={slice.name} fill={slice.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={tooltipValueFormatter} contentStyle={tooltipContentStyle} />
+                <Legend />
+              </PieChart>
+            )}
           </ResponsiveContainer>
         </ChartCard>
       </div>

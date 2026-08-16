@@ -2,13 +2,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, ClipboardPaste, X, TrendingUp } from 'lucide-react';
+import { Plus, ClipboardPaste, X, TrendingUp, RefreshCw, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, type Investment } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { fetchMarketPrice, isMarketPriceError } from '@/lib/market-price';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -30,6 +31,8 @@ export default function YatirimPage() {
   const [currentPrice, setCurrentPrice] = useState('');
   const [currency, setCurrency] = useState('TRY');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [isRefreshingAll, setIsRefreshingAll] = useState(false);
 
   const fetchInvestments = async () => {
     setLoading(true);
@@ -180,6 +183,40 @@ export default function YatirimPage() {
     return sum + Number(inv.quantity) * Number(price);
   }, 0);
 
+  // "Tümünü Güncelle" — fon dışındaki her satır için piyasa fiyatını çekip
+  // `current_price` kolonunu tek tek günceller (sırayla, ücretsiz/anahtarsız
+  // servise saygılı olmak için art arda çok hızlı istek atmıyoruz).
+  const handleRefreshAllPrices = async () => {
+    const refreshable = investments.filter((inv) => inv.asset_type !== 'fon');
+    if (refreshable.length === 0) {
+      toast.info('Otomatik fiyat çekilebilecek yatırım yok.');
+      return;
+    }
+    setIsRefreshingAll(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const inv of refreshable) {
+      const result = await fetchMarketPrice(inv.asset_type, inv.symbol, inv.currency || 'TRY');
+      if (isMarketPriceError(result)) {
+        failCount++;
+        continue;
+      }
+      const { error } = await supabase
+        .from('investments')
+        .update({ current_price: result.price })
+        .eq('id', inv.id);
+      if (!error) {
+        successCount++;
+        setInvestments((prev) => prev.map((i) => (i.id === inv.id ? { ...i, current_price: result.price } : i)));
+      } else {
+        failCount++;
+      }
+    }
+    setIsRefreshingAll(false);
+    if (successCount > 0) toast.success(`${successCount} yatırımın fiyatı güncellendi.`);
+    if (failCount > 0) toast.error(`${failCount} yatırım için fiyat alınamadı.`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -190,6 +227,14 @@ export default function YatirimPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefreshAllPrices}
+            disabled={isRefreshingAll || investments.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-foreground dark:hover:bg-secondary"
+          >
+            {isRefreshingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Tüm Fiyatları Güncelle
+          </button>
           <button
             onClick={() => setIsBulkModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
@@ -318,7 +363,28 @@ export default function YatirimPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Güncel Fiyat</label>
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-foreground dark:text-muted-foreground">Güncel Fiyat</label>
+                    <button
+                      type="button"
+                      disabled={!symbol || isFetchingPrice}
+                      onClick={async () => {
+                        setIsFetchingPrice(true);
+                        const result = await fetchMarketPrice(assetType, symbol, currency || 'TRY');
+                        setIsFetchingPrice(false);
+                        if (isMarketPriceError(result)) {
+                          toast.error(result.error);
+                          return;
+                        }
+                        setCurrentPrice(result.price.toString());
+                        toast.success(`Fiyat çekildi: ${result.price} ${result.currency}${result.note ? ' — ' + result.note : ''}`);
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-gold hover:text-brand-gold-light disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-gold-light"
+                    >
+                      {isFetchingPrice ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Piyasadan Çek
+                    </button>
+                  </div>
                   <input
                     type="number"
                     step="0.0001"

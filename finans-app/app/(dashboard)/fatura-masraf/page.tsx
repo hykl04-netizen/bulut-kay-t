@@ -1,16 +1,19 @@
 // app/(dashboard)/fatura-masraf/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
+import { AdvancedFilterBar, applyAdvancedFilter, EMPTY_ADVANCED_FILTER, type AdvancedFilterValue } from '@/components/data-table/advanced-filter';
 import { KdvCalculator } from '@/components/kdv-calculator';
+import { OcrReceiptButton, type OcrResult } from '@/components/ocr-receipt-button';
 import { columns, type Bill } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 
 interface Category {
   id: string;
@@ -23,6 +26,10 @@ export default function FaturaMasrafPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Gelişmiş arama ve filtreleme
+  const [filters, setFilters] = useState<AdvancedFilterValue>(EMPTY_ADVANCED_FILTER);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -206,6 +213,8 @@ export default function FaturaMasrafPage() {
     const { error } = await supabase.from('bills').delete().eq('id', id);
     if (!error) {
       setBills((prev) => prev.filter((b) => b.id !== id));
+    } else {
+      toast.error(`Silinirken hata oluştu: ${error.message}`);
     }
   };
 
@@ -234,6 +243,21 @@ export default function FaturaMasrafPage() {
     }
   };
 
+  const filteredBills = useMemo(
+    () =>
+      applyAdvancedFilter(bills, filters, {
+        dateField: 'due_date',
+        amountField: 'amount',
+        categoryField: 'category_id',
+        searchFields: ['title'],
+      }),
+    [bills, filters]
+  );
+
+  // Klavye kısayolları: N = yeni fatura/masraf ekle, / = arama kutusuna odaklan
+  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: !isModalOpen && !isBulkModalOpen });
+  useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -261,22 +285,40 @@ export default function FaturaMasrafPage() {
         </div>
       </div>
 
+      {/* Arama ve Gelişmiş Filtreleme */}
+      {!loading && (
+        <AdvancedFilterBar
+          value={filters}
+          onChange={setFilters}
+          categories={categories}
+          searchPlaceholder="Başlıkta ara... ( / )"
+          searchInputRef={searchInputRef}
+        />
+      )}
+
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
         <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
           Yükleniyor...
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={bills}
-          meta={{
-            onEdit: handleOpenEditModal,
-            onDelete: handleDelete,
-            onToggleStatus: handleToggleStatus,
-            onCellEdit: handleCellEdit,
-          }}
-        />
+        <>
+          {filteredBills.length === 0 && bills.length > 0 && (
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+              Filtrelere uyan kayıt bulunamadı ({bills.length} kayıttan 0&apos;ı gösteriliyor).
+            </p>
+          )}
+          <DataTable
+            columns={columns}
+            data={filteredBills}
+            meta={{
+              onEdit: handleOpenEditModal,
+              onDelete: handleDelete,
+              onToggleStatus: handleToggleStatus,
+              onCellEdit: handleCellEdit,
+            }}
+          />
+        </>
       )}
 
       {/* Ekleme / Düzenleme Modalı */}
@@ -291,6 +333,18 @@ export default function FaturaMasrafPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              {!editingId && (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-3 py-2.5 dark:bg-secondary/20">
+                  <p className="text-xs text-muted-foreground">Fişin fotoğrafını çekin, tutar/tarih otomatik doldurulsun.</p>
+                  <OcrReceiptButton
+                    onExtracted={(result: OcrResult) => {
+                      if (result.title) setTitle(result.title);
+                      if (result.amount != null) setAmount(result.amount.toString());
+                      if (result.date) setDueDate(result.date);
+                    }}
+                  />
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Fatura / Masraf Başlığı</label>
                 <input

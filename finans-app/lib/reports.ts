@@ -221,6 +221,91 @@ export function aggregatePortfolioDistribution(investments: ReportInvestment[]):
     }));
 }
 
+export type PeriodComparison = {
+  currentLabel: string;
+  previousLabel: string;
+  currentGelir: number;
+  currentGider: number;
+  previousGelir: number;
+  previousGider: number;
+  /** Yüzde değişim; önceki dönem 0 ve şimdiki de 0 değilse anlamlı bir yüzde
+   * hesaplanamayacağından `null` döner (arayüz bu durumda "yeni" gibi bir
+   * etiket gösterir, yanıltıcı bir "%∞" göstermez). */
+  gelirDeltaPct: number | null;
+  giderDeltaPct: number | null;
+  netDeltaPct: number | null;
+};
+
+function pctChange(curr: number, prev: number): number | null {
+  if (prev === 0) return curr === 0 ? 0 : null;
+  return ((curr - prev) / Math.abs(prev)) * 100;
+}
+
+function buildComparison(
+  currentLabel: string,
+  previousLabel: string,
+  currentGelir: number,
+  currentGider: number,
+  previousGelir: number,
+  previousGider: number
+): PeriodComparison {
+  return {
+    currentLabel,
+    previousLabel,
+    currentGelir,
+    currentGider,
+    previousGelir,
+    previousGider,
+    gelirDeltaPct: pctChange(currentGelir, previousGelir),
+    giderDeltaPct: pctChange(currentGider, previousGider),
+    netDeltaPct: pctChange(currentGelir - currentGider, previousGelir - previousGider),
+  };
+}
+
+/**
+ * "Bu ay vs geçen ay" karşılaştırması (Karşılaştırmalı trend raporları).
+ * `aggregateMonthlyCashFlow` çıktısındaki son iki ayı kıyaslar — bu fonksiyon
+ * zaten veri olmayan ayları da sıfırla doldurduğundan, ardışık iki takvim
+ * ayı garanti edilir. En az 2 ay veri yoksa `null` döner.
+ */
+export function compareLastTwoMonths(monthly: MonthlyCashFlow[]): PeriodComparison | null {
+  if (monthly.length < 2) return null;
+  const curr = monthly[monthly.length - 1];
+  const prev = monthly[monthly.length - 2];
+  return buildComparison(curr.monthLabel, prev.monthLabel, curr.gelir, curr.gider, prev.gelir, prev.gider);
+}
+
+/**
+ * "Bu yıl vs geçen yıl" karşılaştırması. İçinde bulunulan yıl ile bir önceki
+ * takvim yılının toplam gelir/giderini kıyaslar. Geçen yıla ait hiç kayıt
+ * yoksa (örn. yeni açılmış bir hesap) anlamlı bir karşılaştırma olmayacağı
+ * için `null` döner.
+ */
+export function compareYearOverYear(transactions: ReportTransaction[]): PeriodComparison | null {
+  const now = new Date();
+  const thisYear = String(now.getFullYear());
+  const lastYear = String(now.getFullYear() - 1);
+
+  let curGelir = 0, curGider = 0, prevGelir = 0, prevGider = 0;
+  let sawPreviousYear = false;
+
+  for (const t of transactions) {
+    if (!t.date) continue;
+    const year = t.date.slice(0, 4);
+    if (year === thisYear) {
+      if (t.type === 'gelir') curGelir += t.amount;
+      else curGider += t.amount;
+    } else if (year === lastYear) {
+      sawPreviousYear = true;
+      if (t.type === 'gelir') prevGelir += t.amount;
+      else prevGider += t.amount;
+    }
+  }
+
+  if (!sawPreviousYear) return null;
+  return buildComparison(thisYear, lastYear, curGelir, curGider, prevGelir, prevGider);
+}
+
 /** Gider işlemlerini kategoriye göre gruplar (8.4 — Kategori bazlı harcama kırılımı için). */
 export function aggregateExpenseByCategory(transactions: ReportTransaction[]): DistributionSlice[] {
   const map = new Map<string, { value: number; color: string }>();

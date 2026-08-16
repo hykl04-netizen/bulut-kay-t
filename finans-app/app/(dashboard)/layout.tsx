@@ -21,12 +21,19 @@ import {
   DownloadCloud,
   Target,
   Landmark,
+  History,
+  MonitorSmartphone,
+  Building2,
+  Lock,
+  Keyboard,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
 import { BackupModal } from '@/components/backup-modal';
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
 import { runRecurringAutomation } from '@/lib/recurring';
 import { toast } from '@/components/ui/toaster';
+import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
@@ -38,9 +45,13 @@ const NAV_ITEMS = [
   { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
   { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet },
   { href: '/butce', label: 'Bütçe', icon: Target },
+  { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
+  { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
   { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
   { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
+  { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2 },
+  { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -48,6 +59,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+  // Global "?" kısayolu: herhangi bir sayfada klavye kısayolları yardımını aç/kapat.
+  useKeyboardShortcut('?', () => setIsShortcutsOpen((o) => !o), []);
+  // Esc: açık kısayol yardım modalını kapat.
+  useKeyboardShortcut('Escape', () => setIsShortcutsOpen(false), [], { enabled: isShortcutsOpen });
 
   // Sayfa değişince mobil menüyü otomatik kapat.
   // Render sırasında önceki pathname ile karşılaştırıp state'i ayarlıyoruz
@@ -141,6 +158,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DownloadCloud className="w-5 h-5" />
           Yedek Al
         </button>
+        <button
+          onClick={() => setIsShortcutsOpen(true)}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-muted-foreground hover:bg-secondary hover:text-white transition"
+        >
+          <Keyboard className="w-5 h-5" />
+          Klavye Kısayolları
+          <span className="ml-auto text-xs opacity-60">?</span>
+        </button>
         <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-secondary transition">
           <LogOut className="w-5 h-5" />
           Çıkış Yap
@@ -152,12 +177,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-muted dark:bg-primary">
       {/* Sol Menü (Sidebar) — masaüstü, md ve üzeri */}
-      <aside className="w-64 bg-primary text-muted-foreground flex-col hidden md:flex">
+      <aside className="w-64 bg-primary text-muted-foreground flex-col hidden md:flex print:hidden">
         {navContent}
       </aside>
 
       {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-primary text-white px-4 h-14 md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-primary text-white px-4 h-14 md:hidden print:hidden">
         <div className="flex items-center gap-2">
           <Wallet className="w-6 h-6 text-brand-gold-light" />
           <span className="font-bold">FinansApp</span>
@@ -192,15 +217,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Ana İçerik Alanı */}
-      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8 overflow-y-auto">
+      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8 overflow-y-auto print:p-0 print:pt-0 print:overflow-visible">
         {children}
       </main>
 
       {/* Yüzen Hesap Makinesi */}
-      <CalculatorWidget />
+      <div className="print:hidden">
+        <CalculatorWidget />
+      </div>
 
       {/* Veri Yedekleme Modalı */}
-      <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
+      <div className="print:hidden">
+        <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
+      </div>
+
+      {/* Klavye Kısayolları Yardım Modalı ("?" ile açılır) */}
+      <div className="print:hidden">
+        <KeyboardShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+      </div>
     </div>
   );
 }

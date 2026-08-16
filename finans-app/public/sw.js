@@ -111,3 +111,45 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// Mobil bildirimler (PWA push) — sunucudaki `/api/cron/bildirim-gonder`
+// route'u web-push ile bu olayı tetikler. Payload JSON: { title, body, url }.
+self.addEventListener('push', (event) => {
+  let payload = { title: 'FinansApp', body: 'Yeni bir bildiriminiz var.', url: '/' };
+  if (event.data) {
+    try {
+      payload = { ...payload, ...event.data.json() };
+    } catch {
+      payload.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: payload.url || '/' },
+    })
+  );
+});
+
+// Bildirime tıklanınca ilgili sayfayı (zaten açık bir sekme varsa onu odaklayarak,
+// yoksa yeni sekme açarak) gösterir.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin === self.location.origin && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })
+  );
+});

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { FileUpload } from '@/components/file-upload';
-import { FileText, Plus, Trash2, ExternalLink, Calendar, Filter, Search, X } from 'lucide-react';
+import { FileText, Plus, Trash2, ExternalLink, Calendar, Filter, Search, X, Tag } from 'lucide-react';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 
@@ -15,6 +15,20 @@ interface DocumentItem {
   file_url: string;
   document_date: string;
   notes: string;
+  tags: string[] | null;
+}
+
+/** Serbest metni virgül/enter ile ayırıp normalize edilmiş (küçük harf, boşluksuz)
+ * benzersiz etiket listesine çevirir. */
+function parseTagsInput(raw: string): string[] {
+  return Array.from(
+    new Set(
+      raw
+        .split(/[,\n]/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+    )
+  );
 }
 
 const CATEGORIES = ['Tümü', 'Fatura', 'Fiş', 'Maaş Bordrosu', 'Vergi', 'Diğer'];
@@ -28,6 +42,7 @@ export default function BelgelerPage() {
   const [selectedCategory, setSelectedCategory] = useState('Tümü');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // desc: en yeni, asc: en eski
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Form State'leri
   const [title, setTitle] = useState('');
@@ -35,7 +50,15 @@ export default function BelgelerPage() {
   const [fileUrl, setFileUrl] = useState('');
   const [documentDate, setDocumentDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const addTagsFromInput = () => {
+    if (!tagInput.trim()) return;
+    setTags((prev) => Array.from(new Set([...prev, ...parseTagsInput(tagInput)])));
+    setTagInput('');
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -83,6 +106,7 @@ export default function BelgelerPage() {
       file_url: fileUrl,
       document_date: documentDate,
       notes,
+      tags,
     });
 
     if (!error) {
@@ -90,10 +114,17 @@ export default function BelgelerPage() {
       setTitle('');
       setFileUrl('');
       setNotes('');
+      setTags([]);
+      setTagInput('');
       setIsModalOpen(false);
       await fetchDocuments();
     } else {
-      toast.error('Belge kaydedilirken hata oluştu.');
+      console.error('Belge kaydedilemedi:', error.message);
+      toast.error(
+        error.message?.includes('column') && error.message?.includes('tags')
+          ? 'Belge kaydedilemedi: etiket alanı için migration çalıştırılmamış olabilir (bkz. yapılacaklar listesi).'
+          : 'Belge kaydedilirken hata oluştu.'
+      );
     }
     setIsSubmitting(false);
   };
@@ -107,13 +138,29 @@ export default function BelgelerPage() {
     }
   };
 
+  // Tüm belgelerde geçen benzersiz etiketler — filtre çubuğundaki rozetler için.
+  const allTags = Array.from(new Set(documents.flatMap((d) => d.tags ?? []))).sort((a, b) =>
+    a.localeCompare(b, 'tr')
+  );
+
+  const toggleTagFilter = (tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
   // Filtreleme ve Sıralama Mantığı
   const filteredDocuments = documents
     .filter((doc) => {
       const matchesCategory = selectedCategory === 'Tümü' || doc.category === selectedCategory;
-      const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (doc.notes && doc.notes.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
+      const docTags = doc.tags ?? [];
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        doc.title.toLowerCase().includes(q) ||
+        (doc.notes && doc.notes.toLowerCase().includes(q)) ||
+        docTags.some((t) => t.toLowerCase().includes(q));
+      // Seçili etiketlerden en az biri belgede varsa eşleşir (OR mantığı) —
+      // kategori filtresi gibi "hiçbiri seçili değilse hepsini göster".
+      const matchesTags = selectedTags.length === 0 || selectedTags.some((t) => docTags.includes(t));
+      return matchesCategory && matchesSearch && matchesTags;
     })
     .sort((a, b) => {
       const dateA = new Date(a.document_date).getTime();
@@ -184,6 +231,34 @@ export default function BelgelerPage() {
         </div>
       </div>
 
+      {/* Etiket Filtreleri */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-3 dark:border-border dark:bg-primary">
+          <Tag className="mr-1 h-4 w-4 text-muted-foreground" />
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => toggleTagFilter(tag)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                selectedTags.includes(tag)
+                  ? 'bg-brand-gold text-primary'
+                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
+              }`}
+            >
+              #{tag}
+            </button>
+          ))}
+          {selectedTags.length > 0 && (
+            <button
+              onClick={() => setSelectedTags([])}
+              className="ml-1 text-xs font-medium text-muted-foreground hover:underline"
+            >
+              Temizle
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Belge Kartları Listesi */}
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Belgeler yükleniyor...</div>
@@ -212,6 +287,18 @@ export default function BelgelerPage() {
 
                 <h3 className="mt-3 text-base font-bold text-foreground dark:text-white">{doc.title}</h3>
                 {doc.notes && <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground line-clamp-2">{doc.notes}</p>}
+                {doc.tags && doc.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {doc.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium text-brand-gold dark:text-brand-gold-light"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex items-center justify-between border-t border-border pt-4 dark:border-border">
@@ -293,6 +380,51 @@ export default function BelgelerPage() {
 
               {/* Cloudinary Dosya Yükleme Bileşeni */}
               <FileUpload onUploadSuccess={(url) => setFileUrl(url)} label="Fatura / Belge Dosyası (Görsel veya PDF)" />
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Etiketler (İsteğe bağlı)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addTagsFromInput();
+                      }
+                    }}
+                    placeholder="Örn: elektrik, 2026 (Enter veya virgülle ekle)"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTagsFromInput}
+                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted dark:text-slate-100 dark:hover:bg-secondary"
+                  >
+                    Ekle
+                  </button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-2 py-1 text-xs font-medium text-brand-gold dark:text-brand-gold-light"
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                          className="hover:text-rose-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-foreground dark:text-muted-foreground">Notlar (İsteğe bağlı)</label>
