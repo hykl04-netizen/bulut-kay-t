@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navContent = (
     <>
       <div className="p-6 flex items-center gap-3 text-white">
-        <Wallet className="w-8 h-8" />
+        <Wallet className="w-8 h-8 text-brand-gold-light drop-shadow-[0_0_10px_rgba(201,162,39,0.45)]" />
         <h2 className="text-xl font-bold">FinansApp</h2>
       </div>
 
@@ -92,10 +92,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-secondary text-white'
-                  : 'hover:bg-secondary hover:text-white'
+              className={`nav-link flex items-center gap-3 pl-5 pr-4 py-3 rounded-lg ${
+                isActive ? 'is-active font-semibold' : 'text-muted-foreground'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -132,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-primary text-white px-4 h-14 md:hidden">
         <div className="flex items-center gap-2">
-          <Wallet className="w-6 h-6" />
+          <Wallet className="w-6 h-6 text-brand-gold-light" />
           <span className="font-bold">FinansApp</span>
         </div>
         <button

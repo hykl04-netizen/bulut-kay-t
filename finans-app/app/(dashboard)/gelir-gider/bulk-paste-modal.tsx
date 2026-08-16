@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { X, Check, AlertCircle, ClipboardPaste } from 'lucide-react';
 import { parseFlexibleAmount, parseFlexibleDate, splitPastedRows } from '@/lib/parsing';
+import { toast } from '@/components/ui/toaster';
 
 type Category = { id: string; name: string; color: string; type: string };
 
@@ -112,7 +113,7 @@ export function BulkPasteModal({ categories, userId, onClose, onImport }: Props)
       await onImport(payload);
       setResult({ success: payload.length, failed: invalidCount });
     } catch (err) {
-      alert('Toplu ekleme sırasında hata oluştu: ' + (err instanceof Error ? err.message : ''));
+      toast.error('Toplu ekleme sırasında hata oluştu: ' + (err instanceof Error ? err.message : ''));
     } finally {
       setImporting(false);
     }

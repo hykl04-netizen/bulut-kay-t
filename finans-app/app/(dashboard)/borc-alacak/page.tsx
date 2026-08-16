@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase/client';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, type Debt } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function BorcAlacakPage() {
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -83,7 +85,7 @@ export default function BorcAlacakPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu kaydı silmek istediğinize emin misiniz?'))) return;
     const { error } = await supabase.from('debts').delete().eq('id', id);
     if (!error) {
       setDebts((prev) => prev.filter((d) => d.id !== id));
@@ -119,7 +121,7 @@ export default function BorcAlacakPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -154,7 +156,7 @@ export default function BorcAlacakPage() {
       setDueDate('');
       setNotes('');
     } else {
-      alert('Hata oluştu: ' + error?.message);
+      toast.error('Hata oluştu: ' + error?.message);
     }
     setIsSubmitting(false);
   };
@@ -178,7 +180,7 @@ export default function BorcAlacakPage() {
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           >
             <Plus className="h-4 w-4" />
             Yeni Kayıt Ekle
@@ -297,7 +299,7 @@ export default function BorcAlacakPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>

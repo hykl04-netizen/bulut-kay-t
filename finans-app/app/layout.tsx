@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
+import { Toaster } from "@/components/ui/toaster";
+import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +50,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <ServiceWorkerRegister />
+        <Toaster />
+        <ConfirmDialogHost />
       </body>
     </html>
   );

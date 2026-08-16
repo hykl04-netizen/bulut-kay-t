@@ -2,6 +2,7 @@
 'use client';
 
 import { Download } from 'lucide-react';
+import { toast } from '@/components/ui/toaster';
 
 interface ReportShareButtonProps {
   targetElementId: string;
@@ -23,7 +24,7 @@ export function ReportShareButton({ targetElementId, reportTitle = 'Finansal Rap
       link.click();
     } catch (err) {
       console.error('Görsel oluşturulurken hata:', err);
-      alert('Rapor görseli indirilemedi.');
+      toast.error('Rapor görseli indirilemedi.');
     }
   };
 

@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Plus, Trash2, Calculator, Wallet } from 'lucide-react';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Payroll {
   id: string;
@@ -75,7 +77,7 @@ export default function BordroPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -102,13 +104,13 @@ export default function BordroPage() {
       // Listeyi yenile
       await fetchPayrolls();
     } else {
-      alert('Eklenirken bir hata oluştu!');
+      toast.error('Eklenirken bir hata oluştu!');
     }
     setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu bordroyu silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu bordroyu silmek istediğinize emin misiniz?'))) return;
     
     const { error } = await supabase.from('payrolls').delete().eq('id', id);
     if (!error) {
@@ -210,7 +212,7 @@ export default function BordroPage() {
             <button
               type="submit"
               disabled={isSubmitting || gross === 0}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              className="btn-gold-cta flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               {isSubmitting ? 'Kaydediliyor...' : 'Bordroyu Kaydet'}

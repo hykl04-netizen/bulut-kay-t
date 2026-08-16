@@ -4,6 +4,7 @@ import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { Pencil, Trash2, CheckCircle2, Repeat, ExternalLink } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
+import { DueBadge } from "@/components/due-badge";
 
 export type Bill = {
   id: string;
@@ -107,12 +108,15 @@ export const columns: ColumnDef<Bill>[] = [
       const meta = table.options.meta as BillTableMeta | undefined;
       const date = row.original.due_date;
       return (
-        <EditableCell
-          type="date"
-          value={date ?? ''}
-          display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
-          onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
-        />
+        <div className="flex flex-col gap-1">
+          <EditableCell
+            type="date"
+            value={date ?? ''}
+            display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
+            onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
+          />
+          <DueBadge dueDate={date} isSettled={row.original.status === 'odendi'} />
+        </div>
       );
     },
   },

@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase/client';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, type Investment } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -88,7 +90,7 @@ export default function YatirimPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu yatırımı silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu yatırımı silmek istediğinize emin misiniz?'))) return;
     const { error } = await supabase.from('investments').delete().eq('id', id);
     if (!error) {
       setInvestments((prev) => prev.filter((i) => i.id !== id));
@@ -123,7 +125,7 @@ export default function YatirimPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -149,7 +151,7 @@ export default function YatirimPage() {
         setInvestments((prev) => prev.map((i) => (i.id === editingId ? (data as Investment) : i)));
         setIsModalOpen(false);
       } else {
-        alert('Hata oluştu: ' + error?.message);
+        toast.error('Hata oluştu: ' + error?.message);
       }
     } else {
       // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
@@ -162,7 +164,7 @@ export default function YatirimPage() {
         setInvestments((prev) => [data as Investment, ...prev]);
         setIsModalOpen(false);
       } else {
-        alert('Hata oluştu: ' + error?.message);
+        toast.error('Hata oluştu: ' + error?.message);
       }
     }
     setEditingId(null);
@@ -206,7 +208,7 @@ export default function YatirimPage() {
               setCurrency('TRY');
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           >
             <Plus className="h-4 w-4" />
             Yeni Yatırım Ekle
@@ -339,7 +341,7 @@ export default function YatirimPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

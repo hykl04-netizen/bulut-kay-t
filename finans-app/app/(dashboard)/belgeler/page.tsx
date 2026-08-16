@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { FileUpload } from '@/components/file-upload';
 import { FileText, Plus, Trash2, ExternalLink, Calendar, Filter, Search, X } from 'lucide-react';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 interface DocumentItem {
   id: string;
@@ -62,7 +64,7 @@ export default function BelgelerPage() {
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fileUrl) {
-      alert('Lütfen bir dosya / fotoğraf yükleyin.');
+      toast.error('Lütfen bir dosya / fotoğraf yükleyin.');
       return;
     }
 
@@ -70,7 +72,7 @@ export default function BelgelerPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -91,13 +93,13 @@ export default function BelgelerPage() {
       setIsModalOpen(false);
       await fetchDocuments();
     } else {
-      alert('Belge kaydedilirken hata oluştu.');
+      toast.error('Belge kaydedilirken hata oluştu.');
     }
     setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu belgeyi silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu belgeyi silmek istediğinize emin misiniz?'))) return;
 
     const { error } = await supabase.from('documents').delete().eq('id', id);
     if (!error) {
@@ -131,7 +133,7 @@ export default function BelgelerPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+          className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
         >
           <Plus className="h-4 w-4" />
           Yeni Belge Yükle
@@ -314,7 +316,7 @@ export default function BelgelerPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !fileUrl}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>

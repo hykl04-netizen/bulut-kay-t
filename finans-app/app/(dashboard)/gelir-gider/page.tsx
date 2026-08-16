@@ -8,6 +8,8 @@ import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, type Transaction } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Category {
   id: string;
@@ -152,7 +154,7 @@ export default function GelirGiderPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -180,7 +182,7 @@ export default function GelirGiderPage() {
         );
         setIsModalOpen(false);
       } else {
-        alert('Güncellenirken hata oluştu.');
+        toast.error('Güncellenirken hata oluştu.');
       }
     } else {
       // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
@@ -195,14 +197,14 @@ export default function GelirGiderPage() {
         );
         setIsModalOpen(false);
       } else {
-        alert('Eklenirken hata oluştu.');
+        toast.error('Eklenirken hata oluştu.');
       }
     }
     setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu kaydı silmek istediğinize emin misiniz?'))) return;
     const { error } = await supabase.from('transactions').delete().eq('id', id);
     if (!error) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
@@ -230,7 +232,7 @@ export default function GelirGiderPage() {
           </button>
           <button
             onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           >
             <Plus className="h-4 w-4" />
             Yeni İşlem Ekle
@@ -365,7 +367,7 @@ export default function GelirGiderPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

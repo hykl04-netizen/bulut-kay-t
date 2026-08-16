@@ -8,6 +8,8 @@ import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
 import { columns, type Bill } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Category {
   id: string;
@@ -131,7 +133,7 @@ export default function FaturaMasrafPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setIsSubmitting(false);
-      alert('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
+      toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
 
@@ -160,7 +162,7 @@ export default function FaturaMasrafPage() {
         setIsModalOpen(false);
       } else {
         console.error('Fatura güncellenirken hata:', error);
-        alert(`Güncellenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
+        toast.error(`Güncellenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     } else {
       // Yeni Ekle — optimistic: dönen kaydı doğrudan listeye ekle
@@ -180,7 +182,7 @@ export default function FaturaMasrafPage() {
         setIsModalOpen(false);
       } else {
         console.error('Fatura eklenirken hata:', error);
-        alert(`Eklenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
+        toast.error(`Eklenirken hata oluştu: ${error?.message ?? 'Bilinmeyen hata'}`);
       }
     }
     setIsSubmitting(false);
@@ -195,7 +197,7 @@ export default function FaturaMasrafPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu faturayı silmek istediğinize emin misiniz?')) return;
+    if (!(await confirmDialog('Bu faturayı silmek istediğinize emin misiniz?'))) return;
     const { error } = await supabase.from('bills').delete().eq('id', id);
     if (!error) {
       setBills((prev) => prev.filter((b) => b.id !== id));
@@ -246,7 +248,7 @@ export default function FaturaMasrafPage() {
           </button>
           <button
             onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
           >
             <Plus className="h-4 w-4" />
             Yeni Fatura/Masraf Ekle
@@ -362,7 +364,7 @@ export default function FaturaMasrafPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

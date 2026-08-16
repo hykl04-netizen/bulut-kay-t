@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { toast } from '@/components/ui/toaster';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 type Category = {
   id: string;
@@ -72,17 +74,17 @@ export default function KategorilerPage() {
       setColor(PRESET_COLORS[0]);
       fetchCategories();
     } else {
-      alert('Kategori eklenemedi: ' + error.message);
+      toast.error('Kategori eklenemedi: ' + error.message);
     }
     setSaving(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz? Bu kategoriyi kullanan işlemler etkilenebilir.')) return;
+    if (!(await confirmDialog('Bu kategoriyi silmek istediğinize emin misiniz? Bu kategoriyi kullanan işlemler etkilenebilir.'))) return;
 
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) {
-      alert('Silinemedi: ' + error.message + '\n\nBu kategori muhtemelen bir veya daha fazla işlemde kullanılıyor. Önce o işlemlerin kategorisini değiştirmen gerekebilir.');
+      toast.error('Silinemedi: ' + error.message + '\n\nBu kategori muhtemelen bir veya daha fazla işlemde kullanılıyor. Önce o işlemlerin kategorisini değiştirmen gerekebilir.');
     } else {
       fetchCategories();
     }
