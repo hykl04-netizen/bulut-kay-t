@@ -56,7 +56,7 @@ export function WorkspaceSwitcher() {
     if (workspaceId === currentId) return;
     setCurrentWorkspaceId(workspaceId);
     // Sayfalar workspace/hesap id'sini component mount'ında bir kez okuyup
-    // state'te tuttuğundan (bkz. lib/supabase/account.ts notu), en güvenli
+    // state'te tuttuğundan (bkz. lib/supabase/workspace.ts notu), en güvenli
     // yenileme yöntemi tam sayfa reload — router.refresh() client-side
     // state'i temizlemez.
     window.location.reload();

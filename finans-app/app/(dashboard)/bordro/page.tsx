@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, Trash2, Calculator, Wallet } from 'lucide-react';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canViewPayroll } from '@/lib/team';
 import { ShieldAlert } from 'lucide-react';
@@ -56,11 +56,11 @@ export default function BordroPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
       const { data, error } = await supabase
         .from('payrolls')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('period', { ascending: false });
 
       if (!error && data) {
@@ -87,10 +87,10 @@ export default function BordroPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const { error } = await supabase.from('payrolls').insert({
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       period,
       gross_salary: gross,
       sgk_deduction: sgk,

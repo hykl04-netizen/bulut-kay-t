@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { buildBudgetRows, currentMonthKey, BUDGET_TONE_CLASSES, BudgetRow } from '@/lib/budget';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -53,15 +53,15 @@ export default function ButcePage() {
       return;
     }
 
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const monthKey = currentMonthKey();
     const [catRes, budgetRes, txRes] = await Promise.all([
-      supabase.from('categories').select('id, name, color').eq('workspace_id', accountId).eq('type', 'gider').order('name'),
-      supabase.from('budgets').select('id, category_id, monthly_limit').eq('workspace_id', accountId),
+      supabase.from('categories').select('id, name, color').eq('workspace_id', workspaceId).eq('type', 'gider').order('name'),
+      supabase.from('budgets').select('id, category_id, monthly_limit').eq('workspace_id', workspaceId),
       supabase
         .from('transactions')
         .select('type, amount, date, category_id, try_equivalent')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .eq('type', 'gider')
         .gte('date', `${monthKey}-01`),
     ]);
@@ -113,10 +113,10 @@ export default function ButcePage() {
       return;
     }
 
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const { error } = await supabase
       .from('budgets')
-      .upsert({ workspace_id: accountId, category_id: categoryId, monthly_limit: limit }, { onConflict: 'workspace_id,category_id' });
+      .upsert({ workspace_id: workspaceId, category_id: categoryId, monthly_limit: limit }, { onConflict: 'workspace_id,category_id' });
 
     if (error) {
       console.error('Bütçe kaydetme hatası:', error.message);

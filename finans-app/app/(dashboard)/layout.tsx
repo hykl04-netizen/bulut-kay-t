@@ -29,6 +29,12 @@ import {
   Users,
   CreditCard,
   AlertTriangle,
+  Users2,
+  FilePlus2,
+  Calculator,
+  Briefcase,
+  LifeBuoy,
+  ReceiptText,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
@@ -36,12 +42,12 @@ import { BackupModal } from '@/components/backup-modal';
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
 import { Logo } from '@/components/logo';
 import { WorkspaceSwitcher } from '@/components/workspace-switcher';
+import { SupportWidget } from '@/components/support-widget';
 import { runRecurringAutomation } from '@/lib/recurring';
 import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 import { useTeamRole } from '@/lib/use-team-role';
 import { ROLE_LABELS } from '@/lib/team';
-import { getCurrentAccountId } from '@/lib/supabase/account';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { isOnboardingPending } from '@/lib/onboarding';
 import { useSubscription } from '@/lib/use-subscription';
@@ -76,6 +82,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
       { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
       { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
+      { href: '/faturalar', label: 'Kesilen Faturalar', icon: FilePlus2 },
+      { href: '/cariler', label: 'Cariler', icon: Users2 },
       { href: '/butce', label: 'Bütçe', icon: Target },
     ],
   },
@@ -98,8 +106,11 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
       { href: '/abonelik', label: 'Abonelik', icon: CreditCard, managerOnly: true },
       { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
+      { href: '/fatura-kunyesi', label: 'Fatura Künyesi', icon: ReceiptText, managerOnly: true },
       { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
+      { href: '/muhasebeci', label: 'Muhasebeci Erişimi', icon: Calculator, managerOnly: true },
       { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
+      { href: '/musterilerim', label: 'Müşterilerim', icon: Briefcase },
     ],
   },
 ];
@@ -183,13 +194,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const accountId = await getCurrentAccountId(user.id);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
       if (cancelled) return;
       // Salt görünüm rolü veri ekleyemez (RLS reddeder) — otomasyonu hiç
       // tetiklemeye gerek yok, yönetici/muhasebeci/sahip giriş yaptığında
       // zaten çalışacak.
       if (roleLoading || role === 'salt_gorunum') return;
-      const result = await runRecurringAutomation(accountId);
+      const result = await runRecurringAutomation(workspaceId);
       if (cancelled) return;
       const total = result.billsCreated + result.transactionsCreated;
       if (total > 0) {
@@ -305,6 +316,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DownloadCloud className="w-[18px] h-[18px]" />
           Yedek Al
         </button>
+        <Link
+          href="/yardim"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"
+        >
+          <LifeBuoy className="w-[18px] h-[18px]" />
+          Yardım Merkezi
+        </Link>
         <button
           onClick={() => setIsShortcutsOpen(true)}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"
@@ -410,6 +428,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
+
+      {/* Canlı destek widget'ı — yalnızca NEXT_PUBLIC_DESTEK_WIDGET_SRC tanımlıysa yüklenir */}
+      <SupportWidget />
 
       {/* Yüzen Hesap Makinesi */}
       <div className="print:hidden">

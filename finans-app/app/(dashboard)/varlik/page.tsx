@@ -9,7 +9,7 @@ import { columns, type Asset } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -39,12 +39,12 @@ export default function VarlikPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
-      setWorkspaceId(accountId);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      setWorkspaceId(workspaceId);
       const { data: assets, error } = await supabase
         .from('assets')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('current_value', { ascending: false });
 
       if (!error && assets) {
@@ -145,10 +145,10 @@ export default function VarlikPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const payload = {
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       asset_name: assetName,
       asset_type: assetType || null,
       current_value: parseFloat(currentValue) || 0,

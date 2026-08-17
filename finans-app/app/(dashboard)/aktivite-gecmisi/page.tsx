@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { History, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 
 interface AuditLogRow {
   id: number;
@@ -134,12 +134,12 @@ export default function AktiviteGecmisiPage() {
         setLoading(false);
         return;
       }
-      const accountId = await getCurrentAccountId(user.id);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
 
       let query = supabase
         .from('audit_log')
         .select('*', { count: 'exact' })
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 

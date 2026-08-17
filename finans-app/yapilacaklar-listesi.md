@@ -87,6 +87,45 @@
   - *`lib/use-team-role.ts` `accountId` → `workspaceId` olarak güncellendi.
   - *Üretim derlemesi başarılı. DB tarafı 10 senaryoda test edildi: Başlangıç planında davet engellendi, Pro'da 4 üye eklenip 5.'si engellendi, iptal edilen üye koltuğu boşalttı, davetli kullanıcıya kişisel workspace açılmadı ve daveti aktifleşti, davetsiz kullanıcı kendi işletmesini almaya devam etti.
   - ***Yapmanız gereken:*** `supabase/migrations/20260820_team_plan_limits.sql` çalıştırın. Davet e-postalarının gidebilmesi için Faz 2'deki SMTP notu burada da geçerli — `inviteUserByEmail` de Supabase'in e-posta servisini kullanır. Ayrıca `NEXT_PUBLIC_APP_URL` ortam değişkeni tanımlı olmalı ki davet linki doğru adrese dönsün.)*
+- [x] **Fatura kesme.** Müşteriye kesilen satış faturası oluşturma. *(Faz 5:*
+  - *Yeni `customers` (cari kartı), `invoices`, `invoice_items` ve `invoice_counters` tabloları; `supabase/migrations/20260821_invoicing.sql`. RLS Faz 3 deseniyle birebir aynı — rol + abonelik kontrolü.
+  - *Yeni sayfalar: `/cariler` (cari CRUD), `/faturalar` (liste, durum filtreleri, tahsil edilmemiş tutar ve gecikme özeti), `/faturalar/yeni` ve `/faturalar/[id]` (ortak `invoice-form.tsx`), `/fatura-kunyesi` (satıcı vergi bilgileri).
+  - *Kalem bazlı KDV: birim fiyatlar KDV hariç girilir, her satırın oranı ayrı seçilir — farklı KDV oranlı kalemler aynı faturada olabilir. Toplamlar DB tetikleyicisiyle (`recalc_invoice_totals`) kalemlerden yeniden hesaplanır, yani başlık ile kalemler hiçbir koşulda ayrışmaz.
+  - *Fatura numarası yıl bazlı ve atomik (`next_invoice_number`), `2026-0001` biçiminde. **İptal edilen numaralar yeniden kullanılmaz** (muhasebe pratiği).
+  - ***Tasarım kararı:*** "Gecikti" durumu SAKLANMIYOR; `gonderildi` + vadesi geçmiş olarak türetiliyor. Böylece durumu her gün güncelleyecek bir cron'a gerek kalmadı ve bilgi her zaman doğru.
+  - *`lib/invoice-pdf.ts`: rapor PDF'iyle aynı altyapıyı (jsPDF + autoTable) ve aynı marka bilgisini kullanan fatura çıktısı. Alt bilgide "resmi e-Fatura değildir" uyarısı var.
+  - *Satıcı künyesi (vergi no, vergi dairesi, adres) bilinçli olarak `company_settings` yerine `workspaces` tablosunda — company_settings hâlâ kullanıcı bazlı, oysa fatura künyesi işletme bazlı olmak zorunda.
+  - *DB tarafı 7 senaryoda test edildi: numaralandırma artışı, iki farklı KDV oranlı kalemin toplamı (11000+2010=13010), kalem silinince toplamın güncellenmesi, aynı numaranın tekrar kullanılamaması, abonelik bitmişken fatura kesilememesi ama okumanın devam etmesi.
+  - ***Yapmanız gereken:*** `20260821_invoicing.sql` çalıştırın, `/fatura-kunyesi` sayfasından vergi bilgilerinizi girin.)*
+- [x] **Muhasebeci / mali müşavir erişimi.** *(Faz 6:*
+  - *Yeni `/muhasebeci` sayfası: tek alanlı sadeleştirilmiş davet (rol sabit `muhasebeci`). Teknik olarak Faz 4'teki ekip davetinin aynısı ama kullanıcıya tanıdık tek bir kavram olarak sunuluyor.
+  - *Yeni `/musterilerim` sayfası: birden fazla işletmeye davet edilmiş muhasebecinin toplu bakışı ve tek tıkla geçiş.
+  - *Yeni `app/api/cron/muhasebeci-ozeti`: her ayın 1'inde (vercel.json) bir önceki ayın gelir/gider/fatura özetini muhasebeciye e-postayla gönderir.
+  - *Yeni `lib/email.ts`: sağlayıcıdan bağımsız e-posta gönderimi (Resend uygulandı). Anahtar tanımlı değilse gönderim yapılmaz ve "atlandı" raporlanır — ortam değişkeni eklenmeden de uygulama çalışır.
+  - ***Yapmanız gereken:*** `EPOSTA_API_KEY` ve `EPOSTA_GONDEREN` ortam değişkenleri (Resend hesabı).)*
+- [x] **Pazarlama sitesi ve hukuki metinler.** *(Faz 7:*
+  - *Yeni `app/(pazarlama)` grubu: `/urun` (tanıtım), `/fiyatlandirma`, `/sss`, `/iletisim`, `/gizlilik` (KVKK aydınlatma metni), `/kullanim-sartlari`. Ortak başlık/alt bilgi düzeni.
+  - *Fiyat tablosu `lib/plans.ts`'ten okunuyor — uygulama içindeki /abonelik sayfasıyla tek kaynaktan besleniyor, fiyat iki yerde ayrı güncellenmiyor.
+  - *Yeni `app/robots.ts` ve `app/sitemap.ts`; yardım makaleleri site haritasına dahil.
+  - ***ÖNEMLİ:*** Hukuki metinler **taslaktır**, hukukçu onayından geçmemiştir. Sayfalarda görünür bir uyarı şeridi var; inceleme bitince `app/(pazarlama)/hukuki-taslak-uyarisi.tsx` içindeki `HUKUKI_METIN_ONAYLANDI` sabitini `true` yapın. Metinlerdeki [KÖŞELİ PARANTEZ] alanları doldurulmalı.)*
+- [x] **Yardım merkezi ve destek.** *(Faz 8:*
+  - *Yeni `/yardim` ve `/yardim/[slug]`: 8 adım adım rehber (`lib/help-articles.ts`). İçerik koda gömülü — ayrı bir CMS bu aşamada gereksiz karmaşıklık.
+  - *Yeni `components/support-widget.tsx`: canlı destek widget'ı yalnızca `NEXT_PUBLIC_DESTEK_WIDGET_SRC` tanımlıysa yüklenir. Böylece varsayılan olarak hiçbir üçüncü taraf script'i yüklenmiyor (gizlilik metnindeki taahhüt doğru kalıyor).
+  - *Sol menüye "Yardım Merkezi" bağlantısı eklendi.)*
+- [~] **Mobil uygulama (Google Play).** *(Faz 9 — kod tarafı hazır, yayın sizde:*
+  - *Manifest zaten TWA gereksinimlerini karşılıyordu (standalone, 192/512 + maskable ikonlar). Eklenenler: `public/.well-known/assetlinks.json` şablonu, `twa-manifest.json` (bubblewrap) şablonu, `docs/faz-9-play-store-yayin.md` adım adım rehber.
+  - ***Kritik düzeltme:*** `/.well-known`, `/robots.txt` ve `/sitemap.xml` proxy'nin oturum korumasından muaf tutuldu. Aksi halde Google'ın doğrulama isteği `/login`'e yönlenir ve hem uygulama–site bağlantısı hem SEO çalışmazdı.
+  - ***Yapılamayan:*** Google Play geliştirici hesabı (25 USD, kimlik doğrulaması) ve imzalama anahtarı sizin adınıza alınamaz. iOS için TWA yok — App Store ayrı bir iş.)*
+- [~] **Resmi e-Fatura / e-Arşiv.** *(Faz 10 — veri modeli hazır, entegrasyon sizde:*
+  - *`supabase/migrations/20260822_einvoice_readiness.sql`: `invoices.einvoice_status/uuid/provider/ref/error/sent_at`, `customers.is_einvoice_user/einvoice_alias`, `workspaces.tax_number/tax_office/address`, ve `einvoice_missing_fields()` fonksiyonu (bir faturanın gönderilmeye hazır olup olmadığını söyler).
+  - *`lib/einvoice.ts`: entegratörden bağımsız `EInvoiceAdapter` arayüzü ve `buildEInvoicePayload()`. Sağlayıcı seçilince tek bir adaptör dosyası yazmak yeterli olacak.
+  - ***Yapılamayan:*** GİB onaylı entegratörle (Logo, Foriba, Uyumsoft, Nes Bilgi) ticari sözleşme, GİB test ortamı onayı ve mali mühür/e-imza temini. Bunlar teknik değil ticari/hukuki adımlar.)*
+- [x] **Ölü kod temizliği.** *(Son adım:*
+  - *`supabase/` klasörünün altına yanlışlıkla kopyalanmış **tam bir proje kopyası** (119 dosya: app, components, lib, public, package.json…) silindi. Hiçbir yerden referans verilmiyordu ve `supabase/app/layout.tsx` TypeScript hatası üretiyordu. `supabase/migrations/` korundu.
+  - *`app/(dashboard)/katagoriler/` — `kategoriler`in yazım hatalı ikizi, ikisi de canlı route'tu. Silindi.
+  - *`lib/supabase/account.ts` — Faz 1'den kalan geçiş kabuğu. 13 dosyadaki çağrılar `getCurrentWorkspaceId`'ye taşındı, `accountId` değişkenleri `workspaceId` olarak yeniden adlandırıldı, dosya silindi. (`importAccountId` gibi banka hesabı id'leri korundu.)
+  - *`/ekip` sayfasındaki 8 ESLint hatası Faz 4'te zaten düzelmişti.
+  - *Temizlik sonrası `next build` başarılı (59 sayfa), TypeScript ve ESLint temiz.)*
 - [x] **Dönem kilitleme (ay/yıl sonu kapanışı).** Geçmiş dönem kayıtlarının yanlışlıkla değiştirilmesini engelleme. *(Yeni `/donem-kilitleme` sayfası: bir tarih seçilip "bu tarihten önceki kayıtlar kilitli" hale getiriliyor. DB seviyesinde `transactions` (date), `bills` ve `debts` (due_date) tablolarına trigger eklendi — kilitli tarihten önceki bir kayıt eklenemez/güncellenemez/silinemez, PostgreSQL hatası olarak engellenir. `gelir-gider`/`fatura-masraf`/`borç-alacak` sayfalarındaki hata toast'ları artık DB'den dönen asıl mesajı (`error.message`) gösteriyor ki kilit engeli kullanıcıya görünür olsun (önceden bazıları jenerik "hata oluştu" diyordu, silme işlemlerinde ise hiç mesaj gösterilmiyordu). **Not:** Tek kullanıcılı hesap modelinde (rol ayrımı olmadığından) kilidi hesap sahibinin kendisi de kaldırabilir — bu, yanlışlık önleyici bir koruma, denetim-geçirmez bir kapanış garantisi değil. **Yapmanız gereken:** `supabase/migrations/20260816_period_locks.sql` dosyasını Supabase SQL Editor'de çalıştırmanız lazım.)*
 
 ### Kullanıcı Deneyimi

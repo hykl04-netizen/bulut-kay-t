@@ -49,8 +49,8 @@ function writeCookie(name: string, value: string) {
  * seçtiyse (tarayıcı cookie'sinde saklı) ve hâlâ erişimi varsa onu, yoksa
  * sahip olduğu ilk workspace'i (yoksa erişebildiği herhangi birini) döner.
  *
- * `userId` parametresi eski `getCurrentAccountId(userId)` imzasıyla geriye
- * dönük uyumluluk için korunuyor; RPC `auth.uid()` kullandığından fiilen
+ * `userId` parametresi çağrı noktalarındaki mevcut imzayla uyum için
+ * korunuyor; RPC `auth.uid()` kullandığından fiilen
  * sorgu için gerekmiyor ama migration/RPC hiç çalışmazsa (henüz
  * uygulanmadıysa) güvenli varsayılan olarak buraya düşülüyor — böylece eski
  * tek-workspace davranışı hiçbir zaman bozulmaz.

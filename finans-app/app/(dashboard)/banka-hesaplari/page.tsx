@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { parseBankStatementCsv, ParsedBankRow } from '@/lib/bank-import';
 import { SUPPORTED_CURRENCIES, formatCurrency } from '@/lib/currency';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -57,12 +57,12 @@ export default function BankaHesaplariPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
-      setWorkspaceId(accountId);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      setWorkspaceId(workspaceId);
       const { data: accData, error } = await supabase
         .from('bank_accounts')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -76,7 +76,7 @@ export default function BankaHesaplariPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('id, name, type')
-        .eq('workspace_id', accountId);
+        .eq('workspace_id', workspaceId);
       if (catData) setCategories(catData);
     }
     setLoading(false);
@@ -118,10 +118,10 @@ export default function BankaHesaplariPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const payload = {
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       name,
       bank_name: bankName || null,
       iban_last4: ibanLast4 || null,
@@ -174,8 +174,8 @@ export default function BankaHesaplariPage() {
 
   // --- CSV içe aktarma akışı ---
 
-  const openImportFor = (accountId: string) => {
-    setImportAccountId(accountId);
+  const openImportFor = (workspaceId: string) => {
+    setImportAccountId(workspaceId);
     setImportDefaultCategoryId('');
     setParsedRows([]);
     setSkippedCount(0);

@@ -13,6 +13,21 @@ const PUBLIC_PREFIXES = [
   '/sifremi-unuttum',
   '/sifre-guncelle',
   '/auth', // e-posta doğrulama dönüş route'u (/auth/callback)
+  // Faz 7-8: pazarlama sitesi ve yardım merkezi — oturum gerektirmez.
+  '/urun',
+  '/fiyatlandirma',
+  '/sss',
+  '/yardim',
+  '/iletisim',
+  '/gizlilik',
+  '/kullanim-sartlari',
+  // Arama motorları ve Android TWA doğrulaması için zorunlu açık dosyalar.
+  // Bunlar public/ altından servis edilse de proxy her istekte çalıştığı için
+  // burada açıkça izinli olmaları gerekiyor — aksi halde /login'e yönlenir ve
+  // hem SEO hem uygulama içi bağlantı doğrulaması (Digital Asset Links) bozulur.
+  '/.well-known',
+  '/robots.txt',
+  '/sitemap.xml',
 ]
 
 // Oturum açmış kullanıcının görmesi anlamsız olan sayfalar — panele yönlendirilir.

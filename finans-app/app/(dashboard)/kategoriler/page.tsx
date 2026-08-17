@@ -5,7 +5,7 @@ import { Plus, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -66,10 +66,10 @@ export default function KategorilerPage() {
       setSaving(false);
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const { error } = await supabase.from('categories').insert({
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       type,
       name: name.trim(),
       color,

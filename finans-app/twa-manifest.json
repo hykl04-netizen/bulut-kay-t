@@ -1,0 +1,21 @@
+{
+  "packageId": "com.finansapp.twa",
+  "host": "ORNEK.vercel.app",
+  "name": "FinansApp — Kurumsal Finans Yönetimi",
+  "launcherName": "FinansApp",
+  "display": "standalone",
+  "themeColor": "#151515",
+  "navigationColor": "#151515",
+  "backgroundColor": "#ffffff",
+  "startUrl": "/",
+  "iconUrl": "https://ORNEK.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://ORNEK.vercel.app/icons/icon-maskable-512.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ORNEK.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "enableNotifications": true,
+  "orientation": "portrait"
+}

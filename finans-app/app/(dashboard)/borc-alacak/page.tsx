@@ -9,7 +9,7 @@ import { columns, type Debt } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -33,12 +33,12 @@ export default function BorcAlacakPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
-      setWorkspaceId(accountId);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      setWorkspaceId(workspaceId);
       const { data, error } = await supabase
         .from('debts')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('due_date', { ascending: true });
 
       if (!error && data) setDebts(data);
@@ -132,10 +132,10 @@ export default function BorcAlacakPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const payload = {
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       direction,
       counterparty,
       amount: parseFloat(amount) || 0,

@@ -1,0 +1,235 @@
+import { supabase } from './supabase/client';
+
+/**
+ * Faz 5 — satış faturası (fatura kesme) modülü.
+ *
+ * ÖNEMLİ: Bu modül RESMİ e-Fatura DEĞİLDİR. Görsel/PDF fatura üretir.
+ * Resmi e-Fatura/e-Arşiv, GİB onaylı bir entegratörle (Logo, Foriba,
+ * Uyumsoft vb.) ticari anlaşma gerektirir — yol haritasında Faz 10.
+ */
+
+export type InvoiceStatus = 'taslak' | 'gonderildi' | 'odendi' | 'iptal';
+
+/** Arayüzde gösterilen durum — "gecikti" saklanmaz, türetilir (bkz. resolveStatus). */
+export type DisplayStatus = InvoiceStatus | 'gecikti';
+
+export interface Customer {
+  id: string;
+  workspace_id: string;
+  name: string;
+  tax_number: string | null;
+  tax_office: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+}
+
+export interface InvoiceItem {
+  id?: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  vat_rate: number;
+  net_total: number;
+  vat_amount: number;
+  line_total: number;
+  sort_order: number;
+}
+
+export interface Invoice {
+  id: string;
+  workspace_id: string;
+  customer_id: string | null;
+  invoice_number: string;
+  issue_date: string;
+  due_date: string | null;
+  status: InvoiceStatus;
+  currency: string;
+  subtotal: number;
+  vat_total: number;
+  total: number;
+  notes: string | null;
+  paid_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
+
+export interface InvoiceWithCustomer extends Invoice {
+  customers: { name: string } | null;
+}
+
+export const STATUS_LABELS: Record<DisplayStatus, string> = {
+  taslak: 'Taslak',
+  gonderildi: 'Gönderildi',
+  odendi: 'Ödendi',
+  gecikti: 'Gecikti',
+  iptal: 'İptal',
+};
+
+export const STATUS_CLASSES: Record<DisplayStatus, string> = {
+  taslak: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  gonderildi: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
+  odendi: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+  gecikti: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+  iptal: 'bg-muted text-muted-foreground line-through',
+};
+
+/**
+ * Gösterilecek durumu belirler. "Gecikti" veritabanında SAKLANMAZ; gönderilmiş
+ * ve vadesi geçmiş faturalar için burada türetilir. Böylece durumu her gün
+ * güncelleyecek bir cron'a gerek kalmıyor ve bilgi her zaman güncel oluyor.
+ */
+export function resolveStatus(invoice: Pick<Invoice, 'status' | 'due_date'>): DisplayStatus {
+  if (invoice.status !== 'gonderildi' || !invoice.due_date) return invoice.status;
+  const due = new Date(`${invoice.due_date}T23:59:59`);
+  return due.getTime() < Date.now() ? 'gecikti' : 'gonderildi';
+}
+
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+/** Bir kalemin net/KDV/toplam değerlerini hesaplar (birim fiyat KDV HARİÇ girilir). */
+export function calcItem(quantity: number, unitPrice: number, vatRate: number) {
+  const net = round2(quantity * unitPrice);
+  const vat = round2(net * (vatRate / 100));
+  return { net_total: net, vat_amount: vat, line_total: round2(net + vat) };
+}
+
+export function calcInvoiceTotals(items: Pick<InvoiceItem, 'net_total' | 'vat_amount' | 'line_total'>[]) {
+  return {
+    subtotal: round2(items.reduce((s, i) => s + i.net_total, 0)),
+    vat_total: round2(items.reduce((s, i) => s + i.vat_amount, 0)),
+    total: round2(items.reduce((s, i) => s + i.line_total, 0)),
+  };
+}
+
+const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
+export function formatMoney(value: number, currency = 'TRY'): string {
+  if (currency === 'TRY') return TRY_FORMATTER.format(value);
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(value);
+}
+
+// ---------------------------------------------------------------------------
+// Veri erişimi
+// ---------------------------------------------------------------------------
+
+export async function fetchCustomers(workspaceId: string): Promise<Customer[]> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Customer[];
+}
+
+export async function fetchInvoices(workspaceId: string): Promise<InvoiceWithCustomer[]> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*, customers(name)')
+    .eq('workspace_id', workspaceId)
+    .order('issue_date', { ascending: false })
+    .order('invoice_number', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as InvoiceWithCustomer[];
+}
+
+export async function fetchInvoice(id: string): Promise<{ invoice: InvoiceWithCustomer; items: InvoiceItem[] }> {
+  const [{ data: inv, error: invErr }, { data: items, error: itemErr }] = await Promise.all([
+    supabase.from('invoices').select('*, customers(name)').eq('id', id).single(),
+    supabase.from('invoice_items').select('*').eq('invoice_id', id).order('sort_order'),
+  ]);
+  if (invErr) throw new Error(invErr.message);
+  if (itemErr) throw new Error(itemErr.message);
+  return { invoice: inv as InvoiceWithCustomer, items: (items ?? []) as InvoiceItem[] };
+}
+
+/** Yeni fatura numarası üretir (yıl bazlı, atomik, iptaller yeniden kullanılmaz). */
+export async function nextInvoiceNumber(workspaceId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('next_invoice_number', { p_workspace_id: workspaceId });
+  if (error || !data) throw new Error(error?.message ?? 'Fatura numarası üretilemedi.');
+  return data as string;
+}
+
+export interface SaveInvoiceInput {
+  workspaceId: string;
+  invoiceId?: string;
+  invoiceNumber: string;
+  customerId: string | null;
+  issueDate: string;
+  dueDate: string | null;
+  status: InvoiceStatus;
+  notes: string | null;
+  items: InvoiceItem[];
+}
+
+/**
+ * Faturayı ve kalemlerini kaydeder. Kalemler her kayıtta silinip yeniden
+ * yazılır — kalem düzenleme arayüzü satırları serbestçe ekleyip çıkarabildiği
+ * için tek tek farkı hesaplamaktan çok daha basit ve hatasız. Fatura
+ * toplamları DB tetikleyicisi (`recalc_invoice_totals`) tarafından kalemlerden
+ * yeniden hesaplanır.
+ */
+export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
+  const totals = calcInvoiceTotals(input.items);
+  const payload = {
+    workspace_id: input.workspaceId,
+    customer_id: input.customerId,
+    invoice_number: input.invoiceNumber,
+    issue_date: input.issueDate,
+    due_date: input.dueDate,
+    status: input.status,
+    notes: input.notes,
+    ...totals,
+    updated_at: new Date().toISOString(),
+  };
+
+  let invoiceId = input.invoiceId;
+
+  if (invoiceId) {
+    const { error } = await supabase.from('invoices').update(payload).eq('id', invoiceId);
+    if (error) throw new Error(error.message);
+    const { error: delErr } = await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
+    if (delErr) throw new Error(delErr.message);
+  } else {
+    const { data, error } = await supabase.from('invoices').insert(payload).select('id').single();
+    if (error) throw new Error(error.message);
+    invoiceId = (data as { id: string }).id;
+  }
+
+  if (input.items.length > 0) {
+    const rows = input.items.map((item, index) => ({
+      workspace_id: input.workspaceId,
+      invoice_id: invoiceId,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      vat_rate: item.vat_rate,
+      net_total: item.net_total,
+      vat_amount: item.vat_amount,
+      line_total: item.line_total,
+      sort_order: index,
+    }));
+    const { error } = await supabase.from('invoice_items').insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  return invoiceId;
+}
+
+export async function updateInvoiceStatus(
+  id: string,
+  status: InvoiceStatus,
+  cancelReason?: string
+): Promise<void> {
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  if (status === 'odendi') patch.paid_at = new Date().toISOString();
+  if (status === 'iptal') {
+    patch.cancelled_at = new Date().toISOString();
+    patch.cancel_reason = cancelReason ?? null;
+  }
+  const { error } = await supabase.from('invoices').update(patch).eq('id', id);
+  if (error) throw new Error(error.message);
+}

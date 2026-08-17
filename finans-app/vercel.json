@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/bildirim-gonder",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/muhasebeci-ozeti",
+      "schedule": "0 6 1 * *"
     }
   ]
 }

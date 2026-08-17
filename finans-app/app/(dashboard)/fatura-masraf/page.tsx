@@ -14,7 +14,7 @@ import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -57,12 +57,12 @@ export default function FaturaMasrafPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
-      setWorkspaceId(accountId);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      setWorkspaceId(workspaceId);
       const { data: billData } = await supabase
         .from('bills')
         .select('*, categories(name)')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('due_date', { ascending: true });
 
       if (billData) setBills(billData);
@@ -70,7 +70,7 @@ export default function FaturaMasrafPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .eq('type', 'gider');
 
       if (catData) setCategories(catData);
@@ -153,10 +153,10 @@ export default function FaturaMasrafPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const payload = {
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       title,
       amount: parseFloat(amount) || 0,
       due_date: dueDate,

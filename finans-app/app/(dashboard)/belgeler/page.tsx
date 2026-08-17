@@ -7,7 +7,7 @@ import { FileUpload } from '@/components/file-upload';
 import { FileText, Plus, Trash2, ExternalLink, Calendar, Filter, Search, X, Tag } from 'lucide-react';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -69,11 +69,11 @@ export default function BelgelerPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('document_date', { ascending: false });
 
       if (!error && data) {
@@ -104,10 +104,10 @@ export default function BelgelerPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const { error } = await supabase.from('documents').insert({
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       title,
       category,
       file_url: fileUrl,

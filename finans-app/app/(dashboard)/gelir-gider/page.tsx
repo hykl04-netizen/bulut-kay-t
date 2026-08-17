@@ -13,7 +13,7 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { SUPPORTED_CURRENCIES, SupportedCurrency, fetchRateToTRY, convertToTRY, formatCurrency } from '@/lib/currency';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
-import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
@@ -92,14 +92,14 @@ export default function GelirGiderPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const accountId = await getCurrentAccountId(user.id);
-      setWorkspaceId(accountId);
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      setWorkspaceId(workspaceId);
 
       // İşlemleri çek
       const { data: txData } = await supabase
         .from('transactions')
         .select(SELECT_WITH_CATEGORY)
-        .eq('workspace_id', accountId)
+        .eq('workspace_id', workspaceId)
         .order('date', { ascending: false });
 
       if (txData) setTransactions(txData as unknown as Transaction[]);
@@ -108,7 +108,7 @@ export default function GelirGiderPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
-        .eq('workspace_id', accountId);
+        .eq('workspace_id', workspaceId);
 
       if (catData) setCategories(catData);
     }
@@ -225,13 +225,13 @@ export default function GelirGiderPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
-    const accountId = await getCurrentAccountId(user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
 
     const parsedAmount = parseFloat(amount) || 0;
     const parsedRate = parseFloat(exchangeRate) || 1;
 
     const payload = {
-      workspace_id: accountId,
+      workspace_id: workspaceId,
       type,
       category_id: categoryId || null,
       amount: parsedAmount,
