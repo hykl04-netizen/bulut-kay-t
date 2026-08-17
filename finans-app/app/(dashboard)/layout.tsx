@@ -32,6 +32,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
 import { BackupModal } from '@/components/backup-modal';
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
+import { Logo } from '@/components/logo';
 import { runRecurringAutomation } from '@/lib/recurring';
 import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
@@ -51,24 +52,44 @@ interface NavItem {
   disabled?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
-  { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
-  { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
-  { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
-  { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
-  { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
-  { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
-  { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true },
-  { href: '/butce', label: 'Bütçe', icon: Target },
-  { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
-  { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
-  { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
-  { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
-  { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
-  { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
-  { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
-  { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true, disabled: true },
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'Genel',
+    items: [
+      { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
+      { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
+      { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
+      { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
+      { href: '/butce', label: 'Bütçe', icon: Target },
+    ],
+  },
+  {
+    title: 'Varlıklar',
+    items: [
+      { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
+      { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
+      { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
+      { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true },
+    ],
+  },
+  {
+    title: 'Kurumsal',
+    items: [
+      { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
+      { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
+      { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
+      { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
+      { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
+      { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
+      { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
+      { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true, disabled: true },
+    ],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -151,71 +172,89 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Sidebar içeriği hem masaüstü hem mobil panelde ortak kullanılıyor
   const navContent = (
     <>
-      <div className="p-6 flex items-center gap-3 text-white">
-        <Wallet className="w-8 h-8 text-brand-gold-light drop-shadow-[0_0_10px_rgba(94, 161, 255,0.45)]" />
-        <div>
-          <h2 className="text-xl font-bold">FinansApp</h2>
-          {!roleLoading && role && role !== 'sahip' && (
-            <span className="text-xs font-medium text-brand-gold-light/80">{ROLE_LABELS[role]}</span>
-          )}
-        </div>
+      <div className="p-5 flex flex-col gap-1.5">
+        <Logo />
+        {!roleLoading && role && role !== 'sahip' && (
+          <span className="ml-[3.25rem] w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+            {ROLE_LABELS[role]}
+          </span>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
-        {NAV_ITEMS.filter((item) => (!item.managerOnly || canManageTeamNav) && (!item.hideForViewer || canViewPayrollNav)).map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-
-          if (item.disabled) {
-            return (
-              <div
-                key={item.href}
-                title="Tek kullanıcılı hesaplarda kapalı. İleride ihtiyaç olursa tekrar açılabilir."
-                className="flex items-center gap-3 pl-5 pr-4 py-3 rounded-lg text-muted-foreground/40 cursor-not-allowed select-none"
-              >
-                <Icon className="w-5 h-5" />
-                {item.label}
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted-foreground/10">
-                  Kapalı
-                </span>
-              </div>
-            );
-          }
+      <nav className="flex-1 px-3 pb-2 space-y-5 overflow-y-auto">
+        {NAV_GROUPS.map((group) => {
+          const visibleItems = group.items.filter(
+            (item) => (!item.managerOnly || canManageTeamNav) && (!item.hideForViewer || canViewPayrollNav)
+          );
+          if (visibleItems.length === 0) return null;
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-link flex items-center gap-3 pl-5 pr-4 py-3 rounded-lg ${
-                isActive ? 'is-active font-semibold' : 'text-muted-foreground'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {item.label}
-            </Link>
+            <div key={group.title}>
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group.title}
+              </p>
+              <div className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+
+                  if (item.disabled) {
+                    return (
+                      <div
+                        key={item.href}
+                        title="Tek kullanıcılı hesaplarda kapalı. İleride ihtiyaç olursa tekrar açılabilir."
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/40 cursor-not-allowed select-none"
+                      >
+                        <Icon className="w-[18px] h-[18px]" />
+                        {item.label}
+                        <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted-foreground/10">
+                          Kapalı
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`nav-link px-3 py-2.5 text-sm ${
+                        isActive ? 'is-active font-semibold' : 'text-muted-foreground'
+                      }`}
+                    >
+                      <Icon className="w-[18px] h-[18px]" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-border space-y-1">
+      <div className="p-3 border-t border-border space-y-0.5">
         <ThemeToggle />
         <button
           onClick={() => setIsBackupOpen(true)}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-muted-foreground hover:bg-secondary hover:text-white transition"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"
         >
-          <DownloadCloud className="w-5 h-5" />
+          <DownloadCloud className="w-[18px] h-[18px]" />
           Yedek Al
         </button>
         <button
           onClick={() => setIsShortcutsOpen(true)}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-muted-foreground hover:bg-secondary hover:text-white transition"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"
         >
-          <Keyboard className="w-5 h-5" />
+          <Keyboard className="w-[18px] h-[18px]" />
           Klavye Kısayolları
           <span className="ml-auto text-xs opacity-60">?</span>
         </button>
-        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-secondary transition">
-          <LogOut className="w-5 h-5" />
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+        >
+          <LogOut className="w-[18px] h-[18px]" />
           Çıkış Yap
         </button>
       </div>
@@ -223,22 +262,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex min-h-screen bg-muted dark:bg-primary">
-      {/* Sol Menü (Sidebar) — masaüstü, md ve üzeri */}
-      <aside className="w-64 bg-primary text-muted-foreground flex-col hidden md:flex print:hidden">
+    <div className="flex min-h-screen bg-background">
+      {/* Sol Menü (Sidebar) — masaüstü, md ve üzeri: sayfadan içeride, beyaz/yüzen kart */}
+      <aside className="w-72 shrink-0 my-4 ml-4 rounded-2xl border border-border/70 bg-card flex-col hidden md:flex print:hidden shadow-[0_4px_24px_-8px_rgba(27,37,89,0.10)]">
         {navContent}
       </aside>
 
       {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-primary text-white px-4 h-14 md:hidden print:hidden">
-        <div className="flex items-center gap-2">
-          <Wallet className="w-6 h-6 text-brand-gold-light" />
-          <span className="font-bold">FinansApp</span>
-        </div>
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-card border-b border-border px-4 h-16 md:hidden print:hidden">
+        <Logo size="md" showSubtitle={false} />
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Menüyü aç"
-          className="p-2 -mr-2 text-muted-foreground hover:text-white"
+          className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -251,11 +287,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="absolute inset-0 bg-primary/50"
             onClick={() => setMobileNavOpen(false)}
           />
-          <aside className="relative w-64 bg-primary text-muted-foreground flex flex-col h-full shadow-xl">
+          <aside className="relative w-72 bg-card text-muted-foreground flex flex-col h-full shadow-xl">
             <button
               onClick={() => setMobileNavOpen(false)}
               aria-label="Menüyü kapat"
-              className="absolute top-4 right-4 text-muted-foreground dark:text-muted-foreground hover:text-white"
+              className="absolute top-5 right-4 text-muted-foreground hover:text-foreground"
             >
               <X className="w-5 h-5" />
             </button>

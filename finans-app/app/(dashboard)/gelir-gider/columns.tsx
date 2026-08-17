@@ -150,11 +150,11 @@ export const columns: ColumnDef<Transaction>[] = [
           value={amount}
           display={
             <div className="flex flex-col">
-              <span className={`font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
+              <span className={`font-mono font-medium ${type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {type === 'gelir' ? '+' : '-'}{formatted}
               </span>
               {isForeign && (
-                <span className="text-xs text-muted-foreground dark:text-muted-foreground">
+                <span className="font-mono text-xs text-muted-foreground dark:text-muted-foreground">
                   ≈ {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(tryEquivalent)}
                 </span>
               )}

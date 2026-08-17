@@ -57,7 +57,7 @@ export function DataTable<TData, TValue>({
     : 0;
 
   return (
-    <div className="rounded-md border border-border dark:border-border bg-card dark:bg-primary overflow-hidden">
+    <div className="rounded-xl border border-border dark:border-border bg-card dark:bg-primary overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="bg-muted dark:bg-primary border-b border-border dark:border-border">

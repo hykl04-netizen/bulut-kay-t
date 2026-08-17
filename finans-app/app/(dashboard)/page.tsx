@@ -244,7 +244,7 @@ export default function DashboardPage() {
             Finansal durumunuzun genel görünümü ve son hareketleriniz.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/50 bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-[0_0_0_1px_rgba(94, 161, 255,0.12),0_4px_16px_-6px_rgba(94, 161, 255,0.45)] dark:border-brand-gold/40 dark:text-muted-foreground">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/50 bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-[0_0_0_1px_rgba(110,147,255,0.12),0_4px_16px_-6px_rgba(110,147,255,0.45)] dark:border-brand-gold/40 dark:text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-emerald-500" />
           <span>Executive Private Terminal</span>
         </div>
@@ -261,7 +261,7 @@ export default function DashboardPage() {
               <Wallet className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(netWorth)}</div>
+          <div className="mt-4 text-2xl font-mono font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(netWorth)}</div>
           <p className="mt-1 text-xs text-muted-foreground">Varlıklar + Yatırımlar + Nakit</p>
         </div>
 
@@ -274,7 +274,7 @@ export default function DashboardPage() {
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalInvestments)}</div>
+          <div className="mt-4 text-2xl font-mono font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalInvestments)}</div>
           <p className="mt-1 text-xs text-muted-foreground">Hisse ve Altın portföyü</p>
         </div>
 
@@ -287,7 +287,7 @@ export default function DashboardPage() {
               <PiggyBank className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalAssets)}</div>
+          <div className="mt-4 text-2xl font-mono font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalAssets)}</div>
           <p className="mt-1 text-xs text-muted-foreground">Araba, Gayrimenkul vb.</p>
         </div>
 
@@ -300,7 +300,7 @@ export default function DashboardPage() {
               <HandCoins className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-4 text-2xl font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalOpenDebts)}</div>
+          <div className="mt-4 text-2xl font-mono font-bold tracking-tight text-brand-gold dark:text-brand-gold-light">{formatTRY(summary.totalOpenDebts)}</div>
           <p className="mt-1 text-xs text-muted-foreground">Kişi bazlı açık bakiyeler</p>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
-                      <span className="text-sm font-bold text-foreground dark:text-foreground">{formatTRY(p.amount)}</span>
+                      <span className="font-mono text-sm font-bold text-foreground dark:text-foreground">{formatTRY(p.amount)}</span>
                       {info && (
                         <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${DUE_TONE_CLASSES[info.tone]}`}>
                           {info.label}
@@ -387,7 +387,7 @@ export default function DashboardPage() {
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row.categoryColor }} />
                   <span className="text-sm font-semibold text-foreground dark:text-foreground truncate">{row.categoryName}</span>
                 </div>
-                <span className={`text-sm font-bold ${BUDGET_TONE_CLASSES.over.text}`}>
+                <span className={`font-mono text-sm font-bold ${BUDGET_TONE_CLASSES.over.text}`}>
                   {formatTRY(row.spent)} / {formatTRY(row.limit)} (%{row.percent})
                 </span>
               </div>
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <div className={`text-sm font-bold ${
+                  <div className={`font-mono text-sm font-bold ${
                     tx.type === 'gelir' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {tx.type === 'gelir' ? '+' : '-'}{formatTRY(Number(tx.amount))}

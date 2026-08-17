@@ -171,10 +171,10 @@ export function EditableCell({
             }
           }}
           placeholder={placeholder}
-          className={`w-full px-2 py-1 pr-7 rounded-md border text-sm focus:outline-none focus:ring-2 ${
+          className={`w-full px-2 py-1 pr-7 rounded-lg border text-sm focus:outline-none focus:ring-2 ${
             error
               ? 'border-rose-400 focus:ring-rose-300'
-              : 'border-border dark:border-slate-600 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100'
+              : 'border-border dark:border-slate-600 focus:ring-accent dark:focus:ring-accent dark:bg-secondary dark:text-slate-100'
           } ${saving ? 'opacity-60' : ''}`}
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
@@ -196,7 +196,7 @@ export function EditableCell({
     <div
       onDoubleClick={startEditing}
       title="Düzenlemek için çift tıklayın"
-      className={`cursor-text rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-secondary dark:hover:bg-slate-700 transition-colors ${className}`}
+      className={`cursor-text rounded-lg px-2 py-1 -mx-2 -my-1 hover:bg-secondary dark:hover:bg-slate-700 transition-colors ${className}`}
     >
       {display ?? value}
     </div>

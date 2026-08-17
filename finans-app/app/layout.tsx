@@ -1,18 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import { Toaster } from "@/components/ui/toaster";
 import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
 });
 
@@ -34,14 +39,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#151515",
+  themeColor: "#10142b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${inter.variable} ${robotoMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

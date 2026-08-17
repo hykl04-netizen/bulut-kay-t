@@ -46,7 +46,7 @@ export function RowActionsMenu({ children }: { children: (close: () => void) => 
       <button
         ref={buttonRef}
         onClick={() => (open ? close() : openMenu())}
-        className="p-2 hover:bg-secondary dark:hover:bg-secondary rounded-md transition-colors"
+        className="p-2 hover:bg-secondary dark:hover:bg-secondary rounded-lg transition-colors"
       >
         <MoreHorizontal className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
       </button>

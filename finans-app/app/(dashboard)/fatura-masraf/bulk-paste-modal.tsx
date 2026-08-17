@@ -140,7 +140,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
             )}
             <button
               onClick={onClose}
-              className="mt-4 bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg transition-colors"
+              className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition-colors"
             >
               Kapat
             </button>
@@ -163,7 +163,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
               onChange={(e) => setRaw(e.target.value)}
               placeholder="Excel'den kopyaladığınız hücreleri buraya yapıştırın..."
               rows={6}
-              className="w-full px-3 py-2 border border-border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 font-mono text-sm resize-y"
+              className="w-full px-3 py-2 border border-border dark:border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent dark:bg-secondary dark:text-slate-100 font-mono text-sm resize-y"
             />
 
             {parsedRows.length > 0 && (
@@ -231,14 +231,14 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
             <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border dark:border-border">
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg text-muted-foreground dark:text-muted-foreground hover:bg-secondary dark:hover:bg-slate-700 transition-colors"
+                className="px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted transition-colors"
               >
                 Vazgeç
               </button>
               <button
                 onClick={handleImport}
                 disabled={validRows.length === 0 || importing}
-                className="bg-primary hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground px-4 py-2 rounded-xl transition-colors"
               >
                 {importing ? 'Ekleniyor...' : `İçe Aktar (${validRows.length} satır)`}
               </button>

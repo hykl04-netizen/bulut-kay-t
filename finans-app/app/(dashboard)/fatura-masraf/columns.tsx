@@ -99,7 +99,7 @@ export const columns: ColumnDef<Bill>[] = [
           type="number"
           step="0.01"
           value={amount}
-          display={<span className="font-medium text-foreground dark:text-foreground">{formatted}</span>}
+          display={<span className="font-mono font-medium text-foreground dark:text-foreground">{formatted}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
         />
       );

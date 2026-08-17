@@ -7,42 +7,43 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #fafafa;
-  --foreground: #1a1a1a;
+  --background: #eef0f7;
+  --foreground: #1b2559;
 
   /* shadcn/ui — new-york / neutral tema tokenları */
-  /* Tema: Grafit Monokrom (Bloomberg-terminal ruhu, tablo yoğun ekranlar için) */
-  --radius: 0.5rem;
+  /* Tema: Ink Indigo + Cobalt (kurumsal, yumuşak köşeli) */
+  --radius: 0.875rem;
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #1b2559;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #1a1a1a;
+  --popover-foreground: #1b2559;
+  --primary: #2f5fe0;
   --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f2f2f2;
-  --muted-foreground: #6b6b6b;
-  --accent: #2f6fe0;
+  --secondary: #eef1fa;
+  --secondary-foreground: #1b2559;
+  --muted: #f0f2f9;
+  --muted-foreground: #6b7195;
+  --accent: #2f5fe0;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: #e4e4e4;
-  --input: #e4e4e4;
-  --ring: #2f6fe0;
+  --border: #e1e4f0;
+  --input: #e1e4f0;
+  --ring: #2f5fe0;
 
   /* Marka tokenları */
-  --brand-navy: #1a1a1a;
-  --brand-navy-light: #2a2a2a;
-  --brand-gold: #2f6fe0;
-  --brand-gold-light: #5ea1ff;
+  --brand-navy: #1b2559;
+  --brand-navy-light: #2b3568;
+  --brand-gold: #2f5fe0;
+  --brand-gold-light: #6e93ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-manrope);
+  --font-mono: var(--font-roboto-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -74,91 +75,82 @@
 }
 
 .dark {
-  --background: #151515;
-  --foreground: #eaeaea;
+  --background: #10142b;
+  --foreground: #e7e9f5;
 
   /* shadcn/ui — new-york / neutral tema tokenları (dark) */
   /* Not: --brand-navy* / --brand-gold* değişken adları geriye dönük uyumluluk
-     için korundu (35 yerde bu class'lar kullanılıyor), ama artık lacivert/altın
-     değil grafit/mavi tonlarını taşıyorlar. Mavi vurgu (accent) yine sadece
-     gerçek vurgu noktalarında; primary buton dolgusu nötr açık gri kalıyor. */
-  --card: #1f1f1f;
-  --card-foreground: #eaeaea;
-  --popover: #1f1f1f;
-  --popover-foreground: #eaeaea;
-  --primary: #eeeeee;
-  --primary-foreground: #151515;
-  --secondary: #262626;
-  --secondary-foreground: #eaeaea;
-  --muted: #212121;
-  --muted-foreground: #9a9a9a;
-  --accent: #5ea1ff;
-  --accent-foreground: #0d1b2e;
+     için korundu (35 yerde bu class'lar kullanılıyor); artık Ink Indigo /
+     Cobalt tonlarını taşıyorlar. Mavi vurgu (accent) yine sadece gerçek
+     vurgu noktalarında; primary buton dolgusu nötr açık indigo-gri kalıyor. */
+  --card: #171b37;
+  --card-foreground: #e7e9f5;
+  --popover: #171b37;
+  --popover-foreground: #e7e9f5;
+  --primary: #e7e9f5;
+  --primary-foreground: #10142b;
+  --secondary: #1e2340;
+  --secondary-foreground: #e7e9f5;
+  --muted: #191d38;
+  --muted-foreground: #9aa1c7;
+  --accent: #6e93ff;
+  --accent-foreground: #0e1430;
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: rgba(94, 161, 255, 0.12);
-  --input: rgba(94, 161, 255, 0.12);
-  --ring: #5ea1ff;
+  --border: rgba(110, 147, 255, 0.14);
+  --input: rgba(110, 147, 255, 0.14);
+  --ring: #6e93ff;
 
-  --brand-navy: #1a1a1a;
-  --brand-navy-light: #2a2a2a;
-  --brand-gold: #2f6fe0;
-  --brand-gold-light: #5ea1ff;
+  --brand-navy: #1b2559;
+  --brand-navy-light: #2b3568;
+  --brand-gold: #2f5fe0;
+  --brand-gold-light: #6e93ff;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), var(--font-sans), Arial, Helvetica, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 /* ============================================================
-   Altın Vurgu Sistemi (Private Banking Gold Accents)
+   Cobalt Vurgu Sistemi (Sidebar aktif durumu + CTA parlaması)
    ============================================================ */
 
-/* --- Sidebar: kutucuksuz, "parlayan" seçim göstergesi ---
-   Aktif/hover menü öğesi artık dolgun bir kutu yerine; ince bir
-   altın kenar çizgisi + yumuşak altın halo (glow) ile öne çıkar. */
+/* --- Sidebar: açık/yüzen kart, "açık mavi arka plan" seçim göstergesi ---
+   Yön B: sidebar artık koyu bir blok değil, sayfadan içeride duran beyaz
+   bir kart. Aktif/hover menü öğesi glow yerine sade bir açık mavi (Cobalt
+   tonlu) arka planla öne çıkar. */
 .nav-link {
-  position: relative;
-  isolation: isolate;
-  transition: color 0.25s ease, background-color 0.35s ease;
-}
-
-.nav-link::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10%;
-  bottom: 10%;
-  width: 3px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--brand-gold-light), var(--brand-gold));
-  opacity: 0;
-  transform: scaleY(0.4);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-lg);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .nav-link:hover {
-  color: var(--brand-gold-light);
-  background: radial-gradient(120% 140% at 0% 50%, rgba(94, 161, 255, 0.14), rgba(94, 161, 255, 0) 70%);
-}
-
-.nav-link:hover::before {
-  opacity: 0.55;
-  transform: scaleY(0.7);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .nav-link.is-active {
-  color: var(--brand-gold-light);
-  background: radial-gradient(120% 140% at 0% 50%, rgba(94, 161, 255, 0.2), rgba(94, 161, 255, 0) 72%);
-  text-shadow: 0 0 18px rgba(94, 161, 255, 0.35);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  color: var(--accent);
 }
 
-.nav-link.is-active::before {
-  opacity: 1;
-  transform: scaleY(1);
-  box-shadow: 0 0 10px 1px rgba(94, 161, 255, 0.65);
+.dark .nav-link.is-active {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 /* --- CTA Butonları: hover'da altın çerçeve + parlama sweep --- */
@@ -170,8 +162,8 @@ body {
 }
 
 .btn-gold-cta:hover {
-  border-color: rgba(94, 161, 255, 0.85);
-  box-shadow: 0 0 0 1px rgba(94, 161, 255, 0.35), 0 10px 26px -10px rgba(94, 161, 255, 0.65);
+  border-color: rgba(110, 147, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(110, 147, 255, 0.35), 0 10px 26px -10px rgba(110, 147, 255, 0.65);
 }
 
 .btn-gold-cta:active {
@@ -212,7 +204,7 @@ body {
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
   background: var(--card);
   padding: 1.5rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 20px -6px rgba(27, 37, 89, 0.12);
   transition: border-color 0.2s ease;
 }
 .card-surface:hover {
@@ -224,7 +216,7 @@ body {
   border: 1px solid var(--border);
   background: var(--card);
   padding: 1.5rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 20px -6px rgba(27, 37, 89, 0.12);
 }
 
 .card-empty-state {
@@ -234,7 +226,7 @@ body {
   padding: 3rem 0;
   text-align: center;
   color: var(--muted-foreground);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 20px -6px rgba(27, 37, 89, 0.12);
 }
 
 .form-input {
@@ -262,7 +254,7 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--foreground);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 20px -6px rgba(27, 37, 89, 0.12);
   transition: background-color 0.2s ease;
 }
 .btn-outline:hover {
