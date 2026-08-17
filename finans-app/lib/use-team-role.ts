@@ -5,13 +5,13 @@ import type { TeamRole } from '@/lib/team';
 
 interface TeamRoleState {
   role: TeamRole | null;
-  accountId: string | null;
+  workspaceId: string | null;
   isOwner: boolean;
   loading: boolean;
 }
 
 /**
- * Oturum açan kullanıcının bağlı olduğu hesabı ve o hesaptaki rolünü döner
+ * Oturum açan kullanıcının SEÇİLİ işletmesini ve o işletmedeki rolünü döner
  * (`/api/ekip/rolum` route'unu çağırır). Yüklenirken role=null döner —
  * bu sırada yetki gerektiren butonları GÖSTERMEK (varsayılan olarak tam
  * yetkili gibi davranmak) yerine gizli tutmak daha güvenlidir; sayfalar
@@ -20,7 +20,7 @@ interface TeamRoleState {
 export function useTeamRole(): TeamRoleState {
   const [state, setState] = useState<TeamRoleState>({
     role: null,
-    accountId: null,
+    workspaceId: null,
     isOwner: false,
     loading: true,
   });
@@ -33,12 +33,12 @@ export function useTeamRole(): TeamRoleState {
         if (!res.ok) throw new Error('rol alınamadı');
         const data = await res.json();
         if (cancelled) return;
-        setState({ role: data.role, accountId: data.accountId, isOwner: data.isOwner, loading: false });
+        setState({ role: data.role, workspaceId: data.workspaceId, isOwner: data.isOwner, loading: false });
       } catch {
         if (cancelled) return;
         // Hata durumunda en kısıtlı role düş — sahip/yönetici gerektiren
         // hiçbir arayüz yanlışlıkla gösterilmesin.
-        setState({ role: 'salt_gorunum', accountId: null, isOwner: false, loading: false });
+        setState({ role: 'salt_gorunum', workspaceId: null, isOwner: false, loading: false });
       }
     })();
     return () => {

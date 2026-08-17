@@ -99,7 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/abonelik', label: 'Abonelik', icon: CreditCard, managerOnly: true },
       { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
       { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
-      { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true, disabled: true },
+      { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
     ],
   },
 ];

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, UserPlus, Loader2, Trash2, ShieldAlert, Mail, Clock } from 'lucide-react';
+import { Users, UserPlus, Loader2, Trash2, ShieldAlert, Mail, Clock, CreditCard } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
@@ -15,43 +16,12 @@ import {
   type TeamMember,
   type InvitableRole,
 } from '@/lib/team';
-
-// Tek kullanıcılı hesaplar için bu özellik kapatıldı. Kod silinmedi — ileride
-// birden fazla kullanıcı/rol yönetimi gerekirse `false` yapıp geri açılabilir.
-// Aynı bayrak app/api/ekip/*/route.ts dosyalarında da kullanılıyor.
-const EKIP_DISABLED = true;
-
-function EkipDisabledNotice() {
-  return (
-    <div className="p-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-2">
-        <Users className="w-6 h-6 text-muted-foreground" />
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
-      </div>
-      <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-5">
-        <p className="text-foreground font-medium mb-1">Bu özellik şu an kapalı.</p>
-        <p className="text-sm text-muted-foreground">
-          Hesabınız tek kullanıcı için ayarlandığından çoklu kullanıcı ve rol yönetimi
-          devre dışı bırakıldı. Kod tabanından silinmedi; ileride ekip üyesi eklemeniz
-          gerekirse tekrar açılabilir.
-        </p>
-      </div>
-    </div>
-  );
-}
+import { useSubscription } from '@/lib/use-subscription';
+import { effectivePlan, getPlan } from '@/lib/plans';
 
 export default function EkipPage() {
-  // Hook'lar burada değil, her zaman render edilen EkipPageContent içinde
-  // çağrılıyor — böylece EKIP_DISABLED bayrağı ne olursa olsun hook sırası
-  // her render'da aynı kalıyor (react-hooks/rules-of-hooks ihlali önlenir).
-  if (EKIP_DISABLED) {
-    return <EkipDisabledNotice />;
-  }
-  return <EkipPageContent />;
-}
-
-function EkipPageContent() {
   const { role, loading: roleLoading } = useTeamRole();
+  const { subscription, loading: subLoading } = useSubscription();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -60,6 +30,15 @@ function EkipPageContent() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const canManage = role === 'sahip' || role === 'yonetici';
+
+  // Plan bazlı kullanıcı limiti (Faz 4). Sahip her zaman 1 kişi sayılır;
+  // iptal edilmiş davetler sayılmaz. Asıl kısıt DB tetikleyicisinde
+  // (enforce_workspace_user_limit) — burası yalnızca kullanıcıyı önceden
+  // bilgilendirip boşuna davet göndermesini engelliyor.
+  const plan = getPlan(effectivePlan(subscription));
+  const usedSeats = 1 + members.filter((m) => m.status !== 'iptal').length;
+  const seatLimit = plan.userLimit;
+  const seatsFull = seatLimit !== null && usedSeats >= seatLimit;
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -180,10 +159,38 @@ function EkipPageContent() {
         <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
       </div>
       <p className="text-sm text-muted-foreground">
-        Hesabınıza başka kullanıcılar davet edin ve yetkilerini belirleyin. Yönetici sizinle eşit yetkiye sahiptir,
+        İşletmenize başka kullanıcılar davet edin ve yetkilerini belirleyin. Yönetici sizinle eşit yetkiye sahiptir,
         muhasebeci kayıt ekleyip düzenleyebilir ama ekip yönetemez, salt görüntüleme ise sadece bakabilir (bordro
         hariç).
       </p>
+
+      {/* Plan bazlı koltuk sayacı */}
+      {!subLoading && (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+            seatsFull
+              ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+              : 'border-border bg-card text-muted-foreground'
+          }`}
+        >
+          <span>
+            <strong className="text-foreground">{plan.label}</strong> planı —{' '}
+            {seatLimit === null
+              ? `sınırsız kullanıcı (${usedSeats} kullanılıyor)`
+              : `${usedSeats} / ${seatLimit} kullanıcı`}
+            {seatsFull && ' · Kullanıcı hakkınız doldu.'}
+          </span>
+          {seatsFull && (
+            <Link
+              href="/abonelik"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-secondary transition"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              Planı Yükselt
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Davet formu */}
       <form
@@ -218,8 +225,9 @@ function EkipPageContent() {
         </div>
         <button
           type="submit"
-          disabled={inviting}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
+          disabled={inviting || seatsFull}
+          title={seatsFull ? 'Planınızdaki kullanıcı hakkı doldu. Yükseltmeniz gerekiyor.' : undefined}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
           Davet Et
@@ -247,7 +255,7 @@ function EkipPageContent() {
                 <Mail className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground dark:text-foreground">
+                    <span className="text-sm font-semibold text-foreground dark:text-slate-100">
                       {member.invited_email}
                     </span>
                     {member.status !== 'aktif' && (

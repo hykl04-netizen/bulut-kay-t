@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { INVITABLE_ROLES, type InvitableRole } from '@/lib/team';
+import { getSelectedWorkspaceId } from '@/lib/supabase/workspace-server';
 
 export const runtime = 'nodejs';
 
-// Tek kullanıcılı hesaplar için ekip yönetimi kapatıldı (bkz. app/(dashboard)/ekip/page.tsx).
-// Kod silinmedi, ileride açılabilir.
-const EKIP_DISABLED = true;
+// Faz 4: ekip yönetimi plan bazlı olarak geri açıldı. Kullanıcı limiti
+// DB tetikleyicisiyle (enforce_workspace_user_limit) uygulanıyor —
+// bkz. supabase/migrations/20260820_team_plan_limits.sql
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,15 +28,13 @@ async function requireTeamManager() {
     return { error: NextResponse.json({ error: 'Oturum açmanız gerekiyor.' }, { status: 401 }) } as const;
   }
 
-  const { data: accountId, error: accountErr } = await supabase.rpc('get_account_id_for_user', {
-    p_user_id: user.id,
-  });
-  if (accountErr || !accountId) {
-    return { error: NextResponse.json({ error: 'Hesap bilgisi alınamadı.' }, { status: 500 }) } as const;
+  const workspaceId = await getSelectedWorkspaceId(supabase, user.id);
+  if (!workspaceId) {
+    return { error: NextResponse.json({ error: 'İşletme bilgisi alınamadı.' }, { status: 500 }) } as const;
   }
 
   const { data: canManage, error: roleErr } = await supabase.rpc('has_account_role', {
-    p_account_id: accountId,
+    p_account_id: workspaceId,
     p_allowed_roles: ['yonetici'],
   });
   if (roleErr) {
@@ -50,22 +49,19 @@ async function requireTeamManager() {
     } as const;
   }
 
-  return { supabase, user, accountId: accountId as string } as const;
+  return { supabase, user, workspaceId } as const;
 }
 
 // Hesabın ekip üyelerini listeler (davet bekleyenler dahil).
 export async function GET() {
-  if (EKIP_DISABLED) {
-    return NextResponse.json({ error: 'Ekip yönetimi bu hesapta kapalı.' }, { status: 403 });
-  }
   const result = await requireTeamManager();
   if ('error' in result) return result.error;
-  const { supabase, accountId } = result;
+  const { supabase, workspaceId } = result;
 
   const { data, error } = await supabase
     .from('team_members')
     .select('*')
-    .eq('workspace_id', accountId)
+    .eq('workspace_id', workspaceId)
     .order('invited_at', { ascending: false });
 
   if (error) {
@@ -77,12 +73,9 @@ export async function GET() {
 
 // Yeni bir ekip üyesi davet eder.
 export async function POST(request: NextRequest) {
-  if (EKIP_DISABLED) {
-    return NextResponse.json({ error: 'Ekip yönetimi bu hesapta kapalı.' }, { status: 403 });
-  }
   const result = await requireTeamManager();
   if ('error' in result) return result.error;
-  const { supabase, user, accountId } = result;
+  const { supabase, user, workspaceId } = result;
 
   let body: { email?: string; role?: string };
   try {
@@ -113,7 +106,7 @@ export async function POST(request: NextRequest) {
   const { data: existingRow } = await supabase
     .from('team_members')
     .select('id, status')
-    .eq('workspace_id', accountId)
+    .eq('workspace_id', workspaceId)
     .eq('invited_email', email)
     .maybeSingle();
 
@@ -146,7 +139,7 @@ export async function POST(request: NextRequest) {
     .from('team_members')
     .upsert(
       {
-        workspace_id: accountId,
+        workspace_id: workspaceId,
         member_user_id: existingAuthUserId,
         invited_email: email,
         role,
