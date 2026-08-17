@@ -132,7 +132,7 @@ export default function KategorilerPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full max-w-sm px-4 py-3 border border-border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100"
+              className="w-full max-w-sm px-4 py-3 border border-border dark:border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent dark:bg-secondary dark:text-foreground"
               placeholder="Örn: Market, Ulaşım, Maaş..."
             />
           </div>
@@ -145,7 +145,7 @@ export default function KategorilerPage() {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-slate-900 scale-110' : ''}`}
+                  className={`w-8 h-8 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-accent scale-110' : ''}`}
                   style={{ backgroundColor: c }}
                   aria-label={`Renk: ${c}`}
                 />
@@ -156,7 +156,7 @@ export default function KategorilerPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-primary hover:bg-secondary disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="btn-gold-cta bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
           >
             <Plus className="w-4 h-4" />
             {saving ? 'Ekleniyor...' : 'Kategori Ekle'}

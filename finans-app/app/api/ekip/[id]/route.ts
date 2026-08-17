@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .from('team_members')
     .update({ role })
     .eq('id', id)
-    .eq('account_id', accountId) // başka hesabın üyesini asla güncelleyemesin
+    .eq('workspace_id', accountId) // başka workspace'in üyesini asla güncelleyemesin
     .select()
     .single();
 
@@ -107,7 +107,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     return NextResponse.json({ error: 'Sunucuda SUPABASE_SERVICE_ROLE_KEY eksik.' }, { status: 500 });
   }
 
-  const { error } = await admin.from('team_members').delete().eq('id', id).eq('account_id', accountId);
+  const { error } = await admin.from('team_members').delete().eq('id', id).eq('workspace_id', accountId);
 
   if (error) {
     return NextResponse.json({ error: 'Üye çıkarılamadı.' }, { status: 500 });

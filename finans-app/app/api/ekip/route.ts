@@ -65,7 +65,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from('team_members')
     .select('*')
-    .eq('account_id', accountId)
+    .eq('workspace_id', accountId)
     .order('invited_at', { ascending: false });
 
   if (error) {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
   const { data: existingRow } = await supabase
     .from('team_members')
     .select('id, status')
-    .eq('account_id', accountId)
+    .eq('workspace_id', accountId)
     .eq('invited_email', email)
     .maybeSingle();
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     .from('team_members')
     .upsert(
       {
-        account_id: accountId,
+        workspace_id: accountId,
         member_user_id: existingAuthUserId,
         invited_email: email,
         role,
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         invited_by: user.id,
         joined_at: existingAuthUserId ? new Date().toISOString() : null,
       },
-      { onConflict: 'account_id,invited_email' }
+      { onConflict: 'workspace_id,invited_email' }
     )
     .select()
     .single();

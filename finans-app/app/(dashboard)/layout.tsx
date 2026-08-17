@@ -33,6 +33,7 @@ import { CalculatorWidget } from '@/components/calculator-widget';
 import { BackupModal } from '@/components/backup-modal';
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
 import { Logo } from '@/components/logo';
+import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import { runRecurringAutomation } from '@/lib/recurring';
 import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
@@ -179,6 +180,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {ROLE_LABELS[role]}
           </span>
         )}
+      </div>
+
+      <div className="pb-3">
+        <WorkspaceSwitcher />
       </div>
 
       <nav className="flex-1 px-3 pb-2 space-y-5 overflow-y-auto">

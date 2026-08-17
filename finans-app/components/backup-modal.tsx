@@ -24,8 +24,8 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl dark:bg-primary dark:text-slate-100">
-        <h2 className="text-lg font-bold text-foreground dark:text-white">Veri Yedekleme</h2>
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl dark:bg-card dark:text-foreground">
+        <h2 className="text-lg font-bold text-foreground dark:text-foreground">Veri Yedekleme</h2>
         <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
           Tüm gelir-gider, borç, fatura ve yatırım verilerinizi tek bir JSON dosyası olarak cihazınıza indirebilirsiniz.
         </p>
@@ -46,7 +46,7 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           <button
             onClick={handleExport}
             disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
           >
             {loading ? 'İndiriliyor...' : '📥 Tüm Verileri İndir (JSON)'}
           </button>

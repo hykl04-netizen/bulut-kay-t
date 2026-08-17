@@ -19,7 +19,7 @@ const PAGE_SHORTCUTS: ShortcutRow[] = [
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="inline-flex min-w-[1.75rem] items-center justify-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-slate-100">
+    <kbd className="inline-flex min-w-[1.75rem] items-center justify-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-foreground">
       {children}
     </kbd>
   );
@@ -30,7 +30,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: { isOpen: boolean; o
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl dark:bg-card dark:text-foreground">
         <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Keyboard className="h-5 w-5" />

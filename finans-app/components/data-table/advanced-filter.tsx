@@ -77,7 +77,7 @@ export function AdvancedFilterBar({
             value={value.search}
             onChange={(e) => update({ search: e.target.value })}
             placeholder={searchPlaceholder ?? 'Ara... ( / )'}
-            className="w-full rounded-xl border border-border bg-transparent py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-white"
+            className="w-full rounded-xl border border-border bg-transparent py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
           />
         </div>
 
@@ -112,7 +112,7 @@ export function AdvancedFilterBar({
       </div>
 
       {panelOpen && (
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-primary sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-card sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
               Başlangıç Tarihi
@@ -121,7 +121,7 @@ export function AdvancedFilterBar({
               type="date"
               value={value.dateFrom}
               onChange={(e) => update({ dateFrom: e.target.value })}
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-white"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
             />
           </div>
           <div>
@@ -132,7 +132,7 @@ export function AdvancedFilterBar({
               type="date"
               value={value.dateTo}
               onChange={(e) => update({ dateTo: e.target.value })}
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-white"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
             />
           </div>
           <div>
@@ -145,7 +145,7 @@ export function AdvancedFilterBar({
               value={value.amountMin}
               onChange={(e) => update({ amountMin: e.target.value })}
               placeholder="0"
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-white"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
             />
           </div>
           <div>
@@ -158,7 +158,7 @@ export function AdvancedFilterBar({
               value={value.amountMax}
               onChange={(e) => update({ amountMax: e.target.value })}
               placeholder="∞"
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-white"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
             />
           </div>
 

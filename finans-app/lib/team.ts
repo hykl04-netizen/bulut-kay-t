@@ -1,5 +1,7 @@
 // Çoklu kullanıcı / rol yönetimi için paylaşılan tipler ve yardımcılar.
-// DB tarafındaki roller ile birebir eşleşir (bkz. supabase/migrations/20260816_team_roles.sql).
+// DB tarafındaki roller ile birebir eşleşir (bkz.
+// supabase/migrations/20260816_team_roles.sql ve 20260817_workspaces.sql —
+// ikincisi team_members.account_id kolonunu workspace_id'ye yeniden adlandırdı).
 
 export type TeamRole = 'sahip' | 'yonetici' | 'muhasebeci' | 'salt_gorunum';
 
@@ -9,7 +11,7 @@ export type MemberStatus = 'beklemede' | 'aktif' | 'iptal';
 
 export interface TeamMember {
   id: number;
-  account_id: string;
+  workspace_id: string;
   member_user_id: string | null;
   invited_email: string;
   role: InvitableRole;

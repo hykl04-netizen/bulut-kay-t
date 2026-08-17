@@ -237,7 +237,7 @@ export default function BordroPage() {
             <button
               type="submit"
               disabled={isSubmitting || gross === 0}
-              className="btn-gold-cta flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              className="btn-gold-cta flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
             >
               <Plus className="h-4 w-4" />
               {isSubmitting ? 'Kaydediliyor...' : 'Bordroyu Kaydet'}
@@ -263,7 +263,7 @@ export default function BordroPage() {
                   <th className="px-4 py-3 text-center">İşlem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-border">
+              <tbody className="divide-y divide-border dark:divide-border">
                 {payrolls.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-muted-foreground">Henüz bordro kaydı bulunmuyor.</td>
@@ -273,7 +273,7 @@ export default function BordroPage() {
                     const totalDeductions = payroll.sgk_deduction + payroll.income_tax + payroll.stamp_tax + payroll.bes_deduction;
                     return (
                       <tr key={payroll.id} className="transition-colors hover:bg-muted dark:hover:bg-secondary/50">
-                        <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground dark:text-slate-100">
+                        <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground dark:text-foreground">
                           {payroll.period}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-right">

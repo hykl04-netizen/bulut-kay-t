@@ -3,8 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Wallet, ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client'; // Supabase bağlantımız
+import { Logo } from '@/components/logo';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -38,47 +43,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border dark:border-border p-8">
-        
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
+      <ThemeToggle className="absolute right-4 top-4" />
+
+      <div className="w-full max-w-md card-surface">
         {/* Logo ve Başlık */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
-            <Wallet className="text-white w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">FinansApp</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground text-sm mt-1">Kurumsal hesabınıza giriş yapın</p>
+        <div className="mb-8 flex flex-col items-center">
+          <Logo size="lg" className="mb-5" />
+          <p className="text-sm text-muted-foreground">Kurumsal hesabınıza giriş yapın</p>
         </div>
 
         {/* Hata Mesajı */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2 text-sm">
-            <AlertCircle className="w-4 h-4" />
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
         {/* Giriş Formu */}
         <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">
-              E-posta Adresi
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="email">E-posta Adresi</Label>
+            <Input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="ornek@mail.com"
               required
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground">
-                Şifre
-              </label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Şifre</Label>
               <Link
                 href="/sifremi-unuttum"
                 className="text-xs font-medium text-primary hover:underline dark:text-brand-gold-light"
@@ -86,26 +85,21 @@ export default function LoginPage() {
                 Şifremi Unuttum
               </Link>
             </div>
-            <input
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="••••••••"
               required
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-secondary disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
-          >
+          <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-            {!loading && <ArrowRight className="w-4 h-4" />}
-          </button>
+            {!loading && <ArrowRight className="h-4 w-4" />}
+          </Button>
         </form>
-        
       </div>
     </div>
   );

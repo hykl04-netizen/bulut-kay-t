@@ -286,7 +286,7 @@ export default function FaturaMasrafPage() {
               </button>
               <button
                 onClick={handleOpenAddModal}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-primary/90 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
               >
                 <Plus className="h-4 w-4" />
                 Yeni Fatura/Masraf Ekle
@@ -336,7 +336,7 @@ export default function FaturaMasrafPage() {
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-foreground">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Faturayı Düzenle' : 'Yeni Fatura / Masraf Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -478,7 +478,7 @@ export default function FaturaMasrafPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

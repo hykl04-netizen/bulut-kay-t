@@ -216,7 +216,7 @@ export default function ButcePage() {
                 <button
                   onClick={() => handleSaveLimit(cat.id)}
                   disabled={savingId === cat.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-secondary disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 transition-colors dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Kaydet
@@ -245,7 +245,7 @@ function BudgetRowItem({ row, onDelete, canEdit }: { row: BudgetRow; onDelete: (
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.categoryColor }} />
-          <span className="font-medium text-foreground dark:text-slate-100 truncate">{row.categoryName}</span>
+          <span className="font-medium text-foreground dark:text-foreground truncate">{row.categoryName}</span>
           {row.tone === 'over' && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${tone.badge}`}>
               Aşıldı

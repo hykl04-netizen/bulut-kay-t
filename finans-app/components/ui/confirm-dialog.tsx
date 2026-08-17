@@ -71,7 +71,7 @@ export function ConfirmDialogHost() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl dark:border-border dark:bg-primary"
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl dark:border-border dark:bg-card"
       >
         <div className="flex items-center gap-3">
           <div
@@ -83,7 +83,7 @@ export function ConfirmDialogHost() {
           >
             <Icon className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-bold text-foreground dark:text-white">
+          <h3 className="text-base font-bold text-foreground dark:text-foreground">
             {state.title ?? 'Emin misiniz?'}
           </h3>
         </div>
@@ -105,7 +105,7 @@ export function ConfirmDialogHost() {
             className={`btn-gold-cta rounded-xl px-4 py-2 text-sm font-medium text-white transition ${
               state.danger
                 ? 'bg-rose-600 hover:bg-rose-700'
-                : 'bg-primary hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200'
+                : 'bg-primary hover:bg-primary/90 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70'
             }`}
           >
             {state.confirmLabel ?? 'Onayla'}

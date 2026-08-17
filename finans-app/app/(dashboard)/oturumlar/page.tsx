@@ -97,7 +97,7 @@ export default function OturumlarPage() {
           <button
             onClick={handleRevokeOthers}
             disabled={revokingOthers}
-            className="inline-flex items-center gap-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
+            className="inline-flex items-center gap-2 rounded-xl border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
           >
             {revokingOthers ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldX className="h-4 w-4" />}
             Diğer Tüm Oturumlardan Çıkış Yap
@@ -129,7 +129,7 @@ export default function OturumlarPage() {
                 <MonitorSmartphone className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground dark:text-slate-100">
+                    <span className="text-sm font-semibold text-foreground dark:text-foreground">
                       {summarizeUserAgent(session.user_agent)}
                     </span>
                     {session.is_current && (

@@ -94,7 +94,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
       {!uploadedUrl ? (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted py-6 transition-colors hover:bg-secondary dark:border-border dark:bg-primary dark:hover:bg-secondary"
+          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted py-6 transition-colors hover:bg-secondary dark:border-border dark:bg-secondary dark:hover:bg-secondary"
         >
           {isUploading ? (
             <div className="flex flex-col items-center text-emerald-600">

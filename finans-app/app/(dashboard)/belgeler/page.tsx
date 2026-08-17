@@ -188,7 +188,7 @@ export default function BelgelerPage() {
         {canEdit && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-primary/90 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
           >
             <Plus className="h-4 w-4" />
             Yeni Belge Yükle
@@ -208,7 +208,7 @@ export default function BelgelerPage() {
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 selectedCategory === cat
                   ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
-                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
+                  : 'bg-secondary text-muted-foreground hover:bg-accent/10 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-accent/15'
               }`}
             >
               {cat}
@@ -251,7 +251,7 @@ export default function BelgelerPage() {
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                 selectedTags.includes(tag)
                   ? 'bg-brand-gold text-accent-foreground'
-                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
+                  : 'bg-secondary text-muted-foreground hover:bg-accent/10 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-accent/15'
               }`}
             >
               #{tag}
@@ -339,7 +339,7 @@ export default function BelgelerPage() {
       {/* Yeni Belge Ekleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:text-foreground">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">Yeni Belge / Fatura Yükle</h2>
               <button
@@ -411,7 +411,7 @@ export default function BelgelerPage() {
                   <button
                     type="button"
                     onClick={addTagsFromInput}
-                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted dark:text-slate-100 dark:hover:bg-secondary"
+                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted dark:text-foreground dark:hover:bg-secondary"
                   >
                     Ekle
                   </button>
@@ -459,7 +459,7 @@ export default function BelgelerPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !fileUrl}
-                  className="btn-gold-cta rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>

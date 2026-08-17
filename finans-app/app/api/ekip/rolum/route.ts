@@ -29,7 +29,7 @@ export async function GET() {
     const { data: memberRow } = await supabase
       .from('team_members')
       .select('role')
-      .eq('account_id', accountId)
+      .eq('workspace_id', accountId)
       .eq('member_user_id', user.id)
       .eq('status', 'aktif')
       .maybeSingle();

@@ -83,14 +83,14 @@ export function Toaster() {
         return (
           <div
             key={item.id}
-            className={`animate-in slide-in-from-bottom-2 fade-in flex items-start gap-3 rounded-xl border border-border/80 border-l-4 bg-card p-4 text-sm shadow-lg dark:border-border dark:bg-primary ${STYLES[item.type]}`}
+            className={`animate-in slide-in-from-bottom-2 fade-in flex items-start gap-3 rounded-xl border border-border/80 border-l-4 bg-card p-4 text-sm shadow-lg dark:border-border dark:bg-card ${STYLES[item.type]}`}
           >
             <Icon className="toast-icon h-5 w-5 shrink-0 mt-0.5" />
-            <p className="flex-1 text-foreground dark:text-slate-100 leading-snug">{item.message}</p>
+            <p className="flex-1 text-foreground dark:text-foreground leading-snug">{item.message}</p>
             <button
               onClick={() => dismiss(item.id)}
               aria-label="Bildirimi kapat"
-              className="shrink-0 text-muted-foreground hover:text-foreground dark:hover:text-white transition"
+              className="shrink-0 text-muted-foreground hover:text-foreground dark:hover:text-foreground transition"
             >
               <X className="h-4 w-4" />
             </button>

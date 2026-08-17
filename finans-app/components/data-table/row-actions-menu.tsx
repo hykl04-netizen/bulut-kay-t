@@ -58,7 +58,7 @@ export function RowActionsMenu({ children }: { children: (close: () => void) => 
             <div className="fixed inset-0 z-40" onClick={close} />
             <div
               style={{ position: 'fixed', top: coords.top, left: coords.left }}
-              className="w-44 bg-card dark:bg-primary border border-border dark:border-border rounded-lg shadow-lg z-50"
+              className="w-44 bg-card dark:bg-card border border-border dark:border-border rounded-lg shadow-lg z-50"
             >
               {children(close)}
             </div>

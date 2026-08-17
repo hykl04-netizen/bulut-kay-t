@@ -28,7 +28,7 @@ function EkipDisabledNotice() {
         <Users className="w-6 h-6 text-muted-foreground" />
         <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
       </div>
-      <div className="mt-4 rounded-lg border border-border bg-secondary/40 p-5">
+      <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-5">
         <p className="text-foreground font-medium mb-1">Bu özellik şu an kapalı.</p>
         <p className="text-sm text-muted-foreground">
           Hesabınız tek kullanıcı için ayarlandığından çoklu kullanıcı ve rol yönetimi
@@ -41,10 +41,16 @@ function EkipDisabledNotice() {
 }
 
 export default function EkipPage() {
+  // Hook'lar burada değil, her zaman render edilen EkipPageContent içinde
+  // çağrılıyor — böylece EKIP_DISABLED bayrağı ne olursa olsun hook sırası
+  // her render'da aynı kalıyor (react-hooks/rules-of-hooks ihlali önlenir).
   if (EKIP_DISABLED) {
     return <EkipDisabledNotice />;
   }
+  return <EkipPageContent />;
+}
 
+function EkipPageContent() {
   const { role, loading: roleLoading } = useTeamRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +219,7 @@ export default function EkipPage() {
         <button
           type="submit"
           disabled={inviting}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
         >
           {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
           Davet Et
@@ -241,7 +247,7 @@ export default function EkipPage() {
                 <Mail className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground dark:text-slate-100">
+                    <span className="text-sm font-semibold text-foreground dark:text-foreground">
                       {member.invited_email}
                     </span>
                     {member.status !== 'aktif' && (

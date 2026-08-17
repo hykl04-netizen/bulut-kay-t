@@ -1,19 +1,14 @@
-import { supabase } from './client';
+import { getCurrentWorkspaceId } from './workspace';
 
 /**
- * Oturum açan kullanıcının "hesap id'sini" döner: kullanıcı hesap sahibiyse
- * kendi id'si, davetli bir ekip üyesiyse bağlı olduğu hesap sahibinin id'si.
- * Tüm paylaşılan veri tablolarında (transactions, bills, debts, investments,
- * assets, categories, documents, budgets, bank_accounts, payrolls) `user_id`
- * kolonu bu "hesap id'sini" tutar — bu yüzden sorgu/insert'lerde
- * `user.id` yerine bu fonksiyonun döndürdüğü değer kullanılmalı.
- *
- * RPC başarısız olursa (örn. migration henüz çalıştırılmamışsa) güvenli
- * varsayılan olarak kullanıcının kendi id'sine düşer — tek kullanıcılı eski
- * davranış bozulmaz.
+ * @deprecated Yerine doğrudan `getCurrentWorkspaceId` (bkz.
+ * `lib/supabase/workspace.ts`) kullanılması önerilir. Bu fonksiyon, Faz 1
+ * (çoklu şirket/workspace altyapısı) eklenirken var olan ~15 çağrı noktasını
+ * (sayfalar + layout'taki tekrarlayan-işlem otomasyonu) tek tek değiştirmeden
+ * bozmamak için burada bırakıldı — artık tek bir "hesap" değil, kullanıcının
+ * o an SEÇİLİ workspace'ini (birden fazla işletmesi olabilir) döner. Yeni
+ * kod doğrudan `getCurrentWorkspaceId` çağırmalı.
  */
 export async function getCurrentAccountId(userId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('get_account_id_for_user', { p_user_id: userId });
-  if (error || !data) return userId;
-  return data as string;
+  return getCurrentWorkspaceId(userId);
 }

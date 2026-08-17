@@ -57,10 +57,10 @@ export function DataTable<TData, TValue>({
     : 0;
 
   return (
-    <div className="rounded-xl border border-border dark:border-border bg-card dark:bg-primary overflow-hidden">
+    <div className="rounded-xl border border-border dark:border-border bg-card dark:bg-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-muted dark:bg-primary border-b border-border dark:border-border">
+          <thead className="bg-muted dark:bg-secondary border-b border-border dark:border-border">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({
       {showPagination && pageCount > 1 && (
         <div className="flex flex-col gap-3 border-t border-border dark:border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground dark:text-muted-foreground">
-            <span className="font-medium text-foreground dark:text-slate-200">{rangeStart}–{rangeEnd}</span>
+            <span className="font-medium text-foreground dark:text-foreground">{rangeStart}–{rangeEnd}</span>
             {' '}/ {totalRows} kayıt
           </p>
 
@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <span className="px-2 text-xs font-medium text-foreground dark:text-slate-200 whitespace-nowrap">
+            <span className="px-2 text-xs font-medium text-foreground dark:text-foreground whitespace-nowrap">
               Sayfa {currentPage + 1} / {pageCount}
             </span>
 
@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
             <select
               value={table.getState().pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
-              className="ml-2 rounded-lg border border-border dark:border-border bg-background dark:bg-secondary px-2 py-1.5 text-xs text-foreground dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-gold"
+              className="ml-2 rounded-lg border border-border dark:border-border bg-background dark:bg-secondary px-2 py-1.5 text-xs text-foreground dark:text-foreground focus:outline-none focus:ring-1 focus:ring-brand-gold"
             >
               {PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size} value={size}>{size} / sayfa</option>

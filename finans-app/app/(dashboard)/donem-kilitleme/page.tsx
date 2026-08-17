@@ -132,7 +132,7 @@ export default function DonemKilitlemePage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Kilidi Kaydet
@@ -141,7 +141,7 @@ export default function DonemKilitlemePage() {
             <button
               onClick={handleUnlock}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
             >
               <Unlock className="h-4 w-4" />
               Kilidi Kaldır
