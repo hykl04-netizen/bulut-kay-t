@@ -264,7 +264,7 @@ export default function BankaHesaplariPage() {
       </div>
 
       {/* Gerçek Open Banking hakkında bilgilendirme */}
-      <div className="flex gap-3 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm dark:border-border dark:bg-primary dark:text-muted-foreground">
+      <div className="flex gap-3 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm dark:border-border dark:text-muted-foreground">
         <Info className="h-5 w-5 shrink-0 text-brand-gold" />
         <p>
           Bankanıza canlı bağlanıp işlemleri otomatik çekme (gerçek &quot;Open Banking&quot;), BDDK lisanslı
@@ -275,17 +275,17 @@ export default function BankaHesaplariPage() {
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : accounts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border">
           Henüz banka hesabı eklemediniz. &quot;Yeni Hesap Ekle&quot; ile başlayın.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
-            <div key={acc.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:border-border dark:bg-primary">
+            <div key={acc.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:border-border">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <Landmark className="h-5 w-5 text-brand-gold" />
@@ -329,7 +329,7 @@ export default function BankaHesaplariPage() {
       {/* Hesap Ekle/Düzenle Modalı */}
       {isAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Hesabı Düzenle' : 'Yeni Banka Hesabı'}</h2>
               <button onClick={() => setIsAccountModalOpen(false)} className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
@@ -346,7 +346,7 @@ export default function BankaHesaplariPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Örn: İşletme Vadesiz Hesabı"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -358,7 +358,7 @@ export default function BankaHesaplariPage() {
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                     placeholder="Örn: Yapı Kredi"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -369,7 +369,7 @@ export default function BankaHesaplariPage() {
                     value={ibanLast4}
                     onChange={(e) => setIbanLast4(e.target.value.replace(/\D/g, ''))}
                     placeholder="1234"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -380,10 +380,10 @@ export default function BankaHesaplariPage() {
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   >
                     {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code} className="dark:bg-primary">{c.code} — {c.label}</option>
+                      <option key={c.code} value={c.code} className="dark:bg-popover dark:text-popover-foreground">{c.code} — {c.label}</option>
                     ))}
                   </select>
                 </div>
@@ -394,7 +394,7 @@ export default function BankaHesaplariPage() {
                     step="0.01"
                     value={currentBalance}
                     onChange={(e) => setCurrentBalance(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -423,7 +423,7 @@ export default function BankaHesaplariPage() {
       {/* CSV İçe Aktarma Modalı */}
       {importAccountId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-2xl rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">
                 {importAccount?.name} — Ekstre İçe Aktar
@@ -446,7 +446,7 @@ export default function BankaHesaplariPage() {
                   type="file"
                   accept=".csv,text/csv"
                   onChange={handleFileSelected}
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm dark:border-border dark:text-white"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm dark:border-border dark:text-foreground"
                 />
               </div>
 
@@ -459,11 +459,11 @@ export default function BankaHesaplariPage() {
                     <select
                       value={importDefaultCategoryId}
                       onChange={(e) => setImportDefaultCategoryId(e.target.value)}
-                      className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                      className="form-input"
                     >
-                      <option value="" className="dark:bg-primary">Kategorisiz</option>
+                      <option value="" className="dark:bg-popover dark:text-popover-foreground">Kategorisiz</option>
                       {expenseCategories.map((cat) => (
-                        <option key={cat.id} value={cat.id} className="dark:bg-primary">{cat.name}</option>
+                        <option key={cat.id} value={cat.id} className="dark:bg-popover dark:text-popover-foreground">{cat.name}</option>
                       ))}
                     </select>
                   </div>

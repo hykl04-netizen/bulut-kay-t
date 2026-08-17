@@ -184,7 +184,7 @@ export default function BorcAlacakPage() {
             <>
               <button
                 onClick={() => setIsBulkModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                className="btn-outline"
               >
                 <ClipboardPaste className="h-4 w-4" />
                 Excel&apos;den Yapıştır
@@ -203,7 +203,7 @@ export default function BorcAlacakPage() {
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : (
@@ -222,7 +222,7 @@ export default function BorcAlacakPage() {
       {/* Ekleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">Yeni Borç / Alacak Ekle</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -263,7 +263,7 @@ export default function BorcAlacakPage() {
                   value={counterparty}
                   onChange={(e) => setCounterparty(e.target.value)}
                   placeholder="Örn: Ahmet Yılmaz / ABC Şirketi"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -277,7 +277,7 @@ export default function BorcAlacakPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -286,7 +286,7 @@ export default function BorcAlacakPage() {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -298,7 +298,7 @@ export default function BorcAlacakPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Açıklama..."
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 

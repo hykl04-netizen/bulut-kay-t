@@ -34,8 +34,8 @@ export default function SifremiUnuttumPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted dark:bg-primary p-4">
-      <div className="w-full max-w-md bg-card dark:bg-primary rounded-2xl shadow-xl border border-border dark:border-border p-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border dark:border-border p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
             <Wallet className="text-white w-7 h-7" />

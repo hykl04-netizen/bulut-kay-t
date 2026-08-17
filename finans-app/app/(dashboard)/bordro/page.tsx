@@ -158,10 +158,10 @@ export default function BordroPage() {
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         {/* Sol Sütun: Ekleme Formu */}
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm dark:border-border dark:bg-primary lg:col-span-1">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm dark:border-border lg:col-span-1">
           <div className="mb-4 flex items-center gap-2">
             <Calculator className="h-5 w-5 text-emerald-500" />
-            <h2 className="text-lg font-bold text-foreground dark:text-white">Yeni Bordro Ekle</h2>
+            <h2 className="text-lg font-bold text-foreground dark:text-foreground">Yeni Bordro Ekle</h2>
           </div>
 
           <form onSubmit={handleAddPayroll} className="space-y-4">
@@ -172,7 +172,7 @@ export default function BordroPage() {
                 required
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-border dark:text-white"
+                className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-border dark:text-foreground"
               />
             </div>
             <div>
@@ -183,7 +183,7 @@ export default function BordroPage() {
                 step="0.01"
                 value={grossSalary}
                 onChange={(e) => setGrossSalary(e.target.value)}
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-border dark:text-white"
+                className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-border dark:text-foreground"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -194,7 +194,7 @@ export default function BordroPage() {
                   step="0.01"
                   value={sgkDeduction}
                   onChange={(e) => setSgkDeduction(e.target.value)}
-                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
                 />
               </div>
               <div>
@@ -204,7 +204,7 @@ export default function BordroPage() {
                   step="0.01"
                   value={incomeTax}
                   onChange={(e) => setIncomeTax(e.target.value)}
-                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
                 />
               </div>
               <div>
@@ -214,7 +214,7 @@ export default function BordroPage() {
                   step="0.01"
                   value={stampTax}
                   onChange={(e) => setStampTax(e.target.value)}
-                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
                 />
               </div>
               <div>
@@ -224,7 +224,7 @@ export default function BordroPage() {
                   step="0.01"
                   value={besDeduction}
                   onChange={(e) => setBesDeduction(e.target.value)}
-                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-rose-600 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-border dark:text-rose-400"
                 />
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function BordroPage() {
             <button
               type="submit"
               disabled={isSubmitting || gross === 0}
-              className="btn-gold-cta flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              className="btn-gold-cta flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
             >
               <Plus className="h-4 w-4" />
               {isSubmitting ? 'Kaydediliyor...' : 'Bordroyu Kaydet'}
@@ -246,10 +246,10 @@ export default function BordroPage() {
         </div>
 
         {/* Sağ Sütun: Bordro Geçmişi Listesi */}
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm dark:border-border dark:bg-primary lg:col-span-2">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm dark:border-border lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <Wallet className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
-            <h2 className="text-lg font-bold text-foreground dark:text-white">Bordro Geçmişi</h2>
+            <h2 className="text-lg font-bold text-foreground dark:text-foreground">Bordro Geçmişi</h2>
           </div>
 
           <div className="overflow-x-auto">

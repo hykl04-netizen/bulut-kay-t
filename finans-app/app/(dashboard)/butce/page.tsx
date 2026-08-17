@@ -170,7 +170,7 @@ export default function ButcePage() {
       </div>
 
       {/* Limiti tanımlı kategoriler */}
-      <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
         <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
           <Wallet className="w-4 h-4 text-muted-foreground" />
           Bütçe Durumu
@@ -197,7 +197,7 @@ export default function ButcePage() {
 
       {/* Limit tanımlanmamış kategoriler için hızlı ekleme */}
       {canEdit && unbudgetedCategories.length > 0 && (
-        <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
           <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Bütçe Limiti Belirle</h2>
           <div className="space-y-3">
             {unbudgetedCategories.map((cat) => (
@@ -211,7 +211,7 @@ export default function ButcePage() {
                   placeholder="Aylık limit (TL)"
                   value={drafts[cat.id] ?? ''}
                   onChange={(e) => setDrafts((prev) => ({ ...prev, [cat.id]: e.target.value }))}
-                  className="w-40 rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="w-40 rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                 />
                 <button
                   onClick={() => handleSaveLimit(cat.id)}

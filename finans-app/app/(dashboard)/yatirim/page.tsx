@@ -248,7 +248,7 @@ export default function YatirimPage() {
             <>
               <button
                 onClick={() => setIsBulkModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                className="btn-outline"
               >
                 <ClipboardPaste className="h-4 w-4" />
                 Excel&apos;den Yapıştır
@@ -275,17 +275,17 @@ export default function YatirimPage() {
       </div>
 
       {/* Portföy Özet Kartı */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border dark:bg-primary">
+      <div className="card-static">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Toplam Portföy Değeri</span>
           <TrendingUp className="h-5 w-5 text-blue-500" />
         </div>
-        <div className="mt-2 text-3xl font-bold text-foreground dark:text-white">{formatTRY(totalPortfolioValue)}</div>
+        <div className="mt-2 text-3xl font-bold text-foreground dark:text-foreground">{formatTRY(totalPortfolioValue)}</div>
       </div>
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : (
@@ -304,7 +304,7 @@ export default function YatirimPage() {
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Yatırımı Düzenle' : 'Yeni Yatırım Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -318,13 +318,13 @@ export default function YatirimPage() {
                 <select
                   value={assetType}
                   onChange={(e) => setAssetType(e.target.value as 'hisse' | 'doviz' | 'kripto' | 'fon' | 'altin')}
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 >
-                  <option value="hisse" className="dark:bg-primary">Hisse Senedi</option>
-                  <option value="doviz" className="dark:bg-primary">Döviz</option>
-                  <option value="kripto" className="dark:bg-primary">Kripto Varlık</option>
-                  <option value="fon" className="dark:bg-primary">Yatırım Fonu</option>
-                  <option value="altin" className="dark:bg-primary">Altın / Kıymetli Maden</option>
+                  <option value="hisse" className="dark:bg-popover dark:text-popover-foreground">Hisse Senedi</option>
+                  <option value="doviz" className="dark:bg-popover dark:text-popover-foreground">Döviz</option>
+                  <option value="kripto" className="dark:bg-popover dark:text-popover-foreground">Kripto Varlık</option>
+                  <option value="fon" className="dark:bg-popover dark:text-popover-foreground">Yatırım Fonu</option>
+                  <option value="altin" className="dark:bg-popover dark:text-popover-foreground">Altın / Kıymetli Maden</option>
                 </select>
               </div>
 
@@ -336,7 +336,7 @@ export default function YatirimPage() {
                   value={symbol}
                   onChange={(e) => setSymbol(e.target.value)}
                   placeholder="Örn: THYAO, USD, BTC, GRAM"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -350,7 +350,7 @@ export default function YatirimPage() {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder="0"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -359,7 +359,7 @@ export default function YatirimPage() {
                     type="text"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -373,7 +373,7 @@ export default function YatirimPage() {
                     value={avgCost}
                     onChange={(e) => setAvgCost(e.target.value)}
                     placeholder="Opsiyonel"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -405,7 +405,7 @@ export default function YatirimPage() {
                     value={currentPrice}
                     onChange={(e) => setCurrentPrice(e.target.value)}
                     placeholder="Opsiyonel"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>

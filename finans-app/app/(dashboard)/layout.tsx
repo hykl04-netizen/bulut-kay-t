@@ -148,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navContent = (
     <>
       <div className="p-6 flex items-center gap-3 text-white">
-        <Wallet className="w-8 h-8 text-brand-gold-light drop-shadow-[0_0_10px_rgba(201,162,39,0.45)]" />
+        <Wallet className="w-8 h-8 text-brand-gold-light drop-shadow-[0_0_10px_rgba(94, 161, 255,0.45)]" />
         <div>
           <h2 className="text-xl font-bold">FinansApp</h2>
           {!roleLoading && role && role !== 'sahip' && (

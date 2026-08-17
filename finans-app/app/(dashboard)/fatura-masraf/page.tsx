@@ -279,7 +279,7 @@ export default function FaturaMasrafPage() {
             <>
               <button
                 onClick={() => setIsBulkModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                className="btn-outline"
               >
                 <ClipboardPaste className="h-4 w-4" />
                 Excel&apos;den Yapıştır
@@ -309,7 +309,7 @@ export default function FaturaMasrafPage() {
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : (
@@ -336,7 +336,7 @@ export default function FaturaMasrafPage() {
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Faturayı Düzenle' : 'Yeni Fatura / Masraf Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -365,7 +365,7 @@ export default function FaturaMasrafPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Örn: Bulut Sunucu / Ofis Kirası"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -382,7 +382,7 @@ export default function FaturaMasrafPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -392,7 +392,7 @@ export default function FaturaMasrafPage() {
                     required
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -403,11 +403,11 @@ export default function FaturaMasrafPage() {
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   >
-                    <option value="" className="dark:bg-primary">Seçiniz</option>
+                    <option value="" className="dark:bg-popover dark:text-popover-foreground">Seçiniz</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id} className="dark:bg-primary">{cat.name}</option>
+                      <option key={cat.id} value={cat.id} className="dark:bg-popover dark:text-popover-foreground">{cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -416,10 +416,10 @@ export default function FaturaMasrafPage() {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as 'odendi' | 'odenmedi')}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   >
-                    <option value="odenmedi" className="dark:bg-primary">Ödenmedi</option>
-                    <option value="odendi" className="dark:bg-primary">Ödendi</option>
+                    <option value="odenmedi" className="dark:bg-popover dark:text-popover-foreground">Ödenmedi</option>
+                    <option value="odendi" className="dark:bg-popover dark:text-popover-foreground">Ödendi</option>
                   </select>
                 </div>
               </div>
@@ -442,10 +442,10 @@ export default function FaturaMasrafPage() {
                       <select
                         value={recurrencePeriod}
                         onChange={(e) => setRecurrencePeriod(e.target.value)}
-                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                        className="form-input"
                       >
-                        <option value="aylik" className="dark:bg-primary">Aylık</option>
-                        <option value="yillik" className="dark:bg-primary">Yıllık</option>
+                        <option value="aylik" className="dark:bg-popover dark:text-popover-foreground">Aylık</option>
+                        <option value="yillik" className="dark:bg-popover dark:text-popover-foreground">Yıllık</option>
                       </select>
                     </div>
                     <div>
@@ -454,7 +454,7 @@ export default function FaturaMasrafPage() {
                         type="date"
                         value={recurrenceEndDate}
                         onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                        className="form-input"
                       />
                     </div>
                   </div>

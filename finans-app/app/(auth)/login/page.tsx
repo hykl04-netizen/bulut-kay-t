@@ -38,8 +38,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted dark:bg-primary p-4">
-      <div className="w-full max-w-md bg-card dark:bg-primary rounded-2xl shadow-xl border border-border dark:border-border p-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border dark:border-border p-8">
         
         {/* Logo ve Başlık */}
         <div className="flex flex-col items-center mb-8">

@@ -115,7 +115,7 @@ export default function OturumlarPage() {
           <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
         </div>
       ) : sessions.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border dark:bg-primary">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border">
           Oturum bilgisi bulunamadı.
         </div>
       ) : (
@@ -123,7 +123,7 @@ export default function OturumlarPage() {
           {sessions.map((session) => (
             <div
               key={session.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-primary"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border"
             >
               <div className="flex items-center gap-3">
                 <MonitorSmartphone className="h-5 w-5 shrink-0 text-muted-foreground" />

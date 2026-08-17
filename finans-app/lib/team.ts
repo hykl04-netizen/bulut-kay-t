@@ -45,11 +45,6 @@ export function canEditData(role: TeamRole): boolean {
   return role === 'sahip' || role === 'yonetici' || role === 'muhasebeci';
 }
 
-/** Sadece sahip ve yönetici ekip üyelerini yönetebilir (davet/rol/çıkarma). */
-export function canManageTeam(role: TeamRole): boolean {
-  return role === 'sahip' || role === 'yonetici';
-}
-
 /** Bordro verisi sadece sahip/yönetici/muhasebeci için görünür (salt_gorunum hariç). */
 export function canViewPayroll(role: TeamRole): boolean {
   return role === 'sahip' || role === 'yonetici' || role === 'muhasebeci';

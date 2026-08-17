@@ -45,14 +45,13 @@ export default function EkipPage() {
   };
 
   useEffect(() => {
-    if (roleLoading) return;
-    if (!canManage) {
-      setLoading(false);
-      return;
-    }
-    fetchMembers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (roleLoading || !canManage) return;
+    queueMicrotask(() => {
+      fetchMembers();
+    });
   }, [roleLoading, canManage]);
+
+  const isLoading = roleLoading || (canManage && loading);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +154,7 @@ export default function EkipPage() {
       {/* Davet formu */}
       <form
         onSubmit={handleInvite}
-        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-primary sm:flex-row sm:items-end"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 dark:border-border sm:flex-row sm:items-end"
       >
         <div className="flex-1 space-y-1.5">
           <Label htmlFor="invite-email">E-posta</Label>
@@ -174,7 +173,7 @@ export default function EkipPage() {
             id="invite-role"
             value={inviteRole}
             onChange={(e) => setInviteRole(e.target.value as InvitableRole)}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground dark:border-border dark:bg-primary"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground dark:border-border"
           >
             {INVITABLE_ROLES.map((r) => (
               <option key={r} value={r}>
@@ -195,12 +194,12 @@ export default function EkipPage() {
       <p className="-mt-4 text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[inviteRole]}</p>
 
       {/* Üye listesi */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
         </div>
       ) : members.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border dark:bg-primary">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border">
           Henüz davet edilmiş bir ekip üyesi yok.
         </div>
       ) : (
@@ -208,7 +207,7 @@ export default function EkipPage() {
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-primary"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border"
             >
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -236,7 +235,7 @@ export default function EkipPage() {
                   value={member.role}
                   disabled={updatingId === member.id}
                   onChange={(e) => handleRoleChange(member, e.target.value as InvitableRole)}
-                  className="rounded-lg border border-input bg-background px-2 py-1.5 text-sm text-foreground disabled:opacity-60 dark:border-border dark:bg-primary"
+                  className="rounded-lg border border-input bg-background px-2 py-1.5 text-sm text-foreground disabled:opacity-60 dark:border-border"
                 >
                   {INVITABLE_ROLES.map((r) => (
                     <option key={r} value={r}>

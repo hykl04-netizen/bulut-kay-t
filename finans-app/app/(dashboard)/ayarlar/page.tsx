@@ -357,7 +357,7 @@ export default function AyarlarPage() {
         Burada belirlediğiniz şirket adı ve logo, Raporlar sayfasından indirilen PDF raporların üst kısmında görünür.
       </p>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-primary">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
         <div className="space-y-2">
           <Label htmlFor="company-name">Şirket / İşletme Adı</Label>
           <Input
@@ -413,7 +413,7 @@ export default function AyarlarPage() {
         </button>
       </div>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-primary">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
         <div className="flex items-center gap-3">
           <CloudUpload className="h-5 w-5 text-brand-gold" />
           <h2 className="text-lg font-bold text-foreground dark:text-foreground">Otomatik Yedekleme</h2>
@@ -470,7 +470,7 @@ export default function AyarlarPage() {
         </div>
       </div>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-primary">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
         <div className="flex items-center gap-3">
           <BellRing className="h-5 w-5 text-brand-gold" />
           <h2 className="text-lg font-bold text-foreground dark:text-foreground">Bildirim Tercihleri</h2>

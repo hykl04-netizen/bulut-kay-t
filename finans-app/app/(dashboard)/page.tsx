@@ -244,7 +244,7 @@ export default function DashboardPage() {
             Finansal durumunuzun genel görünümü ve son hareketleriniz.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/50 bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-[0_0_0_1px_rgba(201,162,39,0.12),0_4px_16px_-6px_rgba(201,162,39,0.45)] dark:border-brand-gold/40 dark:bg-primary dark:text-muted-foreground">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/50 bg-card px-4 py-2 text-xs font-medium text-muted-foreground shadow-[0_0_0_1px_rgba(94, 161, 255,0.12),0_4px_16px_-6px_rgba(94, 161, 255,0.45)] dark:border-brand-gold/40 dark:text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-emerald-500" />
           <span>Executive Private Terminal</span>
         </div>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
       {/* Üst İstatistik Kartları (Obsidian / Slate & Zarif Kenarlıklar) */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Tahmini Net Değer */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
+        <div className="card-surface">
           <div className="gold-top-accent absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Tahmini Net Değer</span>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Toplam Yatırımlar */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
+        <div className="card-surface">
           <div className="gold-top-accent absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Toplam Yatırımlar</span>
@@ -279,7 +279,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Fiziki Varlıklar */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
+        <div className="card-surface">
           <div className="gold-top-accent absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Fiziki Varlıklar</span>
@@ -292,7 +292,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Net Alacak / Borç */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition hover:border-border dark:border-border dark:bg-primary">
+        <div className="card-surface">
           <div className="gold-top-accent absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">Net Alacak / Borç</span>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
         });
 
         return (
-          <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border dark:bg-primary">
+          <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 dark:border-border">
               <div className="flex items-center gap-2">
                 <CalendarClock className="h-5 w-5 text-brand-gold" />
@@ -348,14 +348,14 @@ export default function DashboardPage() {
                         <Receipt className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-foreground dark:text-white truncate">{p.title}</div>
+                        <div className="text-sm font-semibold text-foreground dark:text-foreground truncate">{p.title}</div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           {p.kind === 'fatura' ? 'Fatura/Masraf' : 'Borç'} • {new Date(p.dueDate).toLocaleDateString('tr-TR')}
                         </div>
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
-                      <span className="text-sm font-bold text-foreground dark:text-white">{formatTRY(p.amount)}</span>
+                      <span className="text-sm font-bold text-foreground dark:text-foreground">{formatTRY(p.amount)}</span>
                       {info && (
                         <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${DUE_TONE_CLASSES[info.tone]}`}>
                           {info.label}
@@ -385,7 +385,7 @@ export default function DashboardPage() {
               <div key={row.categoryId} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row.categoryColor }} />
-                  <span className="text-sm font-semibold text-foreground dark:text-white truncate">{row.categoryName}</span>
+                  <span className="text-sm font-semibold text-foreground dark:text-foreground truncate">{row.categoryName}</span>
                 </div>
                 <span className={`text-sm font-bold ${BUDGET_TONE_CLASSES.over.text}`}>
                   {formatTRY(row.spent)} / {formatTRY(row.limit)} (%{row.percent})
@@ -397,7 +397,7 @@ export default function DashboardPage() {
       )}
 
       {/* Son İşlemler Tablosu (Yumuşak Geçişler & Kurumsal Rozetler) */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border dark:bg-primary">
+      <div className="rounded-2xl border border-border bg-card shadow-sm dark:border-border">
         <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-border">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-muted-foreground" />
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                       {tx.type === 'gelir' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-foreground dark:text-white">{tx.description || 'Açıklama yok'}</div>
+                      <div className="text-sm font-semibold text-foreground dark:text-foreground">{tx.description || 'Açıklama yok'}</div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {tx.date} • {tx.categories?.name ? (
                           <span className="font-medium text-muted-foreground dark:text-muted-foreground">

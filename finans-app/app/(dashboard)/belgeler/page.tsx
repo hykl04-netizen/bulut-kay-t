@@ -197,7 +197,7 @@ export default function BelgelerPage() {
       </div>
 
       {/* Filtreleme ve Arama Çubuğu */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-primary md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm dark:border-border md:flex-row md:items-center md:justify-between">
         {/* Kategoriler */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Filter className="mr-1 h-4 w-4 text-muted-foreground" />
@@ -225,14 +225,14 @@ export default function BelgelerPage() {
               placeholder="Belge ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-muted py-2 pl-9 pr-4 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:bg-primary dark:text-white"
+              className="w-full rounded-lg border border-border bg-muted py-2 pl-9 pr-4 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
             />
           </div>
 
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-            className="rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:bg-primary dark:text-white"
+            className="rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
           >
             <option value="desc">En Yeni Tarih</option>
             <option value="asc">En Eski Tarih</option>
@@ -242,7 +242,7 @@ export default function BelgelerPage() {
 
       {/* Etiket Filtreleri */}
       {allTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-3 dark:border-border dark:bg-primary">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-3 dark:border-border">
           <Tag className="mr-1 h-4 w-4 text-muted-foreground" />
           {allTags.map((tag) => (
             <button
@@ -272,7 +272,7 @@ export default function BelgelerPage() {
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Belgeler yükleniyor...</div>
       ) : filteredDocuments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-16 dark:border-border dark:bg-primary">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-16 dark:border-border">
           <FileText className="h-12 w-12 text-muted-foreground dark:text-muted-foreground" />
           <p className="mt-3 text-sm font-medium text-muted-foreground dark:text-muted-foreground">Kayıtlı belge bulunamadı.</p>
         </div>
@@ -281,7 +281,7 @@ export default function BelgelerPage() {
           {filteredDocuments.map((doc) => (
             <div
               key={doc.id}
-              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md dark:border-border dark:bg-primary"
+              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md dark:border-border"
             >
               <div>
                 <div className="flex items-start justify-between gap-2">
@@ -294,7 +294,7 @@ export default function BelgelerPage() {
                   </div>
                 </div>
 
-                <h3 className="mt-3 text-base font-bold text-foreground dark:text-white">{doc.title}</h3>
+                <h3 className="mt-3 text-base font-bold text-foreground dark:text-foreground">{doc.title}</h3>
                 {doc.notes && <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground line-clamp-2">{doc.notes}</p>}
                 {doc.tags && doc.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -339,7 +339,7 @@ export default function BelgelerPage() {
       {/* Yeni Belge Ekleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">Yeni Belge / Fatura Yükle</h2>
               <button
@@ -359,7 +359,7 @@ export default function BelgelerPage() {
                   placeholder="Örn: Elektrik Faturası - Ağustos"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                 />
               </div>
 
@@ -369,10 +369,10 @@ export default function BelgelerPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                   >
                     {CATEGORIES.filter((c) => c !== 'Tümü').map((cat) => (
-                      <option key={cat} value={cat} className="dark:bg-primary">{cat}</option>
+                      <option key={cat} value={cat} className="dark:bg-popover dark:text-popover-foreground">{cat}</option>
                     ))}
                   </select>
                 </div>
@@ -384,7 +384,7 @@ export default function BelgelerPage() {
                     required
                     value={documentDate}
                     onChange={(e) => setDocumentDate(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function BelgelerPage() {
                       }
                     }}
                     placeholder="Örn: elektrik, 2026 (Enter veya virgülle ekle)"
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                   />
                   <button
                     type="button"
@@ -444,7 +444,7 @@ export default function BelgelerPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ek açıklamalar..."
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
                 />
               </div>
 

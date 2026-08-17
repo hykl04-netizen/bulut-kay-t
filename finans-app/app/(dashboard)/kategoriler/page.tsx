@@ -108,17 +108,17 @@ export default function KategorilerPage() {
 
       {/* Yeni Kategori Ekleme Formu */}
       {canEdit && (
-      <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
         <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Kategori Ekle</h2>
         <form onSubmit={handleAdd} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">Tür</label>
             <div className="flex gap-4 p-1 bg-secondary dark:bg-secondary rounded-lg max-w-xs">
-              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-card dark:bg-primary shadow-sm font-medium text-emerald-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
+              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-card shadow-sm font-medium text-emerald-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
                 <input type="radio" className="hidden" checked={type === 'gelir'} onChange={() => setType('gelir')} />
                 Gelir
               </label>
-              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-card dark:bg-primary shadow-sm font-medium text-rose-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
+              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-card shadow-sm font-medium text-rose-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
                 <input type="radio" className="hidden" checked={type === 'gider'} onChange={() => setType('gider')} />
                 Gider
               </label>
@@ -194,7 +194,7 @@ function CategoryList({
   canEdit: boolean;
 }) {
   return (
-    <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+    <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
       <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
         <Tag className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
         {title}

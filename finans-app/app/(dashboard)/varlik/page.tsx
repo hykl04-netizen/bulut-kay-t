@@ -207,7 +207,7 @@ export default function VarlikPage() {
             <>
               <button
                 onClick={() => setIsBulkModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                className="btn-outline"
               >
                 <ClipboardPaste className="h-4 w-4" />
                 Excel&apos;den Yapıştır
@@ -225,17 +225,17 @@ export default function VarlikPage() {
       </div>
 
       {/* Toplam Varlık Özet Kartı */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-border dark:bg-primary">
+      <div className="card-static">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Toplam Varlık Değeri</span>
           <PiggyBank className="h-5 w-5 text-purple-500" />
         </div>
-        <div className="mt-2 text-3xl font-bold text-foreground dark:text-white">{formatTRY(totalValue)}</div>
+        <div className="mt-2 text-3xl font-bold text-foreground dark:text-foreground">{formatTRY(totalValue)}</div>
       </div>
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : (
@@ -254,7 +254,7 @@ export default function VarlikPage() {
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:bg-primary dark:text-slate-100">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -271,7 +271,7 @@ export default function VarlikPage() {
                   value={assetName}
                   onChange={(e) => setAssetName(e.target.value)}
                   placeholder="Örn: Konut, Şirket Aracı, Altın"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -282,7 +282,7 @@ export default function VarlikPage() {
                   value={assetType}
                   onChange={(e) => setAssetType(e.target.value)}
                   placeholder="Örn: Gayrimenkul, Taşıt, Değerli Maden"
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 
@@ -296,7 +296,7 @@ export default function VarlikPage() {
                     value={currentValue}
                     onChange={(e) => setCurrentValue(e.target.value)}
                     placeholder="0.00"
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
                 <div>
@@ -305,7 +305,7 @@ export default function VarlikPage() {
                     type="text"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                    className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function VarlikPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ek açıklamalar..."
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm focus:border-slate-500 focus:outline-none dark:border-border dark:text-white"
+                  className="form-input"
                 />
               </div>
 

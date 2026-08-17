@@ -62,7 +62,7 @@ function ChartCard({
   actions?: React.ReactNode;
 }) {
   return (
-    <div id={id} className="print-card bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+    <div id={id} className="print-card bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
         <div className="flex items-center gap-2 print:hidden">
@@ -115,7 +115,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function ComparisonCard({ title, subtitle, data }: { title: string; subtitle: string; data: PeriodComparison | null }) {
   return (
-    <div className="print-card bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
+    <div className="print-card bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
       <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
       <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>
       {data === null ? (
@@ -245,7 +245,7 @@ export default function RaporlarPage() {
           <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
           <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
         </div>
-        <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6 flex items-center justify-center h-40">
+        <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6 flex items-center justify-center h-40">
           <p className="text-muted-foreground dark:text-muted-foreground">Veriler yükleniyor...</p>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function RaporlarPage() {
         <div className="flex items-center gap-2 print:hidden">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
           >
             <Printer className="h-4 w-4" />
             Yazdır
@@ -270,7 +270,7 @@ export default function RaporlarPage() {
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
           >
             <FileDown className="h-4 w-4" />
             {exportingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}
@@ -278,7 +278,7 @@ export default function RaporlarPage() {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card dark:bg-primary px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
           >
             <FileSpreadsheet className="h-4 w-4" />
             {exportingExcel ? 'Hazırlanıyor...' : 'Excel İndir'}

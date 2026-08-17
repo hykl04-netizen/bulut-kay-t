@@ -115,7 +115,7 @@ export default function DonemKilitlemePage() {
         kaldırılabilir.
       </p>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border dark:bg-primary">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
         {lockedBefore && (
           <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
             <Lock className="h-4 w-4" />

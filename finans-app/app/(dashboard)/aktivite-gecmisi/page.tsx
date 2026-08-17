@@ -68,7 +68,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
   const ActionIcon = actionMeta.icon;
 
   return (
-    <div className="rounded-xl border border-border bg-card dark:border-border dark:bg-primary">
+    <div className="rounded-xl border border-border bg-card dark:border-border">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -182,31 +182,31 @@ export default function AktiviteGecmisiPage() {
         <select
           value={tableFilter}
           onChange={(e) => { setTableFilter(e.target.value); setPage(0); }}
-          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-white"
+          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-foreground"
         >
-          <option value="all" className="dark:bg-primary">Tüm Tablolar</option>
+          <option value="all" className="dark:bg-popover dark:text-popover-foreground">Tüm Tablolar</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (
-            <option key={key} value={key} className="dark:bg-primary">{label}</option>
+            <option key={key} value={key} className="dark:bg-popover dark:text-popover-foreground">{label}</option>
           ))}
         </select>
         <select
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
-          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-white"
+          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-foreground"
         >
-          <option value="all" className="dark:bg-primary">Tüm İşlemler</option>
-          <option value="INSERT" className="dark:bg-primary">Eklendi</option>
-          <option value="UPDATE" className="dark:bg-primary">Güncellendi</option>
-          <option value="DELETE" className="dark:bg-primary">Silindi</option>
+          <option value="all" className="dark:bg-popover dark:text-popover-foreground">Tüm İşlemler</option>
+          <option value="INSERT" className="dark:bg-popover dark:text-popover-foreground">Eklendi</option>
+          <option value="UPDATE" className="dark:bg-popover dark:text-popover-foreground">Güncellendi</option>
+          <option value="DELETE" className="dark:bg-popover dark:text-popover-foreground">Silindi</option>
         </select>
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="card-empty-state">
           Yükleniyor...
         </div>
       ) : logs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border dark:bg-primary">
+        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border">
           Henüz kayıtlı aktivite yok. (Bu sayfa çalışmıyorsa `supabase/migrations/20260816_audit_log.sql`
           dosyasını Supabase SQL Editor&apos;de çalıştırdığınızdan emin olun.)
         </div>
