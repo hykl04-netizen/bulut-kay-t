@@ -5,6 +5,10 @@ import { INVITABLE_ROLES, type InvitableRole } from '@/lib/team';
 
 export const runtime = 'nodejs';
 
+// Tek kullanıcılı hesaplar için ekip yönetimi kapatıldı (bkz. app/(dashboard)/ekip/page.tsx).
+// Kod silinmedi, ileride açılabilir.
+const EKIP_DISABLED = true;
+
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,6 +51,9 @@ async function requireTeamManager() {
 
 // Bir ekip üyesinin rolünü değiştirir.
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (EKIP_DISABLED) {
+    return NextResponse.json({ error: 'Ekip yönetimi bu hesapta kapalı.' }, { status: 403 });
+  }
   const result = await requireTeamManager();
   if ('error' in result) return result.error;
   const { accountId } = result;
@@ -87,6 +94,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 // Bir ekip üyesini hesaptan çıkarır (erişimi anında kesilir — RLS,
 // team_members satırı silindiği an artık has_account_role false döner).
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (EKIP_DISABLED) {
+    return NextResponse.json({ error: 'Ekip yönetimi bu hesapta kapalı.' }, { status: 403 });
+  }
   const result = await requireTeamManager();
   if ('error' in result) return result.error;
   const { accountId } = result;

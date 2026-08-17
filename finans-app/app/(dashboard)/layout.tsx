@@ -45,6 +45,10 @@ interface NavItem {
   icon: typeof LayoutDashboard;
   managerOnly?: boolean;
   hideForViewer?: boolean;
+  // Kod tabanında duruyor ama tek kullanıcılı hesaplar için kapatıldı.
+  // İleride birden fazla kullanıcı gerekirse buradan (ve /ekip sayfası ile
+  // /api/ekip route'larındaki aynı bayraktan) tekrar açılabilir.
+  disabled?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -64,7 +68,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
   { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
   { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
-  { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
+  { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true, disabled: true },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -161,6 +165,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {NAV_ITEMS.filter((item) => (!item.managerOnly || canManageTeamNav) && (!item.hideForViewer || canViewPayrollNav)).map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
+
+          if (item.disabled) {
+            return (
+              <div
+                key={item.href}
+                title="Tek kullanıcılı hesaplarda kapalı. İleride ihtiyaç olursa tekrar açılabilir."
+                className="flex items-center gap-3 pl-5 pr-4 py-3 rounded-lg text-muted-foreground/40 cursor-not-allowed select-none"
+              >
+                <Icon className="w-5 h-5" />
+                {item.label}
+                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted-foreground/10">
+                  Kapalı
+                </span>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.href}

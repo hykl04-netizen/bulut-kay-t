@@ -16,7 +16,35 @@ import {
   type InvitableRole,
 } from '@/lib/team';
 
+// Tek kullanıcılı hesaplar için bu özellik kapatıldı. Kod silinmedi — ileride
+// birden fazla kullanıcı/rol yönetimi gerekirse `false` yapıp geri açılabilir.
+// Aynı bayrak app/api/ekip/*/route.ts dosyalarında da kullanılıyor.
+const EKIP_DISABLED = true;
+
+function EkipDisabledNotice() {
+  return (
+    <div className="p-6 max-w-2xl">
+      <div className="flex items-center gap-3 mb-2">
+        <Users className="w-6 h-6 text-muted-foreground" />
+        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
+      </div>
+      <div className="mt-4 rounded-lg border border-border bg-secondary/40 p-5">
+        <p className="text-foreground font-medium mb-1">Bu özellik şu an kapalı.</p>
+        <p className="text-sm text-muted-foreground">
+          Hesabınız tek kullanıcı için ayarlandığından çoklu kullanıcı ve rol yönetimi
+          devre dışı bırakıldı. Kod tabanından silinmedi; ileride ekip üyesi eklemeniz
+          gerekirse tekrar açılabilir.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function EkipPage() {
+  if (EKIP_DISABLED) {
+    return <EkipDisabledNotice />;
+  }
+
   const { role, loading: roleLoading } = useTeamRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
