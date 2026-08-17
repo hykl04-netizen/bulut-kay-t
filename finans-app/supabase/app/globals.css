@@ -1,0 +1,233 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Tailwind v4'te dark: varyantı varsayılan olarak prefers-color-scheme media
+   query'sine bağlıdır. Kullanıcının açıp kapatabildiği bir tema anahtarı
+   istediğimiz için bunu <html> üzerindeki .dark sınıfına bağlıyoruz. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #fafafa;
+  --foreground: #1a1a1a;
+
+  /* shadcn/ui — new-york / neutral tema tokenları */
+  /* Tema: Grafit Monokrom (Bloomberg-terminal ruhu, tablo yoğun ekranlar için) */
+  --radius: 0.5rem;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f2f2f2;
+  --muted-foreground: #6b6b6b;
+  --accent: #2f6fe0;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: #e4e4e4;
+  --input: #e4e4e4;
+  --ring: #2f6fe0;
+
+  /* Marka tokenları */
+  --brand-navy: #1a1a1a;
+  --brand-navy-light: #2a2a2a;
+  --brand-gold: #2f6fe0;
+  --brand-gold-light: #5ea1ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-light: var(--brand-navy-light);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-light: var(--brand-gold-light);
+}
+
+.dark {
+  --background: #151515;
+  --foreground: #eaeaea;
+
+  /* shadcn/ui — new-york / neutral tema tokenları (dark) */
+  /* Not: --brand-navy* / --brand-gold* değişken adları geriye dönük uyumluluk
+     için korundu (35 yerde bu class'lar kullanılıyor), ama artık lacivert/altın
+     değil grafit/mavi tonlarını taşıyorlar. Mavi vurgu (accent) yine sadece
+     gerçek vurgu noktalarında; primary buton dolgusu nötr açık gri kalıyor. */
+  --card: #1f1f1f;
+  --card-foreground: #eaeaea;
+  --popover: #1f1f1f;
+  --popover-foreground: #eaeaea;
+  --primary: #eeeeee;
+  --primary-foreground: #151515;
+  --secondary: #262626;
+  --secondary-foreground: #eaeaea;
+  --muted: #212121;
+  --muted-foreground: #9a9a9a;
+  --accent: #5ea1ff;
+  --accent-foreground: #0d1b2e;
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: rgba(94, 161, 255, 0.12);
+  --input: rgba(94, 161, 255, 0.12);
+  --ring: #5ea1ff;
+
+  --brand-navy: #1a1a1a;
+  --brand-navy-light: #2a2a2a;
+  --brand-gold: #2f6fe0;
+  --brand-gold-light: #5ea1ff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ============================================================
+   Altın Vurgu Sistemi (Private Banking Gold Accents)
+   ============================================================ */
+
+/* --- Sidebar: kutucuksuz, "parlayan" seçim göstergesi ---
+   Aktif/hover menü öğesi artık dolgun bir kutu yerine; ince bir
+   altın kenar çizgisi + yumuşak altın halo (glow) ile öne çıkar. */
+.nav-link {
+  position: relative;
+  isolation: isolate;
+  transition: color 0.25s ease, background-color 0.35s ease;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--brand-gold-light), var(--brand-gold));
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.nav-link:hover {
+  color: var(--brand-gold-light);
+  background: radial-gradient(120% 140% at 0% 50%, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0) 70%);
+}
+
+.nav-link:hover::before {
+  opacity: 0.55;
+  transform: scaleY(0.7);
+}
+
+.nav-link.is-active {
+  color: var(--brand-gold-light);
+  background: radial-gradient(120% 140% at 0% 50%, rgba(201, 162, 39, 0.2), rgba(201, 162, 39, 0) 72%);
+  text-shadow: 0 0 18px rgba(201, 162, 39, 0.35);
+}
+
+.nav-link.is-active::before {
+  opacity: 1;
+  transform: scaleY(1);
+  box-shadow: 0 0 10px 1px rgba(201, 162, 39, 0.65);
+}
+
+/* --- CTA Butonları: hover'da altın çerçeve + parlama sweep --- */
+.btn-gold-cta {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
+}
+
+.btn-gold-cta:hover {
+  border-color: rgba(201, 162, 39, 0.85);
+  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.35), 0 10px 26px -10px rgba(201, 162, 39, 0.65);
+}
+
+.btn-gold-cta:active {
+  transform: translateY(1px);
+}
+
+.btn-gold-cta::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+
+.btn-gold-cta:hover::after {
+  left: 130%;
+}
+
+/* --- Öne çıkan altın çizgi (kart üstü vurgu) --- */
+.gold-top-accent {
+  background: linear-gradient(90deg, transparent, var(--brand-gold) 45%, var(--brand-gold-light) 55%, transparent);
+}
+
+/* --- Yazdırma (print-friendly) kuralları ---
+   Raporlar sayfası gibi yerlerde "Yazdır" ile tarayıcıdan doğrudan düzgün
+   çıktı alınabilmesi için: karanlık modda bile kağıda her zaman açık/beyaz
+   zemin + siyah metin basılsın, kart gölgeleri/gradyanlar kaybolsun, bir
+   kart sayfa ortasından bölünmesin. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  .print-hide,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-card {
+    background: #fff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-card * {
+    color: #0f172a !important;
+  }
+}
+
