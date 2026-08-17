@@ -27,6 +27,8 @@ import {
   Lock,
   Keyboard,
   Users,
+  CreditCard,
+  AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
@@ -40,6 +42,10 @@ import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 import { useTeamRole } from '@/lib/use-team-role';
 import { ROLE_LABELS } from '@/lib/team';
 import { getCurrentAccountId } from '@/lib/supabase/account';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
+import { isOnboardingPending } from '@/lib/onboarding';
+import { useSubscription } from '@/lib/use-subscription';
+import { accessState, hasFeature, trialDaysLeft } from '@/lib/plans';
 
 interface NavItem {
   href: string;
@@ -51,6 +57,10 @@ interface NavItem {
   // İleride birden fazla kullanıcı gerekirse buradan (ve /ekip sayfası ile
   // /api/ekip route'larındaki aynı bayraktan) tekrar açılabilir.
   disabled?: boolean;
+  // Plan bazlı kilit (Faz 3). Bu özellik mevcut planda yoksa menü öğesi
+  // kilit rozetiyle görünür ve tıklanınca /abonelik sayfasına götürür.
+  // Asıl kısıtlama DB'de (RLS) — bu sadece arayüz göstergesi.
+  requiresFeature?: 'bordro';
 }
 
 interface NavGroup {
@@ -75,7 +85,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
       { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
       { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
-      { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true },
+      { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true, requiresFeature: 'bordro' },
     ],
   },
   {
@@ -86,6 +96,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
       { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
       { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
+      { href: '/abonelik', label: 'Abonelik', icon: CreditCard, managerOnly: true },
       { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
       { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
       { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true, disabled: true },
@@ -102,6 +113,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { role, loading: roleLoading } = useTeamRole();
   const canManageTeamNav = roleLoading || role === 'sahip' || role === 'yonetici';
   const canViewPayrollNav = roleLoading || !role || role !== 'salt_gorunum';
+
+  // Abonelik durumu (Faz 3) — kilitli modülleri ve uyarı şeridini belirler.
+  const { subscription, loading: subLoading } = useSubscription();
+  const subState = accessState(subscription);
+  const trialLeft = trialDaysLeft(subscription);
 
   // Global "?" kısayolu: herhangi bir sayfada klavye kısayolları yardımını aç/kapat.
   useKeyboardShortcut('?', () => setIsShortcutsOpen((o) => !o), []);
@@ -133,6 +149,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     });
     return () => subscription.unsubscribe();
+  }, [router]);
+
+  // Kurulum sihirbazı (Faz 2) — seçili işletmenin `onboarded_at` alanı boşsa
+  // kullanıcı henüz kurulumu bitirmemiş demektir, panele girmeden /kurulum'a
+  // yönlendirilir. Bu hem yeni kayıt olan kullanıcılar hem de sol menüden
+  // "Yeni İşletme Ekle" ile açılan ikinci/üçüncü işletmeler için çalışır.
+  // Migration çalıştırılmamışsa isOnboardingPending false döner — yönlendirme
+  // olmaz, eski davranış korunur.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+      if (cancelled) return;
+      const pending = await isOnboardingPending(workspaceId);
+      if (!cancelled && pending) router.replace('/kurulum');
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   // Tekrarlayan fatura/gelir otomasyonu — kullanıcı oturum açıp panele her
@@ -216,6 +255,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           Kapalı
                         </span>
                       </div>
+                    );
+                  }
+
+                  // Plan bazlı kilit — abonelik bilgisi yüklenene kadar
+                  // kilitli göstermiyoruz ki menü gözle görülür şekilde zıplamasın.
+                  if (item.requiresFeature && !subLoading && !hasFeature(subscription, item.requiresFeature)) {
+                    return (
+                      <Link
+                        key={item.href}
+                        href="/abonelik"
+                        title="Bu modül Pro ve Kurumsal planlarda kullanılabilir."
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground transition"
+                      >
+                        <Icon className="w-[18px] h-[18px]" />
+                        {item.label}
+                        <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/15 text-accent">
+                          Pro
+                        </span>
+                      </Link>
                     );
                   }
 
@@ -307,6 +365,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Ana İçerik Alanı */}
       <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8 overflow-y-auto print:p-0 print:pt-0 print:overflow-visible">
+        {/* Abonelik uyarı şeridi (Faz 3). Yazma kısıtı asıl olarak RLS'te
+            uygulanıyor; bu şerit kullanıcının NEDEN kayıt ekleyemediğini
+            görmesini sağlıyor. */}
+        {!subLoading && subState !== 'aktif' && (
+          <div className="print:hidden mb-4">
+            {subState === 'kisitli' && (
+              <Link
+                href="/abonelik"
+                className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 hover:bg-rose-100 transition dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300"
+              >
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Aboneliğiniz sona erdi.</strong> Verileriniz duruyor ve okunabilir, ancak
+                  yeni kayıt ekleyip düzenleyemezsiniz. Devam etmek için bir plan seçin.
+                </span>
+              </Link>
+            )}
+            {subState === 'tolerans' && (
+              <Link
+                href="/abonelik"
+                className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300"
+              >
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Son ödemeniz alınamadı.</strong> Erişiminiz kısa bir süre daha açık —
+                  kesinti yaşamamak için ödeme bilginizi güncelleyin.
+                </span>
+              </Link>
+            )}
+            {subState === 'deneme' && trialLeft <= 5 && (
+              <Link
+                href="/abonelik"
+                className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 hover:bg-sky-100 transition dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-300"
+              >
+                <CreditCard className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Ücretsiz denemenizin bitmesine <strong>{trialLeft} gün</strong> kaldı. Planları
+                  incelemek için tıklayın.
+                </span>
+              </Link>
+            )}
+          </div>
+        )}
         {children}
       </main>
 

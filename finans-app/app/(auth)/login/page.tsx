@@ -1,22 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Wallet, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client'; // Supabase bağlantımız
-import { Logo } from '@/components/logo';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
+// useSearchParams kullanan bileşen bir Suspense sınırı içinde olmalı
+// (Next.js app router kuralı) — bu yüzden form ayrı bir bileşene alındı.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // E-posta doğrulama bağlantısı geçersiz/süresi dolmuşsa /auth/callback
+  // buraya `?hata=dogrulama` ile geri gönderir. Türetilmiş değer olarak
+  // okunuyor (effect + setState yerine) — gereksiz render zinciri oluşmasın.
+  const verifyError =
+    searchParams.get('hata') === 'dogrulama'
+      ? 'Doğrulama bağlantısı geçersiz veya süresi dolmuş. Tekrar kayıt olmayı ya da şifre sıfırlamayı deneyin.'
+      : '';
+  const shownError = error || verifyError;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,41 +58,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
-      <ThemeToggle className="absolute right-4 top-4" />
-
-      <div className="w-full max-w-md card-surface">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border dark:border-border p-8">
+        
         {/* Logo ve Başlık */}
-        <div className="mb-8 flex flex-col items-center">
-          <Logo size="lg" className="mb-5" />
-          <p className="text-sm text-muted-foreground">Kurumsal hesabınıza giriş yapın</p>
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
+            <Wallet className="text-white w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">FinansApp</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground text-sm mt-1">Kurumsal hesabınıza giriş yapın</p>
         </div>
 
         {/* Hata Mesajı */}
-        {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {error}
+        {shownError && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-start gap-2 text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{shownError}</span>
           </div>
         )}
 
         {/* Giriş Formu */}
         <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">E-posta Adresi</Label>
-            <Input
-              id="email"
+          <div>
+            <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">
+              E-posta Adresi
+            </label>
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="ornek@mail.com"
               required
             />
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Şifre</Label>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground dark:text-muted-foreground">
+                Şifre
+              </label>
               <Link
                 href="/sifremi-unuttum"
                 className="text-xs font-medium text-primary hover:underline dark:text-brand-gold-light"
@@ -85,21 +106,32 @@ export default function LoginPage() {
                 Şifremi Unuttum
               </Link>
             </div>
-            <Input
-              id="password"
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="••••••••"
               required
             />
           </div>
 
-          <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-secondary disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+          >
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-            {!loading && <ArrowRight className="h-4 w-4" />}
-          </Button>
+            {!loading && <ArrowRight className="w-4 h-4" />}
+          </button>
         </form>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Hesabınız yok mu?{' '}
+          <Link href="/kayit-ol" className="font-medium text-primary hover:underline">
+            Ücretsiz kaydolun
+          </Link>
+        </p>
       </div>
     </div>
   );

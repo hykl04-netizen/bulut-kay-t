@@ -17,7 +17,7 @@ type ParsedRow = {
 };
 
 type NewDebtPayload = {
-  user_id: string;
+  workspace_id: string;
   direction: 'borc' | 'alacak';
   counterparty: string;
   amount: number;
@@ -27,7 +27,7 @@ type NewDebtPayload = {
 };
 
 type Props = {
-  userId: string;
+  workspaceId: string;
   onClose: () => void;
   onImport: (rows: NewDebtPayload[]) => Promise<void>;
 };
@@ -87,7 +87,7 @@ function buildRows(raw: string): ParsedRow[] {
   });
 }
 
-export function BulkPasteModal({ userId, onClose, onImport }: Props) {
+export function BulkPasteModal({ workspaceId, onClose, onImport }: Props) {
   const [raw, setRaw] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
@@ -101,7 +101,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
     setImporting(true);
     try {
       const payload: NewDebtPayload[] = validRows.map((r) => ({
-        user_id: userId,
+        workspace_id: workspaceId,
         direction: r.direction as 'borc' | 'alacak',
         counterparty: r.counterparty,
         amount: r.amount as number,
@@ -120,7 +120,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
 
   return (
     <div className="fixed inset-0 bg-primary/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card dark:bg-card rounded-2xl p-6 w-full max-w-3xl shadow-xl border border-border dark:border-border max-h-[90vh] flex flex-col">
+      <div className="bg-card dark:bg-primary rounded-2xl p-6 w-full max-w-3xl shadow-xl border border-border dark:border-border max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-foreground dark:text-foreground flex items-center gap-2">
             <ClipboardPaste className="w-5 h-5" />
@@ -144,7 +144,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
             )}
             <button
               onClick={onClose}
-              className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition-colors"
+              className="mt-4 bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg transition-colors"
             >
               Kapat
             </button>
@@ -157,7 +157,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
             </p>
             <details className="mb-3 text-xs text-muted-foreground dark:text-muted-foreground">
               <summary className="cursor-pointer hover:text-foreground dark:hover:text-foreground select-none">Örnek biçim</summary>
-              <pre className="mt-2 bg-muted dark:bg-secondary border border-border dark:border-border rounded-lg p-3 whitespace-pre-wrap font-mono">
+              <pre className="mt-2 bg-muted dark:bg-primary border border-border dark:border-border rounded-lg p-3 whitespace-pre-wrap font-mono">
                 {EXAMPLE}
               </pre>
             </details>
@@ -167,7 +167,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
               onChange={(e) => setRaw(e.target.value)}
               placeholder="Excel'den kopyaladığınız hücreleri buraya yapıştırın..."
               rows={6}
-              className="w-full px-3 py-2 border border-border dark:border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent dark:bg-secondary dark:text-foreground font-mono text-sm resize-y"
+              className="w-full px-3 py-2 border border-border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 font-mono text-sm resize-y"
             />
 
             {parsedRows.length > 0 && (
@@ -181,7 +181,7 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
                 </div>
                 <div className="border border-border dark:border-border rounded-lg overflow-auto flex-1 min-h-0">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-muted dark:bg-secondary border-b border-border dark:border-border sticky top-0">
+                    <thead className="bg-muted dark:bg-primary border-b border-border dark:border-border sticky top-0">
                       <tr>
                         <th className="p-2 font-medium text-muted-foreground dark:text-muted-foreground w-8"></th>
                         <th className="p-2 font-medium text-muted-foreground dark:text-muted-foreground">Tür</th>
@@ -237,14 +237,14 @@ export function BulkPasteModal({ userId, onClose, onImport }: Props) {
             <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border dark:border-border">
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted transition-colors"
+                className="px-4 py-2 rounded-lg text-muted-foreground dark:text-muted-foreground hover:bg-secondary dark:hover:bg-slate-700 transition-colors"
               >
                 Vazgeç
               </button>
               <button
                 onClick={handleImport}
                 disabled={validRows.length === 0 || importing}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground px-4 py-2 rounded-xl transition-colors"
+                className="bg-primary hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
               >
                 {importing ? 'Ekleniyor...' : `İçe Aktar (${validRows.length} satır)`}
               </button>

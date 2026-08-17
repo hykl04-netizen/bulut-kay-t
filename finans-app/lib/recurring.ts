@@ -37,7 +37,7 @@ function todayStr(): string {
 
 interface RecurringBillRow {
   id: string;
-  user_id: string;
+  workspace_id: string;
   title: string;
   amount: number;
   due_date: string | null;
@@ -50,7 +50,7 @@ interface RecurringBillRow {
 
 interface RecurringTransactionRow {
   id: string;
-  user_id: string;
+  workspace_id: string;
   type: 'gelir' | 'gider';
   amount: number;
   date: string;
@@ -86,13 +86,13 @@ function pickLatestPerSeries<T extends { id: string; series_id: string | null }>
   return Array.from(bySeries.values());
 }
 
-async function processDueBills(userId: string): Promise<number> {
+async function processDueBills(workspaceId: string): Promise<number> {
   const today = todayStr();
 
   const { data, error } = await supabase
     .from('bills')
-    .select('id, user_id, title, amount, due_date, is_recurring, recurrence_period, recurrence_end_date, series_id, category_id')
-    .eq('user_id', userId)
+    .select('id, workspace_id, title, amount, due_date, is_recurring, recurrence_period, recurrence_end_date, series_id, category_id')
+    .eq('workspace_id', workspaceId)
     .eq('is_recurring', true)
     .not('due_date', 'is', null)
     .lte('due_date', today);
@@ -112,7 +112,7 @@ async function processDueBills(userId: string): Promise<number> {
     while (nextDue <= today && guard < MAX_CATCHUP_ITERATIONS) {
       if (head.recurrence_end_date && nextDue > head.recurrence_end_date) break;
       newRows.push({
-        user_id: head.user_id,
+        workspace_id: head.workspace_id,
         title: head.title,
         amount: head.amount,
         due_date: nextDue,
@@ -141,15 +141,15 @@ async function processDueBills(userId: string): Promise<number> {
   return created;
 }
 
-async function processDueTransactions(userId: string): Promise<number> {
+async function processDueTransactions(workspaceId: string): Promise<number> {
   const today = todayStr();
 
   const { data, error } = await supabase
     .from('transactions')
     .select(
-      'id, user_id, type, amount, date, description, category_id, is_recurring, recurrence_period, recurrence_end_date, series_id, currency, exchange_rate'
+      'id, workspace_id, type, amount, date, description, category_id, is_recurring, recurrence_period, recurrence_end_date, series_id, currency, exchange_rate'
     )
-    .eq('user_id', userId)
+    .eq('workspace_id', workspaceId)
     .eq('is_recurring', true)
     .lte('date', today);
 
@@ -169,7 +169,7 @@ async function processDueTransactions(userId: string): Promise<number> {
       if (head.recurrence_end_date && nextDate > head.recurrence_end_date) break;
       const tryEquivalent = Number(head.amount) * Number(head.exchange_rate || 1);
       newRows.push({
-        user_id: head.user_id,
+        workspace_id: head.workspace_id,
         type: head.type,
         amount: head.amount,
         date: nextDate,
@@ -210,10 +210,10 @@ export interface RecurringAutomationResult {
  * serilerini işler ve eksik dönemleri otomatik oluşturur. Dashboard
  * layout'unda oturum açıldığında bir kez çağrılır.
  */
-export async function runRecurringAutomation(userId: string): Promise<RecurringAutomationResult> {
+export async function runRecurringAutomation(workspaceId: string): Promise<RecurringAutomationResult> {
   const [billsCreated, transactionsCreated] = await Promise.all([
-    processDueBills(userId),
-    processDueTransactions(userId),
+    processDueBills(workspaceId),
+    processDueTransactions(workspaceId),
   ]);
   return { billsCreated, transactionsCreated };
 }

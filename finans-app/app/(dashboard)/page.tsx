@@ -69,7 +69,7 @@ export default function DashboardPage() {
     const { data: txData } = await supabase
       .from('transactions')
       .select('*, categories(name, color)')
-      .eq('user_id', accountId)
+      .eq('workspace_id', accountId)
       .order('date', { ascending: false });
 
     let income = 0;
@@ -88,7 +88,7 @@ export default function DashboardPage() {
     const { data: invData } = await supabase
       .from('investments')
       .select('*')
-      .eq('user_id', accountId);
+      .eq('workspace_id', accountId);
 
     let investmentsTotal = 0;
     if (invData) {
@@ -101,7 +101,7 @@ export default function DashboardPage() {
     const { data: assetData } = await supabase
       .from('assets')
       .select('*')
-      .eq('user_id', accountId);
+      .eq('workspace_id', accountId);
 
     let assetsTotal = 0;
     if (assetData) {
@@ -114,7 +114,7 @@ export default function DashboardPage() {
     const { data: debtData } = await supabase
       .from('debts')
       .select('*')
-      .eq('user_id', accountId)
+      .eq('workspace_id', accountId)
       .eq('status', 'acik');
 
     let debtsTotal = 0;
@@ -146,7 +146,7 @@ export default function DashboardPage() {
       ? await supabase
           .from('bills')
           .select('id, title, amount, due_date')
-          .eq('user_id', accountId)
+          .eq('workspace_id', accountId)
           .eq('status', 'odenmedi')
           .not('due_date', 'is', null)
       : { data: [] as { id: string; title: string; amount: number; due_date: string }[] };
@@ -187,12 +187,12 @@ export default function DashboardPage() {
     const { data: budgetData } = await supabase
       .from('budgets')
       .select('category_id, monthly_limit')
-      .eq('user_id', accountId);
+      .eq('workspace_id', accountId);
 
     const { data: giderCategories } = await supabase
       .from('categories')
       .select('id, name, color')
-      .eq('user_id', accountId)
+      .eq('workspace_id', accountId)
       .eq('type', 'gider');
 
     const overBudgetRows = showBudgetAlerts && budgetData && giderCategories
@@ -318,7 +318,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 dark:border-border">
               <div className="flex items-center gap-2">
                 <CalendarClock className="h-5 w-5 text-brand-gold" />
-                <h2 className="text-base font-bold text-foreground dark:text-foreground">Yaklaşan Ödemeler</h2>
+                <h2 className="text-base font-bold text-foreground dark:text-slate-100">Yaklaşan Ödemeler</h2>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <span className="rounded-full bg-accent/15 px-2.5 py-1 text-brand-gold dark:text-brand-gold-light">
@@ -330,7 +330,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="divide-y divide-border p-2 dark:divide-border">
+            <div className="divide-y divide-slate-100 p-2 dark:divide-border">
               {summary.upcomingPayments.slice(0, 6).map((p) => {
                 const info = getDueInfo(p.dueDate, false);
                 return (
@@ -401,7 +401,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-border">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-base font-bold text-foreground dark:text-foreground">Son Gelir ve Giderler</h2>
+            <h2 className="text-base font-bold text-foreground dark:text-slate-100">Son Gelir ve Giderler</h2>
           </div>
           <span className="text-xs text-muted-foreground">Son 5 Hareket</span>
         </div>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
           {summary.recentTransactions.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">Henüz işlem bulunmuyor.</p>
           ) : (
-            <div className="divide-y divide-border dark:divide-border">
+            <div className="divide-y divide-slate-100 dark:divide-border">
               {summary.recentTransactions.map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between py-3.5 transition hover:bg-muted/50 dark:hover:bg-secondary/30 px-2 rounded-xl">
                   <div className="flex items-center gap-3">

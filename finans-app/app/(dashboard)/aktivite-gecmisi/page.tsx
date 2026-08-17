@@ -81,7 +81,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
           <span className="shrink-0 text-xs font-semibold text-muted-foreground">
             {TABLE_LABELS[row.table_name] ?? row.table_name}
           </span>
-          <span className="truncate text-sm text-foreground dark:text-foreground">{summarizeRow(row)}</span>
+          <span className="truncate text-sm text-foreground dark:text-slate-100">{summarizeRow(row)}</span>
         </div>
         <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
           <span>{new Date(row.created_at).toLocaleString('tr-TR')}</span>
@@ -102,7 +102,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
             <tbody>
               {changedFields.map((f) => (
                 <tr key={f.key} className="border-t border-border/60 dark:border-border/60">
-                  <td className="py-1 pr-4 font-medium text-foreground dark:text-foreground">{f.key}</td>
+                  <td className="py-1 pr-4 font-medium text-foreground dark:text-slate-200">{f.key}</td>
                   <td className="py-1 pr-4 text-rose-600 dark:text-rose-400">{String(f.before ?? '—')}</td>
                   <td className="py-1 text-emerald-600 dark:text-emerald-400">{String(f.after ?? '—')}</td>
                 </tr>
@@ -139,7 +139,7 @@ export default function AktiviteGecmisiPage() {
       let query = supabase
         .from('audit_log')
         .select('*', { count: 'exact' })
-        .eq('user_id', accountId)
+        .eq('workspace_id', accountId)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 

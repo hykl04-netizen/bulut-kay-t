@@ -30,7 +30,7 @@ export default function FaturaMasrafPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
 
   // Gelişmiş arama ve filtreleme
   const [filters, setFilters] = useState<AdvancedFilterValue>(EMPTY_ADVANCED_FILTER);
@@ -58,11 +58,11 @@ export default function FaturaMasrafPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const accountId = await getCurrentAccountId(user.id);
-      setUserId(accountId);
+      setWorkspaceId(accountId);
       const { data: billData } = await supabase
         .from('bills')
         .select('*, categories(name)')
-        .eq('user_id', accountId)
+        .eq('workspace_id', accountId)
         .order('due_date', { ascending: true });
 
       if (billData) setBills(billData);
@@ -70,7 +70,7 @@ export default function FaturaMasrafPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
-        .eq('user_id', accountId)
+        .eq('workspace_id', accountId)
         .eq('type', 'gider');
 
       if (catData) setCategories(catData);
@@ -89,7 +89,7 @@ export default function FaturaMasrafPage() {
   // local state'e optimistic olarak ekle (tam yeniden çekim yok).
   const handleBulkImport = async (
     rows: {
-      user_id: string;
+      workspace_id: string;
       title: string;
       amount: number;
       due_date: string | null;
@@ -156,7 +156,7 @@ export default function FaturaMasrafPage() {
     const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: accountId,
+      workspace_id: accountId,
       title,
       amount: parseFloat(amount) || 0,
       due_date: dueDate,
@@ -286,7 +286,7 @@ export default function FaturaMasrafPage() {
               </button>
               <button
                 onClick={handleOpenAddModal}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-primary/90 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
               >
                 <Plus className="h-4 w-4" />
                 Yeni Fatura/Masraf Ekle
@@ -336,7 +336,7 @@ export default function FaturaMasrafPage() {
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-foreground">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
               <h2 className="text-lg font-bold">{editingId ? 'Faturayı Düzenle' : 'Yeni Fatura / Masraf Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
@@ -478,7 +478,7 @@ export default function FaturaMasrafPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>
@@ -489,9 +489,9 @@ export default function FaturaMasrafPage() {
       )}
 
       {/* Excel'den Toplu Ekleme Modalı */}
-      {isBulkModalOpen && userId && (
+      {isBulkModalOpen && workspaceId && (
         <BulkPasteModal
-          userId={userId}
+          workspaceId={workspaceId}
           onClose={() => setIsBulkModalOpen(false)}
           onImport={handleBulkImport}
         />

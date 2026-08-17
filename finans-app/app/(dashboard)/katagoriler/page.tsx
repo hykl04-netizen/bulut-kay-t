@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 
 type Category = {
   id: string;
@@ -27,11 +28,22 @@ export default function KategorilerPage() {
   const [saving, setSaving] = useState(false);
 
 
+  // Seçili işletmenin (workspace) kategorileri. RLS kullanıcının erişebildiği
+  // TÜM workspace'leri geçirdiği için burada açıkça workspace_id ile
+  // filtrelemek gerekiyor — aksi halde ikinci bir işletme açan kullanıcı
+  // her iki işletmenin kategorilerini bir arada görürdü.
   const fetchCategories = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const { data, error } = await supabase
       .from('categories')
       .select('*')
+      .eq('workspace_id', workspaceId)
       .order('type', { ascending: true })
       .order('name', { ascending: true });
 
@@ -60,8 +72,9 @@ export default function KategorilerPage() {
       return;
     }
 
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const { error } = await supabase.from('categories').insert({
-      user_id: user.id,
+      workspace_id: workspaceId,
       type,
       name: name.trim(),
       color,
