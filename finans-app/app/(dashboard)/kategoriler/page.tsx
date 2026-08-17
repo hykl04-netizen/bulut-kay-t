@@ -5,6 +5,9 @@ import { Plus, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 type Category = {
   id: string;
@@ -20,6 +23,8 @@ const PRESET_COLORS = [
 ];
 
 export default function KategorilerPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,9 +66,10 @@ export default function KategorilerPage() {
       setSaving(false);
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const { error } = await supabase.from('categories').insert({
-      user_id: user.id,
+      user_id: accountId,
       type,
       name: name.trim(),
       color,
@@ -101,6 +107,7 @@ export default function KategorilerPage() {
       </div>
 
       {/* Yeni Kategori Ekleme Formu */}
+      {canEdit && (
       <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
         <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Kategori Ekle</h2>
         <form onSubmit={handleAdd} className="space-y-4">
@@ -156,6 +163,7 @@ export default function KategorilerPage() {
           </button>
         </form>
       </div>
+      )}
 
       {/* Kategori Listesi */}
       {loading ? (
@@ -164,8 +172,8 @@ export default function KategorilerPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <CategoryList title="Gelir Kategorileri" categories={gelirCategories} onDelete={handleDelete} emptyLabel="Henüz gelir kategorisi eklenmemiş." />
-          <CategoryList title="Gider Kategorileri" categories={giderCategories} onDelete={handleDelete} emptyLabel="Henüz gider kategorisi eklenmemiş." />
+          <CategoryList title="Gelir Kategorileri" categories={gelirCategories} onDelete={handleDelete} emptyLabel="Henüz gelir kategorisi eklenmemiş." canEdit={canEdit} />
+          <CategoryList title="Gider Kategorileri" categories={giderCategories} onDelete={handleDelete} emptyLabel="Henüz gider kategorisi eklenmemiş." canEdit={canEdit} />
         </div>
       )}
     </div>
@@ -177,11 +185,13 @@ function CategoryList({
   categories,
   onDelete,
   emptyLabel,
+  canEdit,
 }: {
   title: string;
   categories: Category[];
   onDelete: (id: string) => void;
   emptyLabel: string;
+  canEdit: boolean;
 }) {
   return (
     <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
@@ -204,12 +214,14 @@ function CategoryList({
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                 <span className="text-foreground dark:text-muted-foreground">{cat.name}</span>
               </div>
-              <button
-                onClick={() => onDelete(cat.id)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground dark:text-muted-foreground hover:text-rose-600 transition-all p-1"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => onDelete(cat.id)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground dark:text-muted-foreground hover:text-rose-600 transition-all p-1"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </li>
           ))}
         </ul>

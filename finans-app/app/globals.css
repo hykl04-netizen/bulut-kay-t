@@ -7,35 +7,35 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #0b1e3d;
+  --background: #fafafa;
+  --foreground: #1a1a1a;
 
   /* shadcn/ui — new-york / neutral tema tokenları */
-  /* Tema: Lacivert & Altın (Klasik Kurumsal / Private Banking) */
+  /* Tema: Grafit Monokrom (Bloomberg-terminal ruhu, tablo yoğun ekranlar için) */
   --radius: 0.5rem;
   --card: #ffffff;
-  --card-foreground: #0b1e3d;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #0b1e3d;
-  --primary: #0b1e3d;
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
   --primary-foreground: #ffffff;
-  --secondary: #f4f1e8;
-  --secondary-foreground: #0b1e3d;
-  --muted: #f2f3f5;
-  --muted-foreground: #5a6472;
-  --accent: #c9a227;
-  --accent-foreground: #0b1e3d;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f2f2f2;
+  --muted-foreground: #6b6b6b;
+  --accent: #2f6fe0;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: #e2e5ea;
-  --input: #e2e5ea;
-  --ring: #c9a227;
+  --border: #e4e4e4;
+  --input: #e4e4e4;
+  --ring: #2f6fe0;
 
   /* Marka tokenları */
-  --brand-navy: #0b1e3d;
-  --brand-navy-light: #14335f;
-  --brand-gold: #c9a227;
-  --brand-gold-light: #dcbc55;
+  --brand-navy: #1a1a1a;
+  --brand-navy-light: #2a2a2a;
+  --brand-gold: #2f6fe0;
+  --brand-gold-light: #5ea1ff;
 }
 
 @theme inline {
@@ -74,32 +74,36 @@
 }
 
 .dark {
-  --background: #061224;
-  --foreground: #f4f1e8;
+  --background: #151515;
+  --foreground: #eaeaea;
 
   /* shadcn/ui — new-york / neutral tema tokenları (dark) */
-  --card: #0b1e3d;
-  --card-foreground: #f4f1e8;
-  --popover: #0b1e3d;
-  --popover-foreground: #f4f1e8;
-  --primary: #c9a227;
-  --primary-foreground: #0b1e3d;
-  --secondary: #14335f;
-  --secondary-foreground: #f4f1e8;
-  --muted: #14335f;
-  --muted-foreground: #a9b3c4;
-  --accent: #c9a227;
-  --accent-foreground: #0b1e3d;
+  /* Not: --brand-navy* / --brand-gold* değişken adları geriye dönük uyumluluk
+     için korundu (35 yerde bu class'lar kullanılıyor), ama artık lacivert/altın
+     değil grafit/mavi tonlarını taşıyorlar. Mavi vurgu (accent) yine sadece
+     gerçek vurgu noktalarında; primary buton dolgusu nötr açık gri kalıyor. */
+  --card: #1f1f1f;
+  --card-foreground: #eaeaea;
+  --popover: #1f1f1f;
+  --popover-foreground: #eaeaea;
+  --primary: #eeeeee;
+  --primary-foreground: #151515;
+  --secondary: #262626;
+  --secondary-foreground: #eaeaea;
+  --muted: #212121;
+  --muted-foreground: #9a9a9a;
+  --accent: #5ea1ff;
+  --accent-foreground: #0d1b2e;
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: rgba(201, 162, 39, 0.18);
-  --input: rgba(201, 162, 39, 0.18);
-  --ring: #c9a227;
+  --border: rgba(94, 161, 255, 0.12);
+  --input: rgba(94, 161, 255, 0.12);
+  --ring: #5ea1ff;
 
-  --brand-navy: #0b1e3d;
-  --brand-navy-light: #14335f;
-  --brand-gold: #c9a227;
-  --brand-gold-light: #dcbc55;
+  --brand-navy: #1a1a1a;
+  --brand-navy-light: #2a2a2a;
+  --brand-gold: #2f6fe0;
+  --brand-gold-light: #5ea1ff;
 }
 
 body {

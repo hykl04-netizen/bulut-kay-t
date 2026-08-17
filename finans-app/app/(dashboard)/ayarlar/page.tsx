@@ -8,6 +8,8 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTeamRole } from '@/lib/use-team-role';
+import { ShieldAlert } from 'lucide-react';
 
 const MAX_LOGO_DIMENSION = 240; // px — PDF başlığında küçük bir logo için fazlasıyla yeterli
 
@@ -57,6 +59,9 @@ function resizeImageToDataUrl(file: File): Promise<string> {
 }
 
 export default function AyarlarPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canManage = roleLoading || !role || role === 'sahip' || role === 'yonetici';
+
   const [companyName, setCompanyName] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -317,10 +322,27 @@ export default function AyarlarPage() {
     toast.success('Şirket ayarları kaydedildi. Yeni PDF raporlarında kullanılacak.');
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
+      </div>
+    );
+  }
+
+  if (!canManage) {
+    return (
+      <div className="max-w-xl space-y-6">
+        <div className="flex items-center gap-3">
+          <Building2 className="h-7 w-7 text-brand-gold" />
+          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Şirket Ayarları</h1>
+        </div>
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+          <p className="text-sm">
+            Şirket ayarları ve yedekleme yalnızca sahip veya yönetici rolüne açıktır.
+          </p>
+        </div>
       </div>
     );
   }
@@ -384,7 +406,7 @@ export default function AyarlarPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-primary hover:bg-brand-gold-light disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Kaydet

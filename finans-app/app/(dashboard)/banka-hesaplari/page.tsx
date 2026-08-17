@@ -8,6 +8,9 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { parseBankStatementCsv, ParsedBankRow } from '@/lib/bank-import';
 import { SUPPORTED_CURRENCIES, formatCurrency } from '@/lib/currency';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 interface BankAccount {
   id: string;
@@ -25,6 +28,8 @@ interface Category {
 }
 
 export default function BankaHesaplariPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +57,12 @@ export default function BankaHesaplariPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
       const { data: accData, error } = await supabase
         .from('bank_accounts')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -70,7 +76,7 @@ export default function BankaHesaplariPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('id, name, type')
-        .eq('user_id', user.id);
+        .eq('user_id', accountId);
       if (catData) setCategories(catData);
     }
     setLoading(false);
@@ -112,9 +118,10 @@ export default function BankaHesaplariPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       name,
       bank_name: bankName || null,
       iban_last4: ibanLast4 || null,
@@ -245,13 +252,15 @@ export default function BankaHesaplariPage() {
             işlemlerinizi otomatik olarak Gelir/Gider listesine ekleyin.
           </p>
         </div>
-        <button
-          onClick={handleOpenAddModal}
-          className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Hesap Ekle
-        </button>
+        {canEdit && (
+          <button
+            onClick={handleOpenAddModal}
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Hesap Ekle
+          </button>
+        )}
       </div>
 
       {/* Gerçek Open Banking hakkında bilgilendirme */}
@@ -287,27 +296,31 @@ export default function BankaHesaplariPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => handleOpenEditModal(acc)} className="p-1.5 text-muted-foreground hover:text-foreground dark:hover:text-white">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => handleDelete(acc.id)} className="p-1.5 text-muted-foreground hover:text-rose-600">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex gap-1">
+                    <button onClick={() => handleOpenEditModal(acc)} className="p-1.5 text-muted-foreground hover:text-foreground dark:hover:text-white">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleDelete(acc.id)} className="p-1.5 text-muted-foreground hover:text-rose-600">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <p className="mt-4 text-2xl font-bold text-foreground dark:text-foreground">
                 {formatCurrency(acc.current_balance, acc.currency)}
               </p>
 
-              <button
-                onClick={() => openImportFor(acc.id)}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-              >
-                <UploadCloud className="h-4 w-4" />
-                Ekstre (CSV) İçe Aktar
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => openImportFor(acc.id)}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  Ekstre (CSV) İçe Aktar
+                </button>
+              )}
             </div>
           ))}
         </div>

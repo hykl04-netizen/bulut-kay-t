@@ -26,6 +26,7 @@ import {
   Building2,
   Lock,
   Keyboard,
+  Users,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
@@ -34,8 +35,19 @@ import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
 import { runRecurringAutomation } from '@/lib/recurring';
 import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
+import { useTeamRole } from '@/lib/use-team-role';
+import { ROLE_LABELS } from '@/lib/team';
+import { getCurrentAccountId } from '@/lib/supabase/account';
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  managerOnly?: boolean;
+  hideForViewer?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Özet Paneli', icon: LayoutDashboard },
   { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
   { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
@@ -43,15 +55,16 @@ const NAV_ITEMS = [
   { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
   { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
   { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
-  { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet },
+  { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true },
   { href: '/butce', label: 'Bütçe', icon: Target },
   { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
   { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
   { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
   { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
   { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
-  { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2 },
-  { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock },
+  { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
+  { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
+  { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -60,6 +73,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const { role, loading: roleLoading } = useTeamRole();
+  const canManageTeamNav = roleLoading || role === 'sahip' || role === 'yonetici';
+  const canViewPayrollNav = roleLoading || !role || role !== 'salt_gorunum';
 
   // Global "?" kısayolu: herhangi bir sayfada klavye kısayolları yardımını aç/kapat.
   useKeyboardShortcut('?', () => setIsShortcutsOpen((o) => !o), []);
@@ -102,7 +118,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const result = await runRecurringAutomation(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      if (cancelled) return;
+      // Salt görünüm rolü veri ekleyemez (RLS reddeder) — otomasyonu hiç
+      // tetiklemeye gerek yok, yönetici/muhasebeci/sahip giriş yaptığında
+      // zaten çalışacak.
+      if (roleLoading || role === 'salt_gorunum') return;
+      const result = await runRecurringAutomation(accountId);
       if (cancelled) return;
       const total = result.billsCreated + result.transactionsCreated;
       if (total > 0) {
@@ -114,7 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [role, roleLoading]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -127,11 +149,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <>
       <div className="p-6 flex items-center gap-3 text-white">
         <Wallet className="w-8 h-8 text-brand-gold-light drop-shadow-[0_0_10px_rgba(201,162,39,0.45)]" />
-        <h2 className="text-xl font-bold">FinansApp</h2>
+        <div>
+          <h2 className="text-xl font-bold">FinansApp</h2>
+          {!roleLoading && role && role !== 'sahip' && (
+            <span className="text-xs font-medium text-brand-gold-light/80">{ROLE_LABELS[role]}</span>
+          )}
+        </div>
       </div>
 
       <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => (!item.managerOnly || canManageTeamNav) && (!item.hideForViewer || canViewPayrollNav)).map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           return (

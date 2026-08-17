@@ -7,6 +7,9 @@ import { FileUpload } from '@/components/file-upload';
 import { FileText, Plus, Trash2, ExternalLink, Calendar, Filter, Search, X, Tag } from 'lucide-react';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 interface DocumentItem {
   id: string;
@@ -34,6 +37,8 @@ function parseTagsInput(raw: string): string[] {
 const CATEGORIES = ['Tümü', 'Fatura', 'Fiş', 'Maaş Bordrosu', 'Vergi', 'Diğer'];
 
 export default function BelgelerPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,10 +69,11 @@ export default function BelgelerPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      const accountId = await getCurrentAccountId(user.id);
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('document_date', { ascending: false });
 
       if (!error && data) {
@@ -98,9 +104,10 @@ export default function BelgelerPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const { error } = await supabase.from('documents').insert({
-      user_id: user.id,
+      user_id: accountId,
       title,
       category,
       file_url: fileUrl,
@@ -178,13 +185,15 @@ export default function BelgelerPage() {
             Faturalarınızı, fişlerinizi, bordrolarınızı ve önemli evraklarınızı tek yerde saklayın.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Belge Yükle
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Belge Yükle
+          </button>
+        )}
       </div>
 
       {/* Filtreleme ve Arama Çubuğu */}
@@ -241,7 +250,7 @@ export default function BelgelerPage() {
               onClick={() => toggleTagFilter(tag)}
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                 selectedTags.includes(tag)
-                  ? 'bg-brand-gold text-primary'
+                  ? 'bg-brand-gold text-accent-foreground'
                   : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
               }`}
             >
@@ -312,13 +321,15 @@ export default function BelgelerPage() {
                   Dosyayı Görüntüle
                 </a>
 
-                <button
-                  onClick={() => handleDelete(doc.id)}
-                  className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
-                  title="Sil"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
+                    title="Sil"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

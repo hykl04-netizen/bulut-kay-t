@@ -10,6 +10,9 @@ import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { fetchMarketPrice, isMarketPriceError } from '@/lib/market-price';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -17,6 +20,8 @@ function formatTRY(value: number) {
 }
 
 export default function YatirimPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -38,11 +43,12 @@ export default function YatirimPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
       const { data, error } = await supabase
         .from('investments')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', accountId);
 
       if (!error && data) setInvestments(data);
     }
@@ -131,9 +137,10 @@ export default function YatirimPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       asset_type: assetType,
       symbol: symbol.toUpperCase(),
       quantity: parseFloat(quantity) || 0,
@@ -227,37 +234,43 @@ export default function YatirimPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefreshAllPrices}
-            disabled={isRefreshingAll || investments.length === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            {isRefreshingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Tüm Fiyatları Güncelle
-          </button>
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            <ClipboardPaste className="h-4 w-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setAssetType('hisse');
-              setSymbol('');
-              setQuantity('');
-              setAvgCost('');
-              setCurrentPrice('');
-              setCurrency('TRY');
-              setIsModalOpen(true);
-            }}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Yatırım Ekle
-          </button>
+          {canEdit && (
+            <button
+              onClick={handleRefreshAllPrices}
+              disabled={isRefreshingAll || investments.length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-foreground dark:hover:bg-secondary"
+            >
+              {isRefreshingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Tüm Fiyatları Güncelle
+            </button>
+          )}
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Excel&apos;den Yapıştır
+              </button>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setAssetType('hisse');
+                  setSymbol('');
+                  setQuantity('');
+                  setAvgCost('');
+                  setCurrentPrice('');
+                  setCurrency('TRY');
+                  setIsModalOpen(true);
+                }}
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni Yatırım Ekle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -280,6 +293,7 @@ export default function YatirimPage() {
           columns={columns}
           data={investments}
           meta={{
+            canEdit,
             onEdit: handleOpenEditModal,
             onDelete: handleDelete,
             onCellEdit: handleCellEdit,

@@ -132,7 +132,7 @@ export default function DonemKilitlemePage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-primary hover:bg-brand-gold-light disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Kilidi Kaydet

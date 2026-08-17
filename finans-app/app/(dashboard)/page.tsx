@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Wallet, TrendingUp, PiggyBank, HandCoins, ArrowUpRight, ArrowDownRight, ShieldCheck, Activity, CalendarClock, Receipt, AlertTriangle } from 'lucide-react';
 import { getDueInfo, DUE_TONE_CLASSES } from '@/lib/due-date';
 import { buildBudgetRows, BUDGET_TONE_CLASSES, BudgetRow } from '@/lib/budget';
+import { getCurrentAccountId } from '@/lib/supabase/account';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -62,12 +63,13 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     // 1. Gelir-Giderler
     const { data: txData } = await supabase
       .from('transactions')
       .select('*, categories(name, color)')
-      .eq('user_id', user.id)
+      .eq('user_id', accountId)
       .order('date', { ascending: false });
 
     let income = 0;
@@ -86,7 +88,7 @@ export default function DashboardPage() {
     const { data: invData } = await supabase
       .from('investments')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', accountId);
 
     let investmentsTotal = 0;
     if (invData) {
@@ -99,7 +101,7 @@ export default function DashboardPage() {
     const { data: assetData } = await supabase
       .from('assets')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', accountId);
 
     let assetsTotal = 0;
     if (assetData) {
@@ -112,7 +114,7 @@ export default function DashboardPage() {
     const { data: debtData } = await supabase
       .from('debts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', accountId)
       .eq('status', 'acik');
 
     let debtsTotal = 0;
@@ -144,7 +146,7 @@ export default function DashboardPage() {
       ? await supabase
           .from('bills')
           .select('id, title, amount, due_date')
-          .eq('user_id', user.id)
+          .eq('user_id', accountId)
           .eq('status', 'odenmedi')
           .not('due_date', 'is', null)
       : { data: [] as { id: string; title: string; amount: number; due_date: string }[] };
@@ -185,12 +187,12 @@ export default function DashboardPage() {
     const { data: budgetData } = await supabase
       .from('budgets')
       .select('category_id, monthly_limit')
-      .eq('user_id', user.id);
+      .eq('user_id', accountId);
 
     const { data: giderCategories } = await supabase
       .from('categories')
       .select('id, name, color')
-      .eq('user_id', user.id)
+      .eq('user_id', accountId)
       .eq('type', 'gider');
 
     const overBudgetRows = showBudgetAlerts && budgetData && giderCategories

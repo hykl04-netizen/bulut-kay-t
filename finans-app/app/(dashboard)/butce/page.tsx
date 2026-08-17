@@ -7,6 +7,9 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { buildBudgetRows, currentMonthKey, BUDGET_TONE_CLASSES, BudgetRow } from '@/lib/budget';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
 function formatTRY(value: number) {
@@ -33,6 +36,8 @@ interface Budget {
 }
 
 export default function ButcePage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<{ type: 'gelir' | 'gider'; amount: number; date: string; category_id: string | null; try_equivalent?: number | null }[]>([]);
@@ -48,14 +53,15 @@ export default function ButcePage() {
       return;
     }
 
+    const accountId = await getCurrentAccountId(user.id);
     const monthKey = currentMonthKey();
     const [catRes, budgetRes, txRes] = await Promise.all([
-      supabase.from('categories').select('id, name, color').eq('user_id', user.id).eq('type', 'gider').order('name'),
-      supabase.from('budgets').select('id, category_id, monthly_limit').eq('user_id', user.id),
+      supabase.from('categories').select('id, name, color').eq('user_id', accountId).eq('type', 'gider').order('name'),
+      supabase.from('budgets').select('id, category_id, monthly_limit').eq('user_id', accountId),
       supabase
         .from('transactions')
         .select('type, amount, date, category_id, try_equivalent')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .eq('type', 'gider')
         .gte('date', `${monthKey}-01`),
     ]);
@@ -107,9 +113,10 @@ export default function ButcePage() {
       return;
     }
 
+    const accountId = await getCurrentAccountId(user.id);
     const { error } = await supabase
       .from('budgets')
-      .upsert({ user_id: user.id, category_id: categoryId, monthly_limit: limit }, { onConflict: 'user_id,category_id' });
+      .upsert({ user_id: accountId, category_id: categoryId, monthly_limit: limit }, { onConflict: 'user_id,category_id' });
 
     if (error) {
       console.error('Bütçe kaydetme hatası:', error.message);
@@ -177,6 +184,7 @@ export default function ButcePage() {
               <BudgetRowItem
                 key={row.categoryId}
                 row={row}
+                canEdit={canEdit}
                 onDelete={() => {
                   const budget = budgets.find((b) => b.category_id === row.categoryId);
                   if (budget) handleDeleteLimit(budget.id, row.categoryName);
@@ -188,7 +196,7 @@ export default function ButcePage() {
       </div>
 
       {/* Limit tanımlanmamış kategoriler için hızlı ekleme */}
-      {unbudgetedCategories.length > 0 && (
+      {canEdit && unbudgetedCategories.length > 0 && (
         <div className="bg-card dark:bg-primary rounded-xl shadow-sm border border-border dark:border-border p-6">
           <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Bütçe Limiti Belirle</h2>
           <div className="space-y-3">
@@ -228,7 +236,7 @@ export default function ButcePage() {
   );
 }
 
-function BudgetRowItem({ row, onDelete }: { row: BudgetRow; onDelete: () => void }) {
+function BudgetRowItem({ row, onDelete, canEdit }: { row: BudgetRow; onDelete: () => void; canEdit: boolean }) {
   const tone = BUDGET_TONE_CLASSES[row.tone];
   const barWidth = Math.min(100, row.percent);
 
@@ -249,13 +257,15 @@ function BudgetRowItem({ row, onDelete }: { row: BudgetRow; onDelete: () => void
             </span>
           )}
         </div>
-        <button
-          onClick={onDelete}
-          className="text-muted-foreground hover:text-rose-600 transition-colors p-1 shrink-0"
-          aria-label="Limiti kaldır"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={onDelete}
+            className="text-muted-foreground hover:text-rose-600 transition-colors p-1 shrink-0"
+            aria-label="Limiti kaldır"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="h-2.5 w-full rounded-full bg-muted dark:bg-secondary overflow-hidden">

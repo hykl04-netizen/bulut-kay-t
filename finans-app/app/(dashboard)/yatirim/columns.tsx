@@ -32,6 +32,8 @@ const assetTypeColors: Record<string, string> = {
 };
 
 type InvestmentTableMeta = {
+  /** false ise düzenle/sil menüsü render edilmez (salt_gorunum rolü). */
+  canEdit?: boolean;
   onEdit: (row: Investment) => void;
   onDelete: (id: string) => void;
   onCellEdit: (id: string, field: 'quantity' | 'avg_cost' | 'current_price', value: string) => Promise<void>;
@@ -39,6 +41,7 @@ type InvestmentTableMeta = {
 
 function ActionsCell({ row, table }: { row: Row<Investment>; table: Table<Investment> }) {
   const meta = table.options.meta as InvestmentTableMeta | undefined;
+  if (meta?.canEdit === false) return null;
 
   return (
     <RowActionsMenu>

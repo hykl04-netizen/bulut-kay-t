@@ -93,7 +93,7 @@ export function AdvancedFilterBar({
           <SlidersHorizontal className="h-4 w-4" />
           Filtrele
           {advancedActiveCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white dark:bg-brand-gold dark:text-primary">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white dark:bg-brand-gold dark:text-accent-foreground">
               {advancedActiveCount}
             </span>
           )}
@@ -177,7 +177,7 @@ export function AdvancedFilterBar({
                       onClick={() => toggleCategory(cat.id)}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                         active
-                          ? 'border-primary bg-primary text-white dark:border-brand-gold dark:bg-brand-gold dark:text-primary'
+                          ? 'border-primary bg-primary text-white dark:border-brand-gold dark:bg-brand-gold dark:text-accent-foreground'
                           : 'border-border text-muted-foreground hover:bg-muted dark:border-border dark:text-muted-foreground dark:hover:bg-secondary'
                       }`}
                     >

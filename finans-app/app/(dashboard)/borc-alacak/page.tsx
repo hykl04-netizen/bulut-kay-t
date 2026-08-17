@@ -9,8 +9,13 @@ import { columns, type Debt } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 export default function BorcAlacakPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -28,11 +33,12 @@ export default function BorcAlacakPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
       const { data, error } = await supabase
         .from('debts')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('due_date', { ascending: true });
 
       if (!error && data) setDebts(data);
@@ -126,9 +132,10 @@ export default function BorcAlacakPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       direction,
       counterparty,
       amount: parseFloat(amount) || 0,
@@ -173,20 +180,24 @@ export default function BorcAlacakPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            <ClipboardPaste className="h-4 w-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Kayıt Ekle
-          </button>
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Excel&apos;den Yapıştır
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni Kayıt Ekle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -200,6 +211,7 @@ export default function BorcAlacakPage() {
           columns={columns}
           data={debts}
           meta={{
+            canEdit,
             onDelete: handleDelete,
             onToggleStatus: handleToggleStatus,
             onCellEdit: handleCellEdit,

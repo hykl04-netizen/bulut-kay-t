@@ -13,6 +13,9 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { SUPPORTED_CURRENCIES, SupportedCurrency, fetchRateToTRY, convertToTRY, formatCurrency } from '@/lib/currency';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 interface Category {
   id: string;
@@ -24,6 +27,9 @@ interface Category {
 const SELECT_WITH_CATEGORY = '*, category:categories(name, color)';
 
 export default function GelirGiderPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,13 +92,14 @@ export default function GelirGiderPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
 
       // İşlemleri çek
       const { data: txData } = await supabase
         .from('transactions')
         .select(SELECT_WITH_CATEGORY)
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('date', { ascending: false });
 
       if (txData) setTransactions(txData as unknown as Transaction[]);
@@ -101,7 +108,7 @@ export default function GelirGiderPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', accountId);
 
       if (catData) setCategories(catData);
     }
@@ -218,12 +225,13 @@ export default function GelirGiderPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const parsedAmount = parseFloat(amount) || 0;
     const parsedRate = parseFloat(exchangeRate) || 1;
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       type,
       category_id: categoryId || null,
       amount: parsedAmount,
@@ -297,7 +305,7 @@ export default function GelirGiderPage() {
   );
 
   // Klavye kısayolları: N = yeni işlem ekle, / = arama kutusuna odaklan
-  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: !isModalOpen && !isBulkModalOpen });
+  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: canEdit && !isModalOpen && !isBulkModalOpen });
   useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
 
   return (
@@ -310,20 +318,24 @@ export default function GelirGiderPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            <ClipboardPaste className="h-4 w-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni İşlem Ekle
-          </button>
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Excel&apos;den Yapıştır
+              </button>
+              <button
+                onClick={handleOpenAddModal}
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni İşlem Ekle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -354,6 +366,7 @@ export default function GelirGiderPage() {
             columns={columns}
             data={filteredTransactions}
             meta={{
+              canEdit,
               onEdit: handleOpenEditModal,
               onDelete: handleDelete,
               onCellEdit: handleCellEdit,

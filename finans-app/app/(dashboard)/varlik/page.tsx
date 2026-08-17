@@ -9,6 +9,9 @@ import { columns, type Asset } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 function formatTRY(value: number) {
@@ -16,6 +19,8 @@ function formatTRY(value: number) {
 }
 
 export default function VarlikPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [data, setData] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -34,11 +39,12 @@ export default function VarlikPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
       const { data: assets, error } = await supabase
         .from('assets')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('current_value', { ascending: false });
 
       if (!error && assets) {
@@ -139,9 +145,10 @@ export default function VarlikPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       asset_name: assetName,
       asset_type: assetType || null,
       current_value: parseFloat(currentValue) || 0,
@@ -196,20 +203,24 @@ export default function VarlikPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            <ClipboardPaste className="h-4 w-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Varlık Ekle
-          </button>
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Excel&apos;den Yapıştır
+              </button>
+              <button
+                onClick={() => { resetForm(); setIsModalOpen(true); }}
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni Varlık Ekle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -232,6 +243,7 @@ export default function VarlikPage() {
           columns={columns}
           data={data}
           meta={{
+            canEdit,
             onEdit: handleOpenEditModal,
             onDelete: handleDelete,
             onCellEdit: handleCellEdit,

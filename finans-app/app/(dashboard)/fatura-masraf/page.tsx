@@ -14,6 +14,9 @@ import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canEditData } from '@/lib/team';
 
 interface Category {
   id: string;
@@ -22,6 +25,8 @@ interface Category {
 }
 
 export default function FaturaMasrafPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canEdit = roleLoading || !role || canEditData(role);
   const [bills, setBills] = useState<Bill[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +57,12 @@ export default function FaturaMasrafPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
+      const accountId = await getCurrentAccountId(user.id);
+      setUserId(accountId);
       const { data: billData } = await supabase
         .from('bills')
         .select('*, categories(name)')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('due_date', { ascending: true });
 
       if (billData) setBills(billData);
@@ -64,7 +70,7 @@ export default function FaturaMasrafPage() {
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .eq('type', 'gider');
 
       if (catData) setCategories(catData);
@@ -147,9 +153,10 @@ export default function FaturaMasrafPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const payload = {
-      user_id: user.id,
+      user_id: accountId,
       title,
       amount: parseFloat(amount) || 0,
       due_date: dueDate,
@@ -255,7 +262,7 @@ export default function FaturaMasrafPage() {
   );
 
   // Klavye kısayolları: N = yeni fatura/masraf ekle, / = arama kutusuna odaklan
-  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: !isModalOpen && !isBulkModalOpen });
+  useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: canEdit && !isModalOpen && !isBulkModalOpen });
   useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
 
   return (
@@ -268,20 +275,24 @@ export default function FaturaMasrafPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
-          >
-            <ClipboardPaste className="h-4 w-4" />
-            Excel&apos;den Yapıştır
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Fatura/Masraf Ekle
-          </button>
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Excel&apos;den Yapıştır
+              </button>
+              <button
+                onClick={handleOpenAddModal}
+                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni Fatura/Masraf Ekle
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -312,6 +323,7 @@ export default function FaturaMasrafPage() {
             columns={columns}
             data={filteredBills}
             meta={{
+              canEdit,
               onEdit: handleOpenEditModal,
               onDelete: handleDelete,
               onToggleStatus: handleToggleStatus,

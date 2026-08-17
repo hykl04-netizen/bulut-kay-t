@@ -15,6 +15,8 @@ export type Asset = {
 };
 
 type AssetTableMeta = {
+  /** false ise düzenle/sil menüsü render edilmez (salt_gorunum rolü). */
+  canEdit?: boolean;
   onEdit: (row: Asset) => void;
   onDelete: (id: string) => void;
   onCellEdit: (id: string, field: 'asset_name' | 'current_value', value: string) => Promise<void>;
@@ -22,6 +24,7 @@ type AssetTableMeta = {
 
 function ActionsCell({ row, table }: { row: Row<Asset>; table: Table<Asset> }) {
   const meta = table.options.meta as AssetTableMeta | undefined;
+  if (meta?.canEdit === false) return null;
 
   return (
     <RowActionsMenu>

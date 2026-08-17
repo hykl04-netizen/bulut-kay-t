@@ -6,6 +6,10 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, Trash2, Calculator, Wallet } from 'lucide-react';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { getCurrentAccountId } from '@/lib/supabase/account';
+import { useTeamRole } from '@/lib/use-team-role';
+import { canViewPayroll } from '@/lib/team';
+import { ShieldAlert } from 'lucide-react';
 
 interface Payroll {
   id: string;
@@ -25,6 +29,8 @@ function formatTRY(value: number) {
 }
 
 export default function BordroPage() {
+  const { role, loading: roleLoading } = useTeamRole();
+  const canView = roleLoading || !role || canViewPayroll(role);
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,10 +56,11 @@ export default function BordroPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      const accountId = await getCurrentAccountId(user.id);
       const { data, error } = await supabase
         .from('payrolls')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .order('period', { ascending: false });
 
       if (!error && data) {
@@ -80,9 +87,10 @@ export default function BordroPage() {
       toast.error('Oturumunuz sona ermiş görünüyor. Lütfen sayfayı yenileyip tekrar giriş yapın.');
       return;
     }
+    const accountId = await getCurrentAccountId(user.id);
 
     const { error } = await supabase.from('payrolls').insert({
-      user_id: user.id,
+      user_id: accountId,
       period,
       gross_salary: gross,
       sgk_deduction: sgk,
@@ -118,8 +126,25 @@ export default function BordroPage() {
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return <div className="text-muted-foreground dark:text-muted-foreground">Yükleniyor...</div>;
+  }
+
+  if (!canView) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Bordro & Maaş Takibi</h1>
+        </div>
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+          <p className="text-sm">
+            Bordro verileri hassas kabul edilir; bu sayfayı görüntülemek için sahip, yönetici veya muhasebeci
+            rolüne sahip olmanız gerekiyor.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

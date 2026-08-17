@@ -23,6 +23,8 @@ export type Transaction = {
 };
 
 type TransactionTableMeta = {
+  /** false ise düzenle/sil menüsü render edilmez (salt_gorunum rolü). */
+  canEdit?: boolean;
   onEdit: (row: Transaction) => void;
   onDelete: (id: string) => void;
   onCellEdit: (id: string, field: 'description' | 'amount' | 'date', value: string) => Promise<void>;
@@ -30,6 +32,7 @@ type TransactionTableMeta = {
 
 function ActionsCell({ row, table }: { row: Row<Transaction>; table: Table<Transaction> }) {
   const meta = table.options.meta as TransactionTableMeta | undefined;
+  if (meta?.canEdit === false) return null;
 
   return (
     <RowActionsMenu>

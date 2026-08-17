@@ -18,6 +18,8 @@ export type Debt = {
 };
 
 type DebtTableMeta = {
+  /** false ise düzenle/sil menüsü render edilmez (salt_gorunum rolü). */
+  canEdit?: boolean;
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: 'acik' | 'kapandi') => void;
   onCellEdit: (id: string, field: 'counterparty' | 'amount' | 'due_date' | 'notes', value: string) => Promise<void>;
@@ -25,6 +27,7 @@ type DebtTableMeta = {
 
 function ActionsCell({ row, table }: { row: Row<Debt>; table: Table<Debt> }) {
   const meta = table.options.meta as DebtTableMeta | undefined;
+  if (meta?.canEdit === false) return null;
   const status = row.original.status;
 
   return (
