@@ -163,6 +163,10 @@ export interface SaveInvoiceInput {
   status: InvoiceStatus;
   notes: string | null;
   items: InvoiceItem[];
+  /** Tekrarlayan fatura ayarları (Öneri 10). */
+  isRecurring?: boolean;
+  recurrencePeriod?: 'aylik' | 'yillik' | null;
+  recurrenceEndDate?: string | null;
 }
 
 /**
@@ -182,6 +186,9 @@ export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
     due_date: input.dueDate,
     status: input.status,
     notes: input.notes,
+    is_recurring: input.isRecurring ?? false,
+    recurrence_period: input.recurrencePeriod ?? null,
+    recurrence_end_date: input.recurrenceEndDate ?? null,
     ...totals,
     updated_at: new Date().toISOString(),
   };
@@ -217,6 +224,91 @@ export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
   }
 
   return invoiceId;
+}
+
+/** Fatura geliri için kullanılan kategori adı — yoksa otomatik oluşturulur. */
+const INVOICE_INCOME_CATEGORY = 'Fatura Geliri';
+
+async function findOrCreateInvoiceIncomeCategory(workspaceId: string): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('workspace_id', workspaceId)
+    .eq('type', 'gelir')
+    .eq('name', INVOICE_INCOME_CATEGORY)
+    .maybeSingle();
+  if (existing) return (existing as { id: string }).id;
+
+  const { data: created, error } = await supabase
+    .from('categories')
+    .insert({ workspace_id: workspaceId, type: 'gelir', name: INVOICE_INCOME_CATEGORY, color: '#10b981' })
+    .select('id')
+    .single();
+  // Kategori oluşturulamazsa gelir kaydı kategorisiz açılır — akış durmasın.
+  if (error || !created) return null;
+  return (created as { id: string }).id;
+}
+
+/**
+ * Faturanın gelir kaydını durumla eşitler.
+ *
+ * "Ödendi" olan her faturanın karşılığında tam olarak BİR gelir kaydı olur;
+ * fatura ödenmemişe döndürülür ya da iptal edilirse o kayıt silinir. Böylece
+ * kesilen fatura nakit akışına ve raporlara doğru şekilde yansır ve kullanıcı
+ * aynı tutarı ikinci kez elle girmek zorunda kalmaz.
+ *
+ * Bilinçli olarak DB tetikleyicisi değil: yedekten geri yükleme sırasında hem
+ * faturalar hem işlemler yazıldığı için tetikleyici çift kayıt üretirdi.
+ */
+export async function syncInvoiceIncome(params: {
+  workspaceId: string;
+  invoiceId: string;
+  status: InvoiceStatus;
+  issueDate: string;
+  paidTotal: number;
+  currency: string;
+  invoiceNumber: string;
+  customerName?: string | null;
+}): Promise<void> {
+  const { data: existing } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('invoice_id', params.invoiceId)
+    .maybeSingle();
+
+  if (params.status !== 'odendi') {
+    if (existing) {
+      await supabase.from('transactions').delete().eq('id', (existing as { id: string }).id);
+    }
+    return;
+  }
+
+  const description = params.customerName
+    ? `${params.invoiceNumber} nolu fatura — ${params.customerName}`
+    : `${params.invoiceNumber} nolu fatura`;
+
+  const payload = {
+    workspace_id: params.workspaceId,
+    invoice_id: params.invoiceId,
+    date: params.issueDate,
+    type: 'gelir' as const,
+    amount: params.paidTotal,
+    currency: params.currency,
+    exchange_rate: 1,
+    try_equivalent: params.currency === 'TRY' ? params.paidTotal : null,
+    description,
+  };
+
+  if (existing) {
+    await supabase.from('transactions').update(payload).eq('id', (existing as { id: string }).id);
+    return;
+  }
+
+  const categoryId = await findOrCreateInvoiceIncomeCategory(params.workspaceId);
+  const { error } = await supabase
+    .from('transactions')
+    .insert({ ...payload, category_id: categoryId });
+  if (error) throw new Error(`Gelir kaydı oluşturulamadı: ${error.message}`);
 }
 
 export async function updateInvoiceStatus(

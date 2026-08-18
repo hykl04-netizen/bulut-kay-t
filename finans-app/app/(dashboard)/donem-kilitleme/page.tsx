@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Lock, Unlock, Loader2, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
@@ -21,10 +22,15 @@ export default function DonemKilitlemePage() {
         setLoading(false);
         return;
       }
+      // Dönem kilidi artık İŞLETME bazlı. Eskiden user_id anahtarlıydı; bu
+      // hem kilidin kullanıcının diğer işletmelerine taşımasına hem de
+      // başka bir ekip üyesinin eklediği kaydın kilide takılmamasına yol
+      // açıyordu (bkz. 20260823_settings_workspace_scoping.sql).
+      const workspaceId = await getCurrentWorkspaceId(user.id);
       const { data, error } = await supabase
         .from('period_locks')
         .select('locked_before')
-        .eq('user_id', user.id)
+        .eq('workspace_id', workspaceId)
         .maybeSingle();
 
       if (error) {
@@ -58,7 +64,15 @@ export default function DonemKilitlemePage() {
     setSaving(true);
     const { error } = await supabase
       .from('period_locks')
-      .upsert({ user_id: user.id, locked_before: draftDate, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      .upsert(
+        {
+          workspace_id: await getCurrentWorkspaceId(user.id),
+          user_id: user.id,
+          locked_before: draftDate,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'workspace_id' }
+      );
     setSaving(false);
 
     if (error) {
@@ -83,7 +97,8 @@ export default function DonemKilitlemePage() {
     if (!user) return;
 
     setSaving(true);
-    const { error } = await supabase.from('period_locks').delete().eq('user_id', user.id);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
+    const { error } = await supabase.from('period_locks').delete().eq('workspace_id', workspaceId);
     setSaving(false);
 
     if (error) {
@@ -132,7 +147,7 @@ export default function DonemKilitlemePage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Kilidi Kaydet
@@ -141,7 +156,7 @@ export default function DonemKilitlemePage() {
             <button
               onClick={handleUnlock}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
+              className="inline-flex items-center gap-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
             >
               <Unlock className="h-4 w-4" />
               Kilidi Kaldır

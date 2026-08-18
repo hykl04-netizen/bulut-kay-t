@@ -19,7 +19,11 @@ export const maxDuration = 60;
 
 const FREQUENCY_DAYS: Record<string, number> = { weekly: 7, monthly: 30 };
 
-const BACKUP_TABLES = ['categories', 'transactions', 'debts', 'bills', 'investments', 'assets'] as const;
+// Yedeklenen tablolar `lib/backup.ts` ile ORTAK — otomatik yedek ile elle
+// alınan yedek aynı kapsamda olsun ve geri yükleme ikisinde de çalışsın.
+// Eskiden burada yalnızca 6 tablo vardı; banka hesapları, bütçeler, belgeler,
+// bordro, cariler ve faturalar otomatik yedeğe hiç girmiyordu.
+import { BACKUP_TABLES } from '@/lib/backup';
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   const { data: dueUsers, error: settingsError } = await admin
     .from('backup_settings')
-    .select('user_id, frequency, last_backup_at')
+    .select('workspace_id, user_id, frequency, last_backup_at')
     .neq('frequency', 'off');
 
   if (settingsError) {
@@ -49,7 +53,7 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const results: { user_id: string; status: 'yedeklendi' | 'atlandı' | 'hata'; detail?: string }[] = [];
+  const results: { workspace_id: string; status: 'yedeklendi' | 'atlandı' | 'hata'; detail?: string }[] = [];
 
   for (const setting of dueUsers ?? []) {
     const intervalDays = FREQUENCY_DAYS[setting.frequency];
@@ -59,25 +63,28 @@ export async function GET(request: NextRequest) {
       : Infinity;
 
     if (dueSince < intervalDays) {
-      results.push({ user_id: setting.user_id, status: 'atlandı' });
+      results.push({ workspace_id: setting.workspace_id, status: 'atlandı' });
       continue;
     }
 
     try {
       const tableResults = await Promise.all(
-        BACKUP_TABLES.map((table) => admin.from(table).select('*').eq('user_id', setting.user_id))
+        BACKUP_TABLES.map((table) => admin.from(table).select('*').eq('workspace_id', setting.workspace_id))
       );
       const failed = tableResults.find((r) => r.error);
       if (failed?.error) throw new Error(failed.error.message);
 
       const payload = {
-        version: 1,
+        version: 2,
         exportDate: now.toISOString(),
         automatic: true,
+        workspaceId: setting.workspace_id,
         data: Object.fromEntries(BACKUP_TABLES.map((table, i) => [table, tableResults[i].data ?? []])),
       };
 
-      const filePath = `${setting.user_id}/${now.toISOString().split('T')[0]}.json`;
+      // Depolama yolu da işletme bazlı — eskiden user_id klasörüne yazılıyordu
+      // ve iki işletmesi olan kullanıcının yedekleri birbirinin üzerine biniyordu.
+      const filePath = `${setting.workspace_id}/${now.toISOString().split('T')[0]}.json`;
       const { error: uploadError } = await admin.storage
         .from('yedekler')
         .upload(filePath, JSON.stringify(payload, null, 2), {
@@ -89,12 +96,12 @@ export async function GET(request: NextRequest) {
       await admin
         .from('backup_settings')
         .update({ last_backup_at: now.toISOString() })
-        .eq('user_id', setting.user_id);
+        .eq('workspace_id', setting.workspace_id);
 
-      results.push({ user_id: setting.user_id, status: 'yedeklendi' });
+      results.push({ workspace_id: setting.workspace_id, status: 'yedeklendi' });
     } catch (err) {
-      console.error(`Otomatik yedekleme hatası (user ${setting.user_id}):`, err);
-      results.push({ user_id: setting.user_id, status: 'hata', detail: err instanceof Error ? err.message : 'Bilinmeyen hata' });
+      console.error(`Otomatik yedekleme hatası (workspace ${setting.workspace_id}):`, err);
+      results.push({ workspace_id: setting.workspace_id, status: 'hata', detail: err instanceof Error ? err.message : 'Bilinmeyen hata' });
     }
   }
 

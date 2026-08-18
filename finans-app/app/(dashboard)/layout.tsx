@@ -35,6 +35,7 @@ import {
   Briefcase,
   LifeBuoy,
   ReceiptText,
+  ShieldCheck,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
@@ -44,6 +45,7 @@ import { Logo } from '@/components/logo';
 import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import { SupportWidget } from '@/components/support-widget';
 import { runRecurringAutomation } from '@/lib/recurring';
+import { runRecurringInvoiceAutomation } from '@/lib/recurring-invoices';
 import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 import { useTeamRole } from '@/lib/use-team-role';
@@ -84,6 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
       { href: '/faturalar', label: 'Kesilen Faturalar', icon: FilePlus2 },
       { href: '/cariler', label: 'Cariler', icon: Users2 },
+      { href: '/alacaklar', label: 'Alacak Yaşlandırma', icon: HandCoins },
       { href: '/butce', label: 'Bütçe', icon: Target },
     ],
   },
@@ -111,6 +114,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/muhasebeci', label: 'Muhasebeci Erişimi', icon: Calculator, managerOnly: true },
       { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
       { href: '/musterilerim', label: 'Müşterilerim', icon: Briefcase },
+      { href: '/hesabim', label: 'Hesabım ve Verilerim', icon: ShieldCheck },
     ],
   },
 ];
@@ -200,8 +204,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       // tetiklemeye gerek yok, yönetici/muhasebeci/sahip giriş yaptığında
       // zaten çalışacak.
       if (roleLoading || role === 'salt_gorunum') return;
-      const result = await runRecurringAutomation(workspaceId);
+      const [result, recurringInvoices] = await Promise.all([
+        runRecurringAutomation(workspaceId),
+        // Tekrarlayan SATIŞ faturaları (Öneri 10) — taslak olarak üretilir.
+        runRecurringInvoiceAutomation(workspaceId),
+      ]);
       if (cancelled) return;
+      if (recurringInvoices > 0) {
+        toast.info(`${recurringInvoices} tekrarlayan fatura taslak olarak oluşturuldu.`);
+      }
       const total = result.billsCreated + result.transactionsCreated;
       if (total > 0) {
         toast.info(

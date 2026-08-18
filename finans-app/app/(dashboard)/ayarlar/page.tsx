@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Building2, ImageIcon, Loader2, Save, Trash2, CloudUpload, Download, BellRing, Smartphone, BellOff } from 'lucide-react';
 import { isPushSupported, getExistingSubscription, subscribeToPush, unsubscribeFromPush } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase/client';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
@@ -94,10 +95,16 @@ export default function AyarlarPage() {
         setLoadingBackups(false);
         return;
       }
+      // Şirket ayarları, yedekleme ve dönem kilidi artık İŞLETME bazlı
+      // (bkz. 20260823_settings_workspace_scoping.sql). Bildirim tercihleri
+      // ise bilinçli olarak kullanıcı bazlı kaldı — hangi widget'ı görmek
+      // istediğiniz kişisel bir tercih.
+      const workspaceId = await getCurrentWorkspaceId(user.id);
+
       const { data, error } = await supabase
         .from('company_settings')
         .select('company_name, logo_data_url')
-        .eq('user_id', user.id)
+        .eq('workspace_id', workspaceId)
         .maybeSingle();
 
       if (error) {
@@ -111,13 +118,13 @@ export default function AyarlarPage() {
       const { data: backupSetting, error: backupSettingError } = await supabase
         .from('backup_settings')
         .select('frequency')
-        .eq('user_id', user.id)
+        .eq('workspace_id', workspaceId)
         .maybeSingle();
       if (!backupSettingError && backupSetting) {
         setBackupFrequency(backupSetting.frequency as BackupFrequency);
       }
 
-      const { data: files, error: listError } = await supabase.storage.from('yedekler').list(user.id, {
+      const { data: files, error: listError } = await supabase.storage.from('yedekler').list(workspaceId, {
         sortBy: { column: 'created_at', order: 'desc' },
       });
       if (!listError && files) {
@@ -199,9 +206,13 @@ export default function AyarlarPage() {
       return;
     }
     setSavingBackupFreq(true);
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const { error } = await supabase
       .from('backup_settings')
-      .upsert({ user_id: user.id, frequency: value, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      .upsert(
+        { workspace_id: workspaceId, user_id: user.id, frequency: value, updated_at: new Date().toISOString() },
+        { onConflict: 'workspace_id' }
+      );
     setSavingBackupFreq(false);
 
     if (error) {
@@ -216,9 +227,10 @@ export default function AyarlarPage() {
   const handleDownloadBackup = async (fileName: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    const workspaceId = await getCurrentWorkspaceId(user.id);
     const { data, error } = await supabase.storage
       .from('yedekler')
-      .createSignedUrl(`${user.id}/${fileName}`, 60);
+      .createSignedUrl(`${workspaceId}/${fileName}`, 60);
     if (error || !data) {
       toast.error('İndirme linki oluşturulamadı.');
       return;
@@ -309,8 +321,14 @@ export default function AyarlarPage() {
     const { error } = await supabase
       .from('company_settings')
       .upsert(
-        { user_id: user.id, company_name: companyName.trim() || null, logo_data_url: logoDataUrl, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
+        {
+          workspace_id: await getCurrentWorkspaceId(user.id),
+          user_id: user.id,
+          company_name: companyName.trim() || null,
+          logo_data_url: logoDataUrl,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'workspace_id' }
       );
     setSaving(false);
 
@@ -384,7 +402,7 @@ export default function AyarlarPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={processingLogo}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 dark:text-foreground dark:hover:bg-secondary"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 dark:text-slate-100 dark:hover:bg-secondary"
               >
                 {processingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
                 {logoDataUrl ? 'Logoyu Değiştir' : 'Logo Yükle'}
@@ -406,7 +424,7 @@ export default function AyarlarPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-brand-gold-light disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Kaydet
@@ -442,7 +460,7 @@ export default function AyarlarPage() {
         </div>
 
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-foreground dark:text-foreground">Geçmiş Yedekler</h3>
+          <h3 className="mb-2 text-sm font-semibold text-foreground dark:text-slate-100">Geçmiş Yedekler</h3>
           {loadingBackups ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
@@ -454,7 +472,7 @@ export default function AyarlarPage() {
               {backups.map((b) => (
                 <div key={b.name} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-border">
                   <div>
-                    <span className="font-medium text-foreground dark:text-foreground">{b.name}</span>
+                    <span className="font-medium text-foreground dark:text-slate-100">{b.name}</span>
                     {b.sizeBytes !== null && <span className="ml-2 text-xs text-muted-foreground">{formatBytes(b.sizeBytes)}</span>}
                   </div>
                   <button
@@ -482,7 +500,7 @@ export default function AyarlarPage() {
 
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm font-medium text-foreground dark:text-foreground">Yaklaşan Ödemeler widget&apos;ı</div>
+            <div className="text-sm font-medium text-foreground dark:text-slate-100">Yaklaşan Ödemeler widget&apos;ı</div>
             <div className="text-xs text-muted-foreground">Özet Paneli&apos;nde vadesi yaklaşan fatura/borç listesi.</div>
           </div>
           <button
@@ -522,7 +540,7 @@ export default function AyarlarPage() {
 
         <div className="flex items-center justify-between gap-4 border-t border-border pt-4 dark:border-border">
           <div>
-            <div className="text-sm font-medium text-foreground dark:text-foreground">Bütçe Aşımları widget&apos;ı</div>
+            <div className="text-sm font-medium text-foreground dark:text-slate-100">Bütçe Aşımları widget&apos;ı</div>
             <div className="text-xs text-muted-foreground">Özet Paneli&apos;nde limiti aşan kategori uyarıları.</div>
           </div>
           <button
@@ -541,7 +559,7 @@ export default function AyarlarPage() {
         <div className="border-t border-border pt-4 dark:border-border">
           <div className="flex items-center gap-2 mb-1">
             <Smartphone className="h-4 w-4 text-brand-gold" />
-            <h3 className="text-sm font-bold text-foreground dark:text-foreground">Mobil Bildirimler (Push)</h3>
+            <h3 className="text-sm font-bold text-foreground dark:text-slate-100">Mobil Bildirimler (Push)</h3>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             Yukarıdaki tercihlere göre, vadesi yaklaşan/geciken ödemeler ve bütçe aşımları için telefonunuza/tarayıcınıza
@@ -583,7 +601,7 @@ export default function AyarlarPage() {
               <div className="space-y-1">
                 {pushDevices.map((d) => (
                   <div key={d.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-border">
-                    <span className="font-medium text-foreground dark:text-foreground">{d.device_label ?? 'Bilinmeyen cihaz'}</span>
+                    <span className="font-medium text-foreground dark:text-slate-100">{d.device_label ?? 'Bilinmeyen cihaz'}</span>
                     <button
                       onClick={() => handleRemoveDevice(d.id)}
                       className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline dark:text-rose-400"

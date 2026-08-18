@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Trash2, Loader2, FileDown, ArrowLeft, Ban } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileDown, ArrowLeft, Ban, Repeat } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import {
@@ -14,6 +14,7 @@ import {
   formatMoney,
   nextInvoiceNumber,
   saveInvoice,
+  syncInvoiceIncome,
   updateInvoiceStatus,
   STATUS_LABELS,
   STATUS_CLASSES,
@@ -71,6 +72,10 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
   const [status, setStatus] = useState<InvoiceStatus>('taslak');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([emptyItem()]);
+  // Tekrarlayan fatura (Öneri 10)
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePeriod, setRecurrencePeriod] = useState<'aylik' | 'yillik'>('aylik');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +103,14 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
           setStatus(invoice.status);
           setNotes(invoice.notes ?? '');
           setItems(loadedItems.length > 0 ? loadedItems : [emptyItem()]);
+          const rec = invoice as unknown as {
+            is_recurring?: boolean;
+            recurrence_period?: 'aylik' | 'yillik' | null;
+            recurrence_end_date?: string | null;
+          };
+          setIsRecurring(Boolean(rec.is_recurring));
+          if (rec.recurrence_period) setRecurrencePeriod(rec.recurrence_period);
+          setRecurrenceEndDate(rec.recurrence_end_date ?? '');
         } else {
           // Numara yalnızca YENİ fatura için, form açılırken bir kez üretilir.
           const number = await nextInvoiceNumber(wsId);
@@ -148,8 +161,31 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
         status: nextStatus ?? status,
         notes: notes.trim() || null,
         items: validItems,
+        isRecurring,
+        recurrencePeriod: isRecurring ? recurrencePeriod : null,
+        recurrenceEndDate: isRecurring && recurrenceEndDate ? recurrenceEndDate : null,
       });
-      toast.success(nextStatus === 'gonderildi' ? 'Fatura gönderildi olarak işaretlendi.' : 'Fatura kaydedildi.');
+      // "Ödendi" işaretlenen fatura nakit akışına gelir olarak yansısın;
+      // ödenmemişe dönerse o kayıt silinsin (bkz. syncInvoiceIncome).
+      const effectiveStatus = nextStatus ?? status;
+      await syncInvoiceIncome({
+        workspaceId,
+        invoiceId: id,
+        status: effectiveStatus,
+        issueDate,
+        paidTotal: calcInvoiceTotals(validItems).total,
+        currency: 'TRY',
+        invoiceNumber,
+        customerName: customers.find((c) => c.id === customerId)?.name ?? null,
+      });
+
+      toast.success(
+        effectiveStatus === 'odendi'
+          ? 'Fatura ödendi olarak kaydedildi; gelir kaydı oluşturuldu.'
+          : effectiveStatus === 'gonderildi'
+            ? 'Fatura gönderildi olarak işaretlendi.'
+            : 'Fatura kaydedildi.'
+      );
       router.push(`/faturalar/${id}`);
       router.refresh();
     } catch (err) {
@@ -170,8 +206,20 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
     if (!ok) return;
     try {
       await updateInvoiceStatus(invoiceId, 'iptal');
+      // İptal edilen faturanın gelir kaydı da kaldırılmalı.
+      if (workspaceId) {
+        await syncInvoiceIncome({
+          workspaceId,
+          invoiceId,
+          status: 'iptal',
+          issueDate,
+          paidTotal: 0,
+          currency: 'TRY',
+          invoiceNumber,
+        });
+      }
       setStatus('iptal');
-      toast.success('Fatura iptal edildi.');
+      toast.success('Fatura iptal edildi; varsa gelir kaydı kaldırıldı.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Fatura iptal edilemedi.');
     }
@@ -180,19 +228,14 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
   const handlePdf = async () => {
     if (!workspaceId) return;
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      // Marka bilgisi (ad + logo) kullanıcı bazlı company_settings'ten,
-      // satıcı vergi künyesi ise İŞLETME bazlı workspaces tablosundan gelir.
+      // Marka bilgisi (ad + logo) ve satıcı vergi künyesi artık ikisi de
+      // İŞLETME bazlı — company_settings workspace_id'ye taşındı.
       const [{ data: settings }, { data: ws }] = await Promise.all([
-        user
-          ? supabase
-              .from('company_settings')
-              .select('company_name, logo_data_url')
-              .eq('user_id', user.id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
+        supabase
+          .from('company_settings')
+          .select('company_name, logo_data_url')
+          .eq('workspace_id', workspaceId)
+          .maybeSingle(),
         supabase.from('workspaces').select('name, tax_number, address').eq('id', workspaceId).maybeSingle(),
       ]);
       const workspace = ws as { name: string; tax_number: string | null; address: string | null } | null;
@@ -443,6 +486,57 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
             <span>{formatMoney(totals.total)}</span>
           </div>
         </div>
+      </div>
+
+      {/* Tekrarlama (Öneri 10) */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            disabled={isLocked}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-border"
+          />
+          <span>
+            <span className="flex items-center gap-1.5 font-medium text-foreground">
+              <Repeat className="h-4 w-4" />
+              Bu fatura düzenli tekrarlasın
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Dönem geldiğinde aynı kalemlerle yeni bir fatura <strong>taslak olarak</strong>
+              &nbsp;oluşturulur. Gözden geçirip kendiniz gönderirsiniz.
+            </span>
+          </span>
+        </label>
+
+        {isRecurring && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="tekrar-donem">Sıklık</Label>
+              <select
+                id="tekrar-donem"
+                value={recurrencePeriod}
+                disabled={isLocked}
+                onChange={(e) => setRecurrencePeriod(e.target.value as 'aylik' | 'yillik')}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                <option value="aylik">Aylık</option>
+                <option value="yillik">Yıllık</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tekrar-bitis">Bitiş tarihi (isteğe bağlı)</Label>
+              <Input
+                id="tekrar-bitis"
+                type="date"
+                value={recurrenceEndDate}
+                disabled={isLocked}
+                onChange={(e) => setRecurrenceEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notlar */}

@@ -21,6 +21,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { supabase } from '@/lib/supabase/client';
+import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useIsDarkMode } from '@/lib/use-is-dark-mode';
 import {
   aggregateMonthlyCashFlow,
@@ -132,7 +133,7 @@ function ComparisonCard({ title, subtitle, data }: { title: string; subtitle: st
             <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 dark:border-border px-4 py-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</div>
-                <div className="mt-0.5 text-sm text-foreground dark:text-foreground">
+                <div className="mt-0.5 text-sm text-foreground dark:text-slate-100">
                   <span className="font-bold">{formatTRY(row.curr)}</span>
                   <span className="ml-2 text-xs text-muted-foreground">({data.currentLabel})</span>
                 </div>
@@ -173,11 +174,16 @@ export default function RaporlarPage() {
     const fetchAll = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+      const brandingWorkspaceId = user ? await getCurrentWorkspaceId(user.id) : null;
       const [txRes, invRes, companyRes] = await Promise.all([
         supabase.from('transactions').select('*, category:categories(name, color)').order('date', { ascending: true }),
         supabase.from('investments').select('*'),
-        user
-          ? supabase.from('company_settings').select('company_name, logo_data_url').eq('user_id', user.id).maybeSingle()
+        brandingWorkspaceId
+          ? supabase
+              .from('company_settings')
+              .select('company_name, logo_data_url')
+              .eq('workspace_id', brandingWorkspaceId)
+              .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
 
@@ -262,7 +268,7 @@ export default function RaporlarPage() {
         <div className="flex items-center gap-2 print:hidden">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
           >
             <Printer className="h-4 w-4" />
             Yazdır
@@ -270,7 +276,7 @@ export default function RaporlarPage() {
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
           >
             <FileDown className="h-4 w-4" />
             {exportingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}
@@ -278,7 +284,7 @@ export default function RaporlarPage() {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
           >
             <FileSpreadsheet className="h-4 w-4" />
             {exportingExcel ? 'Hazırlanıyor...' : 'Excel İndir'}
