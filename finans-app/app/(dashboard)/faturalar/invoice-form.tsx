@@ -170,6 +170,11 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
       const effectiveStatus = nextStatus ?? status;
       // Numarayı DB atadığı için gelir kaydının açıklamasında da o kullanılır.
       setInvoiceNumber(saved.invoiceNumber);
+      // Rozeti de güncelle. VAR OLAN bir faturada "Ödendi İşaretle"ye
+      // basıldığında router.push aynı adrese gittiği için React bileşeni
+      // yeniden bağlamıyordu: veritabanı 'odendi' olurken ekranda hâlâ
+      // "Gönderildi" yazıyordu ve kullanıcı düğmeye tekrar basıyordu.
+      setStatus(effectiveStatus);
       await syncInvoiceIncome({
         workspaceId,
         invoiceId: saved.id,

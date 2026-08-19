@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import {
   Wallet,
-  TrendingUp,
   PiggyBank,
   HandCoins,
   CalendarClock,
@@ -17,6 +16,7 @@ import {
   Receipt,
   Target,
   Clock,
+  FileText,
 } from 'lucide-react';
 import { getDueInfo } from '@/lib/due-date';
 import { buildBudgetRows, BudgetRow } from '@/lib/budget';
@@ -74,6 +74,10 @@ interface SummaryData {
   totalInvestments: number;
   totalAssets: number;
   totalOpenDebts: number;
+  /** Kesilmiş ama tahsil edilmemiş fatura toplamı (taslak/iptal/ödendi hariç). */
+  openInvoicesTotal: number;
+  /** Bunlardan vadesi geçmiş olanların sayısı. */
+  overdueInvoiceCount: number;
   recentTransactions: RecentTransaction[];
   upcomingPayments: UpcomingPayment[];
   overBudgetRows: BudgetRow[];
@@ -90,6 +94,8 @@ const EMPTY: SummaryData = {
   totalInvestments: 0,
   totalAssets: 0,
   totalOpenDebts: 0,
+  openInvoicesTotal: 0,
+  overdueInvoiceCount: 0,
   recentTransactions: [],
   upcomingPayments: [],
   overBudgetRows: [],
@@ -195,6 +201,28 @@ export default function DashboardPage() {
     (debtData ?? []).forEach((d) => {
       if (d.direction === 'alacak') debtsTotal += Number(d.amount);
       else debtsTotal -= Number(d.amount);
+    });
+
+    // 4b. Tahsil edilmemiş faturalar.
+    //
+    // Bu rakam paneldeydi EKSİKTİ: bir işletme için "kestim ama tahsil
+    // etmedim" tutarı, yatırım portföyünden çok daha kritik. Yatırımcı
+    // demosunda gösteriliyordu ama gerçek panel bunu hiç sorgulamıyordu.
+    // Taslak henüz alacak değil, iptal ve ödenmiş olanlar da sayılmaz.
+    const bugun = new Date();
+    bugun.setHours(0, 0, 0, 0);
+    const { data: openInvData } = await supabase
+      .from('invoices')
+      .select('total, due_date')
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'gonderildi');
+
+    let openInvoicesTotal = 0;
+    let overdueInvoiceCount = 0;
+    (openInvData ?? []).forEach((inv) => {
+      openInvoicesTotal += Number(inv.total ?? 0);
+      const due = (inv as { due_date: string | null }).due_date;
+      if (due && new Date(`${due}T23:59:59`) < bugun) overdueInvoiceCount += 1;
     });
 
     // 4a. Banka/kasa hesapları — hesap şeridi için.
@@ -323,6 +351,8 @@ export default function DashboardPage() {
       totalInvestments: investmentsTotal,
       totalAssets: assetsTotal,
       totalOpenDebts: debtsTotal,
+      openInvoicesTotal,
+      overdueInvoiceCount,
       recentTransactions: txData ? (txData.slice(0, 9) as RecentTransaction[]) : [],
       upcomingPayments,
       overBudgetRows,
@@ -510,12 +540,19 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
+            {/* İşletmede en kritik rakam yatırım portföyü değil, tahsil
+                edilmemiş alacak. Yatırımlar zaten "Tahmini net değer"in
+                içinde ve menüden tek tıkla erişilebilir. */}
             <StatTile
-              label="Yatırımlar"
-              value={summary.totalInvestments}
-              icon={TrendingUp}
-              hint="Hisse, döviz, kıymetli maden"
-              href="/yatirim"
+              label="Tahsil edilmemiş"
+              value={summary.openInvoicesTotal}
+              icon={FileText}
+              hint={
+                summary.overdueInvoiceCount > 0
+                  ? `${summary.overdueInvoiceCount} fatura vadesi geçmiş`
+                  : 'Gönderilmiş, ödenmemiş faturalar'
+              }
+              href="/alacaklar"
             />
             <StatTile
               label="Net alacak / borç"
