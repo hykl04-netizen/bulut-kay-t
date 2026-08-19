@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
 import { Sparkline } from './sparkline';
 import { formatTRY } from '@/lib/currency';
 
@@ -31,6 +31,14 @@ interface StatTileProps {
   /** Kutu tıklanabilirse hedef. */
   href?: string;
   hint?: string;
+  /**
+   * İpucu bir UYARI ise ('uyari') kırmızı ve ikonlu basılır.
+   *
+   * Gerekçe: "1 fatura vadesi geçmiş" panelin en eyleme çağıran cümlesiydi
+   * ama diğer nötr açıklamalarla aynı gri tonda fısıldanıyordu — göz
+   * üzerinden kayıyordu.
+   */
+  hintTone?: 'notr' | 'uyari';
 }
 
 export function StatTile({
@@ -44,6 +52,7 @@ export function StatTile({
   trend,
   href,
   hint,
+  hintTone = 'notr',
 }: StatTileProps) {
   const up = (changeRatio ?? 0) >= 0;
   const good = up === upIsGood;
@@ -79,7 +88,15 @@ export function StatTile({
               <span className="font-normal text-muted-foreground">{changeLabel}</span>
             </p>
           ) : (
-            hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>
+            hint &&
+            (hintTone === 'uyari' ? (
+              <p className="flex items-center gap-1 truncate text-xs font-medium text-rose-700 dark:text-rose-400">
+                <AlertTriangle aria-hidden className="h-3 w-3 shrink-0" />
+                {hint}
+              </p>
+            ) : (
+              <p className="truncate text-xs text-muted-foreground">{hint}</p>
+            ))
           )}
         </div>
 

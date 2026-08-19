@@ -552,6 +552,7 @@ export default function DashboardPage() {
                   ? `${summary.overdueInvoiceCount} fatura vadesi geçmiş`
                   : 'Gönderilmiş, ödenmemiş faturalar'
               }
+              hintTone={summary.overdueInvoiceCount > 0 ? 'uyari' : 'notr'}
               href="/alacaklar"
             />
             <StatTile
