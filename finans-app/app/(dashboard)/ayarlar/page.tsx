@@ -15,6 +15,8 @@ import { ShieldAlert } from 'lucide-react';
 import { PageLoading } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/ui/page-header';
 import { WorkspaceTypeCard } from '@/components/workspace-type-card';
+import { useWorkspaceType } from '@/lib/use-workspace-type';
+import { vocabularyFor } from '@/lib/vocabulary';
 const MAX_LOGO_DIMENSION = 240; // px — PDF başlığında küçük bir logo için fazlasıyla yeterli
 
 type BackupFrequency = 'off' | 'weekly' | 'monthly';
@@ -64,6 +66,10 @@ function resizeImageToDataUrl(file: File): Promise<string> {
 
 export default function AyarlarPage() {
   const { role, loading: roleLoading } = useTeamRole();
+  // Aile hesabında üst çubuk "Hesap Ayarları" derken sayfa içi "Şirket
+  // Ayarları" diyordu — aynı ekranda iki farklı ürün konuşuyordu.
+  const { type: workspaceType } = useWorkspaceType();
+  const soz = vocabularyFor(workspaceType);
   const canManage = roleLoading || !role || role === 'sahip' || role === 'yonetici';
 
   const [companyName, setCompanyName] = useState('');
@@ -354,12 +360,12 @@ export default function AyarlarPage() {
       <div className="max-w-xl space-y-6">
         <PageHeader
           icon={Building2}
-          title="Şirket Ayarları"
+          title={soz.settingsTitle}
         />
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm">
-            Şirket ayarları ve yedekleme yalnızca sahip veya yönetici rolüne açıktır.
+            {soz.settingsTitle} ve yedekleme yalnızca sahip veya yönetici rolüne açıktır.
           </p>
         </div>
       </div>
@@ -370,20 +376,20 @@ export default function AyarlarPage() {
     <div className="max-w-xl space-y-6">
       <PageHeader
         icon={Building2}
-        title="Şirket Ayarları"
-        description="Burada belirlediğiniz şirket adı ve logo, Raporlar sayfasından indirilen PDF raporların üst kısmında görünür."
+        title={soz.settingsTitle}
+        description={soz.settingsDescription}
       />
 
       <WorkspaceTypeCard />
 
       <div className="space-y-5 rounded-xl border border-border bg-card p-6">
         <div className="space-y-2">
-          <Label htmlFor="company-name">Şirket / İşletme Adı</Label>
+          <Label htmlFor="company-name">{soz.orgNameLabel}</Label>
           <Input
             id="company-name"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="Örn: Acme Danışmanlık A.Ş."
+            placeholder={soz.orgNamePlaceholder}
           />
         </div>
 

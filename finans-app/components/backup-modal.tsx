@@ -105,8 +105,8 @@ export function BackupModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const confirmed = confirmText.trim() === workspaceName.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
+      <div className="animate-sheet-up sm:animate-fade-in max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-card p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6 sm:pb-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-foreground">Veri Yedekleme</h2>

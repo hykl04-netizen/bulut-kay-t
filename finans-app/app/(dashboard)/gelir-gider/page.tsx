@@ -21,6 +21,8 @@ import { canEditData } from '@/lib/team';
 
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/ui/page-header';
+import { useWorkspaceType } from '@/lib/use-workspace-type';
+import { vocabularyFor } from '@/lib/vocabulary';
 interface Category {
   id: string;
   name: string;
@@ -32,6 +34,8 @@ const SELECT_WITH_CATEGORY = '*, category:categories(name, color)';
 
 export default function GelirGiderPage() {
   const { role, loading: roleLoading } = useTeamRole();
+  const { type: workspaceType } = useWorkspaceType();
+  const soz = vocabularyFor(workspaceType);
   const canEdit = roleLoading || !role || canEditData(role);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -309,14 +313,38 @@ export default function GelirGiderPage() {
   );
 
   // Klavye kısayolları: N = yeni işlem ekle, / = arama kutusuna odaklan
+  // Alt çubuktaki büyük "+" düğmesi ve PWA kısayolu /gelir-gider?hizli=1
+  // adresine gidiyordu, ama bu parametreyi HİÇBİR ŞEY okumuyordu: kullanıcı
+  // "+"a basınca yalnızca listeye düşüyor, kayıt formu açılmıyordu.
+  // Uygulamanın en görünür etkileşimi sessizce hiçbir şey yapmıyordu.
+  //
+  // useSearchParams yerine window.location kullanılıyor: o hook prerender
+  // sırasında Suspense sınırı istiyor, burada gereksiz bir sarmalayıcı
+  // eklemeye değmez. Parametre okunduktan sonra adresten temizleniyor ki
+  // geri tuşu formu tekrar tekrar açmasın.
+  const quickOpenedRef = useRef(false);
+  useEffect(() => {
+    if (quickOpenedRef.current || !canEdit) return;
+    const params = new URLSearchParams(window.location.search);
+    const hizli = params.get('hizli');
+    if (!hizli) return;
+    quickOpenedRef.current = true;
+    handleOpenAddModal();
+    if (hizli === 'gelir') setType('gelir');
+    params.delete('hizli');
+    const rest = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit]);
+
   useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: canEdit && !isModalOpen && !isBulkModalOpen });
   useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gelir ve Gider Yönetimi"
-        description="Finansal hareketlerinizi profesyonel kategorilerle takip edin, faturalarınızı ekleyin."
+        title={soz.transactionsTitle}
+        description={soz.transactionsDescription}
         actions={
           <>
           <div className="flex items-center gap-2">
@@ -334,7 +362,7 @@ export default function GelirGiderPage() {
                   className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
                 >
                   <Plus className="h-4 w-4" />
-                  Yeni İşlem Ekle
+                  {soz.addTransaction}
                 </button>
               </>
             )}
@@ -369,6 +397,10 @@ export default function GelirGiderPage() {
               6 sütunlu bir tablo 390px'e sığmıyor; yatay kaydırma da
               tarama alışkanlığını bozuyor. Aynı veri, iki sunum. */}
           <div className="md:hidden">
+            {/* HİÇ kayıt olmaması ile FİLTREYE uymaması aynı şey değil.
+                Yeni kullanıcı hiçbir filtre seçmediği hâlde "Bu filtreye
+                uyan kayıt yok" görüyordu — var olmayan bir filtreyi aramaya
+                çıkıyordu. İlk ekran, ne yapılacağını söylemeli. */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               <TransactionList
                 rows={filteredTransactions.map((t) => ({
@@ -380,12 +412,18 @@ export default function GelirGiderPage() {
                   direction: t.type,
                   accentColor: t.category?.color ?? null,
                 }))}
-                emptyText="Bu filtreye uyan kayıt yok."
+                emptyText={
+                  transactions.length === 0
+                    ? 'Henüz kayıt yok. Yukarıdaki düğmeyle ilk kaydınızı ekleyin.'
+                    : 'Bu filtreye uyan kayıt yok.'
+                }
               />
             </div>
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              Düzenlemek için geniş ekranda açın veya kaydın üzerine dokunun.
-            </p>
+            {filteredTransactions.length > 0 && (
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                Düzenlemek için kaydın üzerine dokunun.
+              </p>
+            )}
           </div>
 
           <div className="hidden md:block">
@@ -405,8 +443,8 @@ export default function GelirGiderPage() {
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="animate-sheet-up sm:animate-fade-in max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-card p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl dark:text-slate-100 sm:max-w-lg sm:rounded-2xl sm:p-6 sm:pb-6">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">

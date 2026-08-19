@@ -336,8 +336,8 @@ export default function BelgelerPage() {
 
       {/* Yeni Belge Ekleme Modalı */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:text-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
+          <div className="animate-sheet-up sm:animate-fade-in max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-card p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl dark:text-slate-100 sm:max-w-lg sm:rounded-2xl sm:p-6 sm:pb-6">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">Yeni Belge / Fatura Yükle</h2>
               <button
