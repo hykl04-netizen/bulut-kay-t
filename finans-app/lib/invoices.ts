@@ -149,12 +149,15 @@ export async function fetchInvoice(id: string): Promise<{ invoice: InvoiceWithCu
   return { invoice: inv as InvoiceWithCustomer, items: (items ?? []) as InvoiceItem[] };
 }
 
-/** Yeni fatura numarası üretir (yıl bazlı, atomik, iptaller yeniden kullanılmaz). */
-export async function nextInvoiceNumber(workspaceId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('next_invoice_number', { p_workspace_id: workspaceId });
-  if (error || !data) throw new Error(error?.message ?? 'Fatura numarası üretilemedi.');
-  return data as string;
-}
+/**
+ * Fatura numarası ARTIK İSTEMCİDEN ÜRETİLMİYOR.
+ *
+ * Numara, veritabanındaki trg_invoices_assign_number tetikleyicisi ile
+ * INSERT anında atanıyor; next_invoice_number RPC'si authenticated rolüne
+ * kapatıldı. Eskiden burada bir yardımcı vardı ve form açılırken
+ * çağrılıyordu — kullanıcı vazgeçtiğinde numara yanıyor, fatura serisinde
+ * delik kalıyordu. Bu yorum, o yardımcıyı geri eklemeyi düşünen için.
+ */
 
 export interface SaveInvoiceInput {
   workspaceId: string;
@@ -179,12 +182,23 @@ export interface SaveInvoiceInput {
  * toplamları DB tetikleyicisi (`recalc_invoice_totals`) tarafından kalemlerden
  * yeniden hesaplanır.
  */
-export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
+export interface SavedInvoice {
+  id: string;
+  /** Numarayı veritabanı atar; kaydedilen gerçek numara buradan döner. */
+  invoiceNumber: string;
+}
+
+export async function saveInvoice(input: SaveInvoiceInput): Promise<SavedInvoice> {
   const totals = calcInvoiceTotals(input.items);
+  // FATURA NUMARASI: yeni faturada kolon HİÇ gönderilmez. Numarayı
+  // veritabanındaki trg_invoices_assign_number tetikleyicisi INSERT anında
+  // atar. Önceden numara form AÇILIRKEN üretiliyordu; kullanıcı vazgeçince
+  // o numara yanıyor ve fatura serisinde delik kalıyordu — Türkiye'de
+  // numaraların aralıksız olması zorunlu.
+  const trimmedNumber = input.invoiceNumber?.trim() ?? '';
   const payload = {
     workspace_id: input.workspaceId,
     customer_id: input.customerId,
-    invoice_number: input.invoiceNumber,
     issue_date: input.issueDate,
     due_date: input.dueDate,
     status: input.status,
@@ -197,16 +211,29 @@ export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
   };
 
   let invoiceId = input.invoiceId;
+  let savedNumber = input.invoiceNumber;
 
   if (invoiceId) {
-    const { error } = await supabase.from('invoices').update(payload).eq('id', invoiceId);
+    const { error } = await supabase
+      .from('invoices')
+      .update({ ...payload, invoice_number: trimmedNumber })
+      .eq('id', invoiceId);
     if (error) throw new Error(error.message);
     const { error: delErr } = await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
     if (delErr) throw new Error(delErr.message);
   } else {
-    const { data, error } = await supabase.from('invoices').insert(payload).select('id').single();
+    // İki ayrı çağrı: yeni faturada invoice_number kolonu HİÇ gönderilmiyor
+    // (tetikleyici atasın diye), düzenlemede mevcut numara korunuyor.
+    const { data, error } = trimmedNumber
+      ? await supabase
+          .from('invoices')
+          .insert({ ...payload, invoice_number: trimmedNumber })
+          .select('id, invoice_number')
+          .single()
+      : await supabase.from('invoices').insert(payload).select('id, invoice_number').single();
     if (error) throw new Error(error.message);
     invoiceId = (data as { id: string }).id;
+    savedNumber = (data as { invoice_number: string }).invoice_number;
   }
 
   if (input.items.length > 0) {
@@ -226,7 +253,7 @@ export async function saveInvoice(input: SaveInvoiceInput): Promise<string> {
     if (error) throw new Error(error.message);
   }
 
-  return invoiceId;
+  return { id: invoiceId, invoiceNumber: savedNumber };
 }
 
 /** Fatura geliri için kullanılan kategori adı — yoksa otomatik oluşturulur. */

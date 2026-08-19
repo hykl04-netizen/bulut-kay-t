@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase/client';
-import { nextInvoiceNumber } from '@/lib/invoices';
 
 /**
  * Öneri 10 — tekrarlayan satış faturası otomasyonu.
@@ -122,13 +121,13 @@ export async function runRecurringInvoiceAutomation(workspaceId: string): Promis
               .toISOString()
               .split('T')[0];
 
-      const number = await nextInvoiceNumber(workspaceId);
+      // Numara gönderilmiyor: veritabanı INSERT anında atıyor. Önce üretip
+      // sonra insert etmek, insert başarısız olduğunda numarayı yakıyordu.
       const { data: inserted, error: insErr } = await supabase
         .from('invoices')
         .insert({
           workspace_id: workspaceId,
           customer_id: head.customer_id,
-          invoice_number: number,
           issue_date: nextDate,
           due_date: nextDue,
           status: 'taslak',

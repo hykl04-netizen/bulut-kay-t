@@ -12,7 +12,6 @@ import {
   fetchCustomers,
   fetchInvoice,
   formatMoney,
-  nextInvoiceNumber,
   saveInvoice,
   syncInvoiceIncome,
   updateInvoiceStatus,
@@ -112,12 +111,12 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
           setIsRecurring(Boolean(rec.is_recurring));
           if (rec.recurrence_period) setRecurrencePeriod(rec.recurrence_period);
           setRecurrenceEndDate(rec.recurrence_end_date ?? '');
-        } else {
-          // Numara yalnızca YENİ fatura için, form açılırken bir kez üretilir.
-          const number = await nextInvoiceNumber(wsId);
-          if (cancelled) return;
-          setInvoiceNumber(number);
         }
+        // YENİ faturada numara ÜRETİLMEZ. Numarayı veritabanı, kayıt anında
+        // atar (trg_invoices_assign_number). Eskiden burada üretiliyordu;
+        // kullanıcı ekranı açıp vazgeçtiğinde numara yanıyor ve fatura
+        // serisinde delik kalıyordu — Türkiye'de numaraların aralıksız
+        // olması zorunlu.
       } catch (err) {
         if (!cancelled) toast.error(err instanceof Error ? err.message : 'Fatura yüklenemedi.');
       } finally {
@@ -152,7 +151,7 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
 
     setSaving(true);
     try {
-      const id = await saveInvoice({
+      const saved = await saveInvoice({
         workspaceId,
         invoiceId,
         invoiceNumber,
@@ -169,14 +168,16 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
       // "Ödendi" işaretlenen fatura nakit akışına gelir olarak yansısın;
       // ödenmemişe dönerse o kayıt silinsin (bkz. syncInvoiceIncome).
       const effectiveStatus = nextStatus ?? status;
+      // Numarayı DB atadığı için gelir kaydının açıklamasında da o kullanılır.
+      setInvoiceNumber(saved.invoiceNumber);
       await syncInvoiceIncome({
         workspaceId,
-        invoiceId: id,
+        invoiceId: saved.id,
         status: effectiveStatus,
         issueDate,
         paidTotal: calcInvoiceTotals(validItems).total,
         currency: 'TRY',
-        invoiceNumber,
+        invoiceNumber: saved.invoiceNumber,
         customerName: customers.find((c) => c.id === customerId)?.name ?? null,
       });
 
@@ -187,7 +188,7 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
             ? 'Fatura gönderildi olarak işaretlendi.'
             : 'Fatura kaydedildi.'
       );
-      router.push(`/faturalar/${id}`);
+      router.push(`/faturalar/${saved.id}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Fatura kaydedilemedi.');
@@ -291,7 +292,7 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="text-2xl font-bold text-foreground">
-            Fatura {invoiceNumber}
+            {invoiceNumber ? `Fatura ${invoiceNumber}` : 'Yeni Fatura'}
           </h1>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[displayStatus]}`}>
             {STATUS_LABELS[displayStatus]}
