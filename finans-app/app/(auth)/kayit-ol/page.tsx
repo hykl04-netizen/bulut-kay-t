@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BETA_GIRIS_ACIK, girisKimligineCevir } from '@/lib/beta-kullanici';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Wallet, ArrowRight, AlertCircle, MailCheck } from 'lucide-react';
@@ -29,7 +30,24 @@ export default function KayitOlPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  // Kapalı beta davet kodu. Sunucu DAVET_KODU tanımlamadıysa alan hiç
+  // görünmez ve kayıt eskisi gibi serbest kalır.
+  const [davetKodu, setDavetKodu] = useState('');
+  const [kapaliBeta, setKapaliBeta] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    let iptal = false;
+    fetch('/api/davet-kodu')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!iptal) setKapaliBeta(Boolean(d?.kapaliBeta));
+      })
+      .catch(() => {});
+    return () => {
+      iptal = true;
+    };
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +68,24 @@ export default function KayitOlPage() {
 
     setLoading(true);
 
+    if (kapaliBeta) {
+      const yanit = await fetch('/api/davet-kodu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kod: davetKodu }),
+      });
+      const sonuc = await yanit.json().catch(() => ({ gecerli: false }));
+      if (!sonuc?.gecerli) {
+        setError('Davet kodu geçersiz. Kapalı test dönemindeyiz; kod için bizimle iletişime geçin.');
+        setLoading(false);
+        return;
+      }
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+      // Beta: "aile" gibi kısa bir ad da kabul ediliyor; hesapları elle
+      // açarken uydurma e-posta yazmak gerekmesin (bkz. lib/beta-kullanici.ts).
+      email: girisKimligineCevir(email),
       password,
       options: {
         data: { company_name: companyName.trim() },
@@ -130,6 +164,28 @@ export default function KayitOlPage() {
         )}
 
         <form onSubmit={handleSignUp} className="space-y-5">
+          {kapaliBeta && (
+            <div>
+              <label htmlFor="davet-kodu" className="block text-sm font-medium text-foreground mb-1">
+                Davet Kodu
+              </label>
+              <input
+                id="davet-kodu"
+                type="text"
+                value={davetKodu}
+                onChange={(e) => setDavetKodu(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
+                placeholder="Size verilen kod"
+                required
+              />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Şu anda kapalı test dönemindeyiz; kayıt için davet kodu gerekiyor.
+              </p>
+            </div>
+          )}
+
           <div>
             <label htmlFor="company" className="block text-sm font-medium text-foreground mb-1">
               İşletme Adı
@@ -147,11 +203,14 @@ export default function KayitOlPage() {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-              E-posta Adresi
+              {BETA_GIRIS_ACIK ? 'Kullanıcı Adı veya E-posta' : 'E-posta Adresi'}
             </label>
             <input
               id="email"
-              type="email"
+              type={BETA_GIRIS_ACIK ? 'text' : 'email'}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"

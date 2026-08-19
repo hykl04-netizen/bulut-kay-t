@@ -56,6 +56,7 @@ import { useSubscription } from '@/lib/use-subscription';
 import { accessState, hasFeature, trialDaysLeft } from '@/lib/plans';
 import { roleLabelFor, type WorkspaceType } from '@/lib/workspace-types';
 import { BottomNav, type BottomNavItem } from '@/components/finans/bottom-nav';
+import { GeriBildirim } from '@/components/geri-bildirim';
 import { MobileTopBar } from '@/components/finans/mobile-top-bar';
 
 interface NavItem {
@@ -504,6 +505,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <LifeBuoy className="w-[18px] h-[18px]" />
           Yardım Merkezi
         </Link>
+        {/* Kapalı beta: test kullanıcısının tek iletişim kanalı. Yardımın
+            hemen altında duruyor çünkü insan takıldığında önce oraya bakıyor,
+            bulamayınca da bir şey söylemek istiyor. */}
+        <GeriBildirim />
         <button
           onClick={() => setIsShortcutsOpen(true)}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition"

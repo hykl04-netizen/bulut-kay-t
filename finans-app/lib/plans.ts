@@ -91,6 +91,73 @@ export const PLANS: Plan[] = [
   },
 ];
 
+/**
+ * PAKETLEME KARARI (19 Ağu 2026) — üç persona, üç farklı satış biçimi.
+ *
+ * Neden persona başına ayrı kademe listesi YOK:
+ *   • Aile modülü sunucuda neredeyse bedava (fatura yok, bordro yok) ve
+ *     Türkiye'de aile bütçesi uygulamasına ödeme isteği düşük. Ücretsiz
+ *     bırakmak fiyat sayfasını sadeleştiriyor ve huninin girişi oluyor.
+ *   • Müşavir için kademe yanlış eksen: 8 mükellefli ofisle 80 mükellefli
+ *     ofis aynı ürünü kullanmıyor. Mükellef başına fiyat, gelirin değerle
+ *     birlikte büyümesini sağlıyor.
+ *   • İşletme tarafında kademe doğru eksen — kullanıcı sayısı ve modül
+ *     derinliği gerçekten farklılaşıyor. PLANS listesi bu tarafa ait.
+ *
+ * Çapraz açılım (ücretli işletme/müşavir planı aile hesabını da yükseltir)
+ * VERİTABANINDA duruyor: workspace_plan() / workspace_can_write()
+ * (bkz. 20260905_aile_ucretsiz_ve_capraz_acilim.sql). Arayüzde dursaydı
+ * bir sonraki ekranda unutulurdu.
+ */
+
+export interface AilePaketi {
+  label: string;
+  tagline: string;
+  features: string[];
+  note: string;
+}
+
+export const AILE_PAKETI: AilePaketi = {
+  label: 'Aile / Bireysel',
+  tagline: 'Ev bütçesi, aylık gelir-gider ve birikim takibi',
+  features: [
+    'Sınırsız gelir ve harcama kaydı',
+    'Kategori ve aylık bütçe limitleri',
+    'Birikim, yatırım ve varlık takibi',
+    'Kişi bazlı borç/alacak',
+    'Aile üyelerini davet etme',
+    'Aylık özet raporu',
+  ],
+  note: 'Ücretsiz. Kart bilgisi istemiyoruz, süre sınırı yok.',
+};
+
+export interface MusavirPaketi {
+  label: string;
+  tagline: string;
+  /** Ofisin kendi defteri için aylık taban ücret (TL). YER TUTUCU. */
+  basePrice: number;
+  /** Her mükellef için aylık ek ücret (TL). YER TUTUCU. */
+  perClientPrice: number;
+  /** Taban ücrete dahil mükellef sayısı. */
+  includedClients: number;
+  features: string[];
+}
+
+export const MUSAVIR_PAKETI: MusavirPaketi = {
+  label: 'Mali Müşavir',
+  tagline: 'Mükelleflerinizin defterlerine tek yerden geçiş',
+  basePrice: 899,
+  perClientPrice: 149,
+  includedClients: 5,
+  features: [
+    'Ofisinizin kendi defteri',
+    'Mükellef hesapları arasında tek tıkla geçiş',
+    'Eksik belge takibi',
+    'Dönem kilitleme ve denetim kaydı',
+    'Mükellef bazlı raporlar',
+  ],
+};
+
 export function getPlan(key: PlanKey): Plan {
   return PLANS.find((p) => p.key === key) ?? PLANS[0];
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Wallet, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client'; // Supabase bağlantımız
+import { BETA_GIRIS_ACIK, BETA_KAYIT_GIZLI, girisKimligineCevir } from '@/lib/beta-kullanici';
 
 // useSearchParams kullanan bileşen bir Suspense sınırı içinde olmalı
 // (Next.js app router kuralı) — bu yüzden form ayrı bir bileşene alındı.
@@ -38,9 +39,11 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    // Supabase'e giriş isteği atıyoruz
+    // Beta sırasında "aile" gibi kısa bir ad da kabul ediliyor; içinde "@"
+    // yoksa sabit alan adıyla birleştiriliyor (bkz. lib/beta-kullanici.ts).
+    // Gerçek e-posta yazan kullanıcı için hiçbir şey değişmiyor.
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: girisKimligineCevir(email),
       password,
     });
 
@@ -82,14 +85,21 @@ function LoginForm() {
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">
-              E-posta Adresi
+              {BETA_GIRIS_ACIK ? 'Kullanıcı Adı' : 'E-posta Adresi'}
             </label>
+            {/* type="email" idi: tarayıcı "aile" gibi bir kullanıcı adını
+                geçersiz sayıp formu hiç göndermiyordu. Beta boyunca type
+                "text" olmalı; doğrulamayı zaten Supabase yapıyor. */}
             <input
-              type="email"
+              type={BETA_GIRIS_ACIK ? 'text' : 'email'}
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
-              placeholder="ornek@mail.com"
+              placeholder={BETA_GIRIS_ACIK ? 'size verilen kullanıcı adı' : 'ornek@mail.com'}
               required
             />
           </div>
@@ -130,11 +140,15 @@ function LoginForm() {
           <Link href="/demo" className="font-medium text-primary hover:underline">
             Önce demoyu inceleyin
           </Link>
-          <span className="mx-2 text-border">·</span>
-          Hesabınız yok mu?{' '}
-          <Link href="/kayit-ol" className="font-medium text-primary hover:underline">
-            Ücretsiz kaydolun
-          </Link>
+          {!BETA_KAYIT_GIZLI && (
+            <>
+              <span className="mx-2 text-border">·</span>
+              Hesabınız yok mu?{' '}
+              <Link href="/kayit-ol" className="font-medium text-primary hover:underline">
+                Ücretsiz kaydolun
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </div>
