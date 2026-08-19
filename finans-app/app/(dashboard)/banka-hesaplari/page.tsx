@@ -8,10 +8,14 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { parseBankStatementCsv, ParsedBankRow } from '@/lib/bank-import';
 import { SUPPORTED_CURRENCIES, formatCurrency } from '@/lib/currency';
+
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 interface BankAccount {
   id: string;
   name: string;
@@ -244,27 +248,28 @@ export default function BankaHesaplariPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Banka Hesapları</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Hesaplarınızı tanımlayın, bankanızdan indirdiğiniz ekstre (CSV) dosyasını içe aktararak
-            işlemlerinizi otomatik olarak Gelir/Gider listesine ekleyin.
-          </p>
-        </div>
-        {canEdit && (
-          <button
-            onClick={handleOpenAddModal}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Hesap Ekle
-          </button>
-        )}
-      </div>
+      <PageHeader
+        icon={Landmark}
+        title="Banka Hesapları"
+        description="Hesaplarınızı tanımlayın, bankanızdan indirdiğiniz ekstre (CSV) dosyasını içe aktararak işlemlerinizi otomatik olarak Gelir/Gider listesine ekleyin."
+        actions={
+          <>
+          {canEdit && (
+            <button
+              onClick={handleOpenAddModal}
+              className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Yeni Hesap Ekle
+            </button>
+          )}
+          </>
+        }
+      />
+
 
       {/* Gerçek Open Banking hakkında bilgilendirme */}
-      <div className="flex gap-3 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm dark:border-border dark:text-muted-foreground">
+      <div className="flex gap-3 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm">
         <Info className="h-5 w-5 shrink-0 text-brand-gold" />
         <p>
           Bankanıza canlı bağlanıp işlemleri otomatik çekme (gerçek &quot;Open Banking&quot;), BDDK lisanslı
@@ -275,23 +280,23 @@ export default function BankaHesaplariPage() {
       </div>
 
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={4} />
       ) : accounts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border">
-          Henüz banka hesabı eklemediniz. &quot;Yeni Hesap Ekle&quot; ile başlayın.
-        </div>
+        <EmptyState
+          icon={Landmark}
+          title="Henüz banka hesabı eklemediniz."
+          description="&quot;Yeni Hesap Ekle&quot; ile başlayın; ardından ekstrenizi (CSV) içe aktarabilirsiniz."
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((acc) => (
-            <div key={acc.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:border-border">
+            <div key={acc.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <Landmark className="h-5 w-5 text-brand-gold" />
                   <div>
-                    <h3 className="font-semibold text-foreground dark:text-foreground">{acc.name}</h3>
-                    <p className="text-xs text-muted-foreground dark:text-muted-foreground">
+                    <h3 className="font-semibold text-foreground">{acc.name}</h3>
+                    <p className="text-xs text-muted-foreground">
                       {acc.bank_name || 'Banka belirtilmedi'}{acc.iban_last4 ? ` · ****${acc.iban_last4}` : ''}
                     </p>
                   </div>
@@ -308,14 +313,14 @@ export default function BankaHesaplariPage() {
                 )}
               </div>
 
-              <p className="mt-4 text-2xl font-bold text-foreground dark:text-foreground">
+              <p className="mt-4 text-2xl font-bold text-foreground">
                 {formatCurrency(acc.current_balance, acc.currency)}
               </p>
 
               {canEdit && (
                 <button
                   onClick={() => openImportFor(acc.id)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
                 >
                   <UploadCloud className="h-4 w-4" />
                   Ekstre (CSV) İçe Aktar
@@ -330,9 +335,9 @@ export default function BankaHesaplariPage() {
       {isAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'Hesabı Düzenle' : 'Yeni Banka Hesabı'}</h2>
-              <button onClick={() => setIsAccountModalOpen(false)} className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
+              <button onClick={() => setIsAccountModalOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -403,14 +408,14 @@ export default function BankaHesaplariPage() {
                 <button
                   type="button"
                   onClick={() => setIsAccountModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>
@@ -424,13 +429,13 @@ export default function BankaHesaplariPage() {
       {importAccountId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">
                 {importAccount?.name} — Ekstre İçe Aktar
               </h2>
               <button
                 onClick={() => { setImportAccountId(null); setParsedRows([]); }}
-                className="text-muted-foreground hover:text-foreground dark:hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -446,7 +451,7 @@ export default function BankaHesaplariPage() {
                   type="file"
                   accept=".csv,text/csv"
                   onChange={handleFileSelected}
-                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm dark:border-border dark:text-foreground"
+                  className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm dark:text-foreground"
                 />
               </div>
 
@@ -468,25 +473,25 @@ export default function BankaHesaplariPage() {
                     </select>
                   </div>
 
-                  <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {parsedRows.length} işlem okundu{skippedCount > 0 ? `, ${skippedCount} satır ayrıştırılamadığı için atlandı` : ''}.
                     Aşağıda ilk 8 satırın önizlemesi var.
                   </p>
 
-                  <div className="max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border">
+                  <div className="max-h-64 overflow-y-auto rounded-xl border border-border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted dark:bg-secondary">
                         <tr>
-                          <th className="px-3 py-2 text-left font-medium text-foreground dark:text-foreground">Tarih</th>
-                          <th className="px-3 py-2 text-left font-medium text-foreground dark:text-foreground">Açıklama</th>
-                          <th className="px-3 py-2 text-right font-medium text-foreground dark:text-foreground">Tutar</th>
+                          <th className="px-3 py-2 text-left font-medium text-foreground">Tarih</th>
+                          <th className="px-3 py-2 text-left font-medium text-foreground">Açıklama</th>
+                          <th className="px-3 py-2 text-right font-medium text-foreground">Tutar</th>
                         </tr>
                       </thead>
                       <tbody>
                         {parsedRows.slice(0, 8).map((row, i) => (
-                          <tr key={i} className="border-t border-border dark:border-border">
-                            <td className="px-3 py-2 text-muted-foreground dark:text-muted-foreground">{new Date(row.date).toLocaleDateString('tr-TR')}</td>
-                            <td className="px-3 py-2 text-foreground dark:text-foreground">{row.description}</td>
+                          <tr key={i} className="border-t border-border">
+                            <td className="px-3 py-2 text-muted-foreground">{new Date(row.date).toLocaleDateString('tr-TR')}</td>
+                            <td className="px-3 py-2 text-foreground">{row.description}</td>
                             <td className={`px-3 py-2 text-right font-medium ${row.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                               {formatCurrency(row.amount, 'TRY')}
                             </td>
@@ -502,7 +507,7 @@ export default function BankaHesaplariPage() {
                 <button
                   type="button"
                   onClick={() => { setImportAccountId(null); setParsedRows([]); }}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
@@ -510,7 +515,7 @@ export default function BankaHesaplariPage() {
                   type="button"
                   disabled={parsedRows.length === 0 || isImporting}
                   onClick={handleConfirmImport}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isImporting ? 'Aktarılıyor...' : `${parsedRows.length} İşlemi İçe Aktar`}
                 </button>

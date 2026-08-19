@@ -50,6 +50,6 @@ export const DUE_TONE_CLASSES: Record<DueTone, string> = {
   overdue: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
   today: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
   soon: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
-  upcoming: 'bg-accent/15 text-brand-gold dark:text-brand-gold-light',
+  upcoming: 'bg-accent/15 text-brand-gold',
   settled: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
 };

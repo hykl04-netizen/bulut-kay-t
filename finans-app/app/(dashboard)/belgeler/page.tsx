@@ -11,6 +11,9 @@ import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { CardGridSkeleton } from '@/components/ui/skeleton';
 interface DocumentItem {
   id: string;
   title: string;
@@ -178,26 +181,28 @@ export default function BelgelerPage() {
   return (
     <div className="space-y-6">
       {/* Başlık ve Ekle Butonu */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Belgeler & Arşiv</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Faturalarınızı, fişlerinizi, bordrolarınızı ve önemli evraklarınızı tek yerde saklayın.
-          </p>
-        </div>
-        {canEdit && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Belge Yükle
-          </button>
-        )}
-      </div>
+      <PageHeader
+        icon={FileText}
+        title="Belgeler & Arşiv"
+        description="Faturalarınızı, fişlerinizi, bordrolarınızı ve önemli evraklarınızı tek yerde saklayın."
+        actions={
+          <>
+          {canEdit && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Yeni Belge Yükle
+            </button>
+          )}
+          </>
+        }
+      />
+
 
       {/* Filtreleme ve Arama Çubuğu */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm dark:border-border md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         {/* Kategoriler */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Filter className="mr-1 h-4 w-4 text-muted-foreground" />
@@ -205,11 +210,7 @@ export default function BelgelerPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                selectedCategory === cat
-                  ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
-                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
-              }`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${ selectedCategory === cat ? 'bg-primary text-primary-foreground ' : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700' }`}
             >
               {cat}
             </button>
@@ -225,14 +226,14 @@ export default function BelgelerPage() {
               placeholder="Belge ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-muted py-2 pl-9 pr-4 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+              className="w-full rounded-lg border border-border bg-muted py-2 pl-9 pr-4 text-sm focus:border-accent focus:outline-none dark:text-foreground"
             />
           </div>
 
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-            className="rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+            className="rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
           >
             <option value="desc">En Yeni Tarih</option>
             <option value="asc">En Eski Tarih</option>
@@ -242,7 +243,7 @@ export default function BelgelerPage() {
 
       {/* Etiket Filtreleri */}
       {allTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-3 dark:border-border">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-3">
           <Tag className="mr-1 h-4 w-4 text-muted-foreground" />
           {allTags.map((tag) => (
             <button
@@ -251,7 +252,7 @@ export default function BelgelerPage() {
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                 selectedTags.includes(tag)
                   ? 'bg-brand-gold text-accent-foreground'
-                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:bg-secondary dark:text-muted-foreground dark:hover:bg-slate-700'
+                  : 'bg-secondary text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               #{tag}
@@ -270,22 +271,19 @@ export default function BelgelerPage() {
 
       {/* Belge Kartları Listesi */}
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Belgeler yükleniyor...</div>
+        <CardGridSkeleton count={6} />
       ) : filteredDocuments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-16 dark:border-border">
-          <FileText className="h-12 w-12 text-muted-foreground dark:text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium text-muted-foreground dark:text-muted-foreground">Kayıtlı belge bulunamadı.</p>
-        </div>
+        <EmptyState icon={FileText} title="Kayıtlı belge bulunamadı." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDocuments.map((doc) => (
             <div
               key={doc.id}
-              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md dark:border-border"
+              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition hover:shadow-md"
             >
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="inline-block rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground dark:bg-secondary dark:text-muted-foreground">
+                  <span className="inline-block rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground dark:text-muted-foreground">
                     {doc.category}
                   </span>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -294,14 +292,14 @@ export default function BelgelerPage() {
                   </div>
                 </div>
 
-                <h3 className="mt-3 text-base font-bold text-foreground dark:text-foreground">{doc.title}</h3>
-                {doc.notes && <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground line-clamp-2">{doc.notes}</p>}
+                <h3 className="mt-3 text-base font-bold text-foreground">{doc.title}</h3>
+                {doc.notes && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{doc.notes}</p>}
                 {doc.tags && doc.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {doc.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium text-brand-gold dark:text-brand-gold-light"
+                        className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium text-brand-gold"
                       >
                         #{tag}
                       </span>
@@ -310,7 +308,7 @@ export default function BelgelerPage() {
                 )}
               </div>
 
-              <div className="mt-6 flex items-center justify-between border-t border-border pt-4 dark:border-border">
+              <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
                 <a
                   href={doc.file_url}
                   target="_blank"
@@ -340,7 +338,7 @@ export default function BelgelerPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">Yeni Belge / Fatura Yükle</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -359,7 +357,7 @@ export default function BelgelerPage() {
                   placeholder="Örn: Elektrik Faturası - Ağustos"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                 />
               </div>
 
@@ -369,7 +367,7 @@ export default function BelgelerPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                   >
                     {CATEGORIES.filter((c) => c !== 'Tümü').map((cat) => (
                       <option key={cat} value={cat} className="dark:bg-popover dark:text-popover-foreground">{cat}</option>
@@ -384,7 +382,7 @@ export default function BelgelerPage() {
                     required
                     value={documentDate}
                     onChange={(e) => setDocumentDate(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                   />
                 </div>
               </div>
@@ -406,12 +404,12 @@ export default function BelgelerPage() {
                       }
                     }}
                     placeholder="Örn: elektrik, 2026 (Enter veya virgülle ekle)"
-                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                    className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                   />
                   <button
                     type="button"
                     onClick={addTagsFromInput}
-                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted dark:text-slate-100 dark:hover:bg-secondary"
+                    className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted dark:hover:bg-secondary"
                   >
                     Ekle
                   </button>
@@ -421,7 +419,7 @@ export default function BelgelerPage() {
                     {tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-2 py-1 text-xs font-medium text-brand-gold dark:text-brand-gold-light"
+                        className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-2 py-1 text-xs font-medium text-brand-gold"
                       >
                         #{tag}
                         <button
@@ -444,7 +442,7 @@ export default function BelgelerPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ek açıklamalar..."
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                 />
               </div>
 
@@ -452,14 +450,14 @@ export default function BelgelerPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !fileUrl}
-                  className="btn-gold-cta rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>

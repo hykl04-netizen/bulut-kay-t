@@ -31,7 +31,11 @@
   --input: #e1e4f0;
   --ring: #2f5fe0;
 
-  /* Marka tokenları */
+  /* Marka tokenları
+     UYARI — `brand-gold` adı tarihsel; artık ALTIN DEĞİL, marka mavisi.
+     Değeri `--accent` ile birebir aynı. 84 yerde kullanıldığı için isim
+     korunuyor ama YENİ KODDA `accent` tercih edilmeli; bu takma ad zamanla
+     kaldırılacak. */
   --brand-navy: #1b2559;
   --brand-navy-light: #2b3568;
   --brand-gold: #2f5fe0;
@@ -103,8 +107,11 @@
 
   --brand-navy: #1b2559;
   --brand-navy-light: #2b3568;
-  --brand-gold: #2f5fe0;
-  --brand-gold-light: #6e93ff;
+  /* Koyu modda accent ile aynı hizaya çekildi. Eskiden açık moddaki değer
+     aynen kullanılıyordu ve koyu kart üzerinde 3.07:1 ile sınırda kalıyordu;
+     şimdi 5.83:1. */
+  --brand-gold: #6e93ff;
+  --brand-gold-light: #9db6ff;
 }
 
 body {
@@ -300,3 +307,160 @@ h6 {
   }
 }
 
+
+/* ==========================================================================
+   NATIVE UYGULAMA DAVRANIŞLARI (Faz 13)
+   --------------------------------------------------------------------------
+   Bir web sayfasının "uygulama gibi" hissettirmemesinin sebebi genelde
+   görsel değil DAVRANIŞSAL: metin seçme imleci, dokununca çıkan mavi
+   parıltı, listenin sonunda sayfanın esnemesi, çift dokununca yakınlaşma.
+   Aşağıdakiler bunları kapatır. Hepsi bilinçli olarak DAR kapsamlı —
+   okunabilir metin ve form alanları etkilenmez.
+   ========================================================================== */
+
+/* Dokununca çıkan mavi/gri parıltı: Android Chrome'un en belirgin
+   "bu bir web sitesi" sinyali. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* Sayfanın üstünde/altında lastik gibi esneyip arka planı göstermesi
+     iOS'ta uygulama değil tarayıcı hissi verir. */
+  overscroll-behavior-y: none;
+  /* Yatay kaydırılabilen şeritler (hesap kartları) sayfayı yana
+     kaydırmasın. */
+  overscroll-behavior-x: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* iOS'ta ivmeli kaydırma. */
+  -webkit-overflow-scrolling: touch;
+  /* Çift dokunuşla yakınlaşmayı kapatır ama parmakla yakınlaştırmayı
+     (erişilebilirlik) engellemez — `touch-action: none` KULLANILMADI. */
+  touch-action: manipulation;
+}
+
+/* Arayüz kromu (menü, düğme, başlık) seçilemez; içerik seçilebilir kalır.
+   Kullanıcı bir düğmeye uzun basınca metin seçilmesi masaüstü davranışı. */
+nav, header, button, [role='button'], .no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Kaydırma çubukları: masaüstünde ince ve sessiz. */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent;
+  }
+}
+
+/* Yatay şeritlerde kaydırma çubuğunu tamamen gizle — kart şeridi
+   kaydırılabilir olduğunu snap ve kırpılmış kartla zaten söylüyor. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Sayfa geçişleri
+   --------------------------------------------------------------------------
+   Native uygulamalarda ekranlar aniden değişmez. framer-motion eklemek
+   yerine saf CSS kullanıldı: paket boyutu artmıyor, JS çalışmadan da
+   çalışıyor ve `prefers-reduced-motion` ile kendiliğinden kapanıyor.
+   -------------------------------------------------------------------------- */
+@keyframes app-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.app-page {
+  animation: app-page-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.animate-sheet-up {
+  animation: sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Hareket hassasiyeti olan kullanıcılarda tüm geçişler kapanır. */
+@media (prefers-reduced-motion: reduce) {
+  .app-page,
+  .animate-sheet-up,
+  .animate-fade-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Dokunma hedefleri
+   --------------------------------------------------------------------------
+   WCAG 2.2 (2.5.8) asgari 24px diyor; Apple ve Google 44px öneriyor.
+   İkon düğmeleri görsel olarak küçük kalabilir ama dokunma alanı
+   büyütülür — `::after` ile görünmez bir alan eklenir, düzen bozulmaz.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .touch-target {
+    position: relative;
+  }
+  .touch-target::after {
+    content: '';
+    position: absolute;
+    inset: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Basılı tutunca hafif küçülme — dokunsal geri bildirim. */
+.press {
+  transition: transform 120ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Güvenli alan (çentik / alt çubuk) yardımcıları. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}

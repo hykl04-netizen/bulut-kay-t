@@ -8,6 +8,8 @@ import { useTeamRole } from '@/lib/use-team-role';
 import { toast } from '@/components/ui/toaster';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 
 /**
  * Faz 5 + Faz 10 hazırlığı — satıcı (işletme) fatura künyesi.
@@ -90,10 +92,7 @@ export default function FaturaKunyesiPage() {
   if (!roleLoading && !isOwner) {
     return (
       <div className="max-w-2xl space-y-6">
-        <div className="flex items-center gap-3">
-          <ReceiptText className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground">Fatura Künyesi</h1>
-        </div>
+        <PageHeader icon={ReceiptText} title="Fatura Künyesi" />
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm">Fatura künyesini yalnızca işletme sahibi düzenleyebilir.</p>
@@ -104,23 +103,17 @@ export default function FaturaKunyesiPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
   return (
     <form onSubmit={handleSave} className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <ReceiptText className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground">Fatura Künyesi</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Kestiğiniz faturaların üstünde görünecek satıcı bilgileri. Bu alanlar ileride resmi
-        e-Fatura entegrasyonu için de zorunlu olacak.
-      </p>
+      <PageHeader
+        icon={ReceiptText}
+        title="Fatura Künyesi"
+        description="Kestiğiniz faturaların üstünde görünecek satıcı bilgileri. Bu alanlar ileride resmi e-Fatura entegrasyonu için de zorunlu olacak."
+      />
 
       <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -168,7 +161,7 @@ export default function FaturaKunyesiPage() {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           Kaydet

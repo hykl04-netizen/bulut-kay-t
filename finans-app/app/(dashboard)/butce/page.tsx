@@ -10,12 +10,10 @@ import { buildBudgetRows, currentMonthKey, BUDGET_TONE_CLASSES, BudgetRow } from
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
+import { formatTRYWhole } from '@/lib/currency';
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
-
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 const MONTH_LABELS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
 function currentMonthDisplay(): string {
@@ -147,31 +145,36 @@ export default function ButcePage() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <p className="text-muted-foreground">Yükleniyor...</p>
+        <PageLoading />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Bütçe Planlama</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground mt-1">
+      <PageHeader
+        title="Bütçe Planlama"
+        description={
+          <>
             {currentMonthDisplay()} için kategori bazlı harcama limitleri ve aşım durumu.
-          </p>
-        </div>
-        {overCount > 0 && (
-          <div className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-400">
-            <AlertTriangle className="h-4 w-4" />
-            {overCount} kategoride bütçe aşımı var
-          </div>
-        )}
-      </div>
+          </>
+        }
+        actions={
+          <>
+          {overCount > 0 && (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-400">
+              <AlertTriangle className="h-4 w-4" />
+              {overCount} kategoride bütçe aşımı var
+            </div>
+          )}
+          </>
+        }
+      />
+
 
       {/* Limiti tanımlı kategoriler */}
-      <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
-        <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
           <Wallet className="w-4 h-4 text-muted-foreground" />
           Bütçe Durumu
         </h2>
@@ -197,8 +200,8 @@ export default function ButcePage() {
 
       {/* Limit tanımlanmamış kategoriler için hızlı ekleme */}
       {canEdit && unbudgetedCategories.length > 0 && (
-        <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Bütçe Limiti Belirle</h2>
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Yeni Bütçe Limiti Belirle</h2>
           <div className="space-y-3">
             {unbudgetedCategories.map((cat) => (
               <div key={cat.id} className="flex items-center gap-3">
@@ -211,12 +214,12 @@ export default function ButcePage() {
                   placeholder="Aylık limit (TL)"
                   value={drafts[cat.id] ?? ''}
                   onChange={(e) => setDrafts((prev) => ({ ...prev, [cat.id]: e.target.value }))}
-                  className="w-40 rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                  className="w-40 rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                 />
                 <button
                   onClick={() => handleSaveLimit(cat.id)}
                   disabled={savingId === cat.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-secondary disabled:opacity-50 text-white text-xs font-medium px-3 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:opacity-90 disabled:opacity-50 text-primary-foreground text-xs font-medium px-3 py-1.5 transition-colors"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Kaydet
@@ -241,11 +244,11 @@ function BudgetRowItem({ row, onDelete, canEdit }: { row: BudgetRow; onDelete: (
   const barWidth = Math.min(100, row.percent);
 
   return (
-    <div className="rounded-xl border border-border dark:border-border p-4">
+    <div className="rounded-xl border border-border p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.categoryColor }} />
-          <span className="font-medium text-foreground dark:text-slate-100 truncate">{row.categoryName}</span>
+          <span className="font-medium text-foreground truncate">{row.categoryName}</span>
           {row.tone === 'over' && (
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${tone.badge}`}>
               Aşıldı
@@ -274,10 +277,10 @@ function BudgetRowItem({ row, onDelete, canEdit }: { row: BudgetRow; onDelete: (
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         <span className={`font-semibold ${tone.text}`}>
-          {formatTRY(row.spent)} / {formatTRY(row.limit)} ({row.percent}%)
+          {formatTRYWhole(row.spent)} / {formatTRYWhole(row.limit)} ({row.percent}%)
         </span>
         <span className="text-muted-foreground">
-          {row.remaining >= 0 ? `Kalan: ${formatTRY(row.remaining)}` : `Aşım: ${formatTRY(Math.abs(row.remaining))}`}
+          {row.remaining >= 0 ? `Kalan: ${formatTRYWhole(row.remaining)}` : `Aşım: ${formatTRYWhole(Math.abs(row.remaining))}`}
         </span>
       </div>
     </div>

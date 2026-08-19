@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Check, Lock, AlertTriangle, Clock, Sparkles } from 'lucide-react';
+import { Check, Lock, AlertTriangle, Clock, Sparkles, CreditCard } from 'lucide-react';
 import { useSubscription } from '@/lib/use-subscription';
 import {
   PLANS,
@@ -13,6 +13,8 @@ import {
   trialDaysLeft,
 } from '@/lib/plans';
 
+import { CardGridSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 /**
  * Faz 3 — abonelik / faturalandırma sayfası.
  *
@@ -25,7 +27,7 @@ export default function AbonelikPage() {
   const { subscription, loading } = useSubscription();
 
   if (loading) {
-    return <p className="text-muted-foreground">Yükleniyor...</p>;
+    return <CardGridSkeleton />;
   }
 
   const current = effectivePlan(subscription);
@@ -35,12 +37,11 @@ export default function AbonelikPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Abonelik</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Planınızı görüntüleyin ve işletmenize uygun pakete geçin.
-        </p>
-      </div>
+      <PageHeader
+        icon={CreditCard}
+        title="Abonelik"
+        description="Planınızı görüntüleyin ve işletmenize uygun pakete geçin."
+      />
 
       {/* Mevcut durum */}
       <div className="rounded-2xl border border-border bg-card p-5 mb-6">
@@ -96,14 +97,12 @@ export default function AbonelikPage() {
           return (
             <div
               key={plan.key}
-              className={`rounded-2xl border p-5 flex flex-col ${
-                isCurrent ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card'
-              }`}
+              className={`rounded-2xl border p-5 flex flex-col ${ isCurrent ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card' }`}
             >
               <div className="flex items-center justify-between gap-2">
                 <h2 className="font-semibold text-foreground">{plan.label}</h2>
                 {isCurrent && (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-white">
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
                     Mevcut
                   </span>
                 )}
@@ -140,7 +139,7 @@ export default function AbonelikPage() {
                 type="button"
                 disabled
                 title="Ödeme sağlayıcısı entegrasyonu tamamlanınca aktif olacak."
-                className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCurrent ? 'Mevcut planınız' : 'Yakında'}
               </button>

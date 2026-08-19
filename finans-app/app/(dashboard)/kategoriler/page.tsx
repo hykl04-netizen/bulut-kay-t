@@ -9,6 +9,8 @@ import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 type Category = {
   id: string;
   type: 'gelir' | 'gider';
@@ -101,24 +103,24 @@ export default function KategorilerPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Kategoriler</h1>
-        <p className="text-muted-foreground dark:text-muted-foreground mt-1">Gelir ve gider kategorilerinizi buradan yönetin.</p>
-      </div>
+      <PageHeader
+        title="Kategoriler"
+        description="Gelir ve gider kategorilerinizi buradan yönetin."
+      />
 
       {/* Yeni Kategori Ekleme Formu */}
       {canEdit && (
-      <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
-        <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4">Yeni Kategori Ekle</h2>
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Yeni Kategori Ekle</h2>
         <form onSubmit={handleAdd} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-2">Tür</label>
-            <div className="flex gap-4 p-1 bg-secondary dark:bg-secondary rounded-lg max-w-xs">
-              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-card shadow-sm font-medium text-emerald-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
+            <div className="flex gap-4 p-1 bg-secondary rounded-lg max-w-xs">
+              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gelir' ? 'bg-card shadow-sm font-medium text-emerald-600' : 'text-muted-foreground hover:text-foreground'}`}>
                 <input type="radio" className="hidden" checked={type === 'gelir'} onChange={() => setType('gelir')} />
                 Gelir
               </label>
-              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-card shadow-sm font-medium text-rose-600' : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground'}`}>
+              <label className={`flex-1 text-center py-2 rounded-md cursor-pointer transition-colors ${type === 'gider' ? 'bg-card shadow-sm font-medium text-rose-600' : 'text-muted-foreground hover:text-foreground'}`}>
                 <input type="radio" className="hidden" checked={type === 'gider'} onChange={() => setType('gider')} />
                 Gider
               </label>
@@ -132,7 +134,7 @@ export default function KategorilerPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full max-w-sm px-4 py-3 border border-border dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100"
+              className="w-full max-w-sm px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100"
               placeholder="Örn: Market, Ulaşım, Maaş..."
             />
           </div>
@@ -156,7 +158,7 @@ export default function KategorilerPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-primary hover:bg-secondary disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-primary hover:opacity-90 disabled:opacity-50 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
             {saving ? 'Ekleniyor...' : 'Kategori Ekle'}
@@ -167,8 +169,8 @@ export default function KategorilerPage() {
 
       {/* Kategori Listesi */}
       {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <p className="text-muted-foreground dark:text-muted-foreground">Yükleniyor...</p>
+        <div className="flex h-40 items-center justify-center">
+          <PageLoading />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -194,15 +196,15 @@ function CategoryList({
   canEdit: boolean;
 }) {
   return (
-    <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
-      <h2 className="text-lg font-semibold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
-        <Tag className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
+    <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+      <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <Tag className="w-4 h-4 text-muted-foreground" />
         {title}
-        <span className="text-sm font-normal text-muted-foreground dark:text-muted-foreground">({categories.length})</span>
+        <span className="text-sm font-normal text-muted-foreground">({categories.length})</span>
       </h2>
 
       {categories.length === 0 ? (
-        <p className="text-muted-foreground dark:text-muted-foreground text-sm">{emptyLabel}</p>
+        <p className="text-muted-foreground text-sm">{emptyLabel}</p>
       ) : (
         <ul className="space-y-2">
           {categories.map((cat) => (
@@ -217,7 +219,7 @@ function CategoryList({
               {canEdit && (
                 <button
                   onClick={() => onDelete(cat.id)}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground dark:text-muted-foreground hover:text-rose-600 transition-all p-1"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-rose-600 transition-all p-1"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

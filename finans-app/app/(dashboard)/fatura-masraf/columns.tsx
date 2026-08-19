@@ -5,6 +5,7 @@ import { Pencil, Trash2, CheckCircle2, Repeat, ExternalLink } from "lucide-react
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
 import { DueBadge } from "@/components/due-badge";
+import { formatTRY } from '@/lib/currency';
 
 export type Bill = {
   id: string;
@@ -72,11 +73,11 @@ export const columns: ColumnDef<Bill>[] = [
         <div className="flex items-center gap-2">
           <EditableCell
             value={row.original.title}
-            className="font-medium text-foreground dark:text-foreground"
+            className="font-medium text-foreground"
             onSave={(v) => meta!.onCellEdit(row.original.id, 'title', v)}
           />
           {row.original.is_recurring && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground dark:text-muted-foreground shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
               <Repeat className="w-3 h-3" />
             </span>
           )}
@@ -90,16 +91,13 @@ export const columns: ColumnDef<Bill>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta as BillTableMeta | undefined;
       const amount = row.original.amount;
-      const formatted = new Intl.NumberFormat("tr-TR", {
-        style: "currency",
-        currency: "TRY",
-      }).format(amount);
+      const formatted = formatTRY(amount);
       return (
         <EditableCell
           type="number"
           step="0.01"
           value={amount}
-          display={<span className="font-mono font-medium text-foreground dark:text-foreground">{formatted}</span>}
+          display={<span className="font-mono font-medium text-foreground">{formatted}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
         />
       );
@@ -116,7 +114,7 @@ export const columns: ColumnDef<Bill>[] = [
           <EditableCell
             type="date"
             value={date ?? ''}
-            display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
+            display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground">-</span>}
             onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
           />
           <DueBadge dueDate={date} isSettled={row.original.status === 'odendi'} />
@@ -130,9 +128,9 @@ export const columns: ColumnDef<Bill>[] = [
     cell: ({ row }) => {
       const isRecurring = row.original.is_recurring;
       const period = row.getValue("recurrence_period") as string | null;
-      if (!isRecurring) return <span className="text-muted-foreground dark:text-muted-foreground text-sm">Tek seferlik</span>;
+      if (!isRecurring) return <span className="text-muted-foreground text-sm">Tek seferlik</span>;
       const label = period === 'aylik' ? 'Aylık' : period === 'yillik' ? 'Yıllık' : period;
-      return <span className="text-sm text-muted-foreground dark:text-muted-foreground">{label}</span>;
+      return <span className="text-sm text-muted-foreground">{label}</span>;
     },
   },
   {
@@ -154,7 +152,7 @@ export const columns: ColumnDef<Bill>[] = [
     header: "Belge",
     cell: ({ row }) => {
       const url = row.original.receipt_url;
-      if (!url) return <span className="text-xs text-muted-foreground dark:text-muted-foreground">-</span>;
+      if (!url) return <span className="text-xs text-muted-foreground">-</span>;
       return (
         <a
           href={url}

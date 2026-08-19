@@ -12,12 +12,13 @@ import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
+import { formatTRY } from '@/lib/currency';
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
 
+import { formatCurrency } from '@/lib/currency';
 export default function VarlikPage() {
   const { role, loading: roleLoading } = useTeamRole();
   const canEdit = roleLoading || !role || canEditData(role);
@@ -195,67 +196,89 @@ export default function VarlikPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Varlık ve Birikimler</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Ev, araba, gayrimenkul ve diğer maddi varlıklarınızı buradan takip edin.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <>
-              <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className="btn-outline"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                Excel&apos;den Yapıştır
-              </button>
-              <button
-                onClick={() => { resetForm(); setIsModalOpen(true); }}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-              >
-                <Plus className="h-4 w-4" />
-                Yeni Varlık Ekle
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        icon={PiggyBank}
+        title="Varlık ve Birikimler"
+        description="Ev, araba, gayrimenkul ve diğer maddi varlıklarınızı buradan takip edin."
+        actions={
+          <>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="btn-outline"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Excel&apos;den Yapıştır
+                </button>
+                <button
+                  onClick={() => { resetForm(); setIsModalOpen(true); }}
+                  className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Yeni Varlık Ekle
+                </button>
+              </>
+            )}
+          </div>
+          </>
+        }
+      />
+
 
       {/* Toplam Varlık Özet Kartı */}
       <div className="card-static">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Toplam Varlık Değeri</span>
+          <span className="text-sm font-medium text-muted-foreground">Toplam Varlık Değeri</span>
           <PiggyBank className="h-5 w-5 text-purple-500" />
         </div>
-        <div className="mt-2 text-3xl font-bold text-foreground dark:text-foreground">{formatTRY(totalValue)}</div>
+        <div className="mt-2 text-3xl font-bold text-foreground">{formatTRY(totalValue)}</div>
       </div>
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={5} />
       ) : (
-        <DataTable
-          columns={columns}
-          data={data}
-          meta={{
-            canEdit,
-            onEdit: handleOpenEditModal,
-            onDelete: handleDelete,
-            onCellEdit: handleCellEdit,
-          }}
-        />
+        <>
+          {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+              6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+              alışkanlığını bozuyor. */}
+          <div className="md:hidden">
+            <MobileListCard>
+              <MobileList
+                emptyText="Kayıtlı varlık yok."
+                rows={data.map((a) => ({
+                  id: a.id,
+                  title: a.asset_name,
+                  subtitle: a.asset_type ?? 'Varlık',
+                  icon: PiggyBank,
+                  value: formatCurrency(a.current_value, a.currency),
+                }))}
+              />
+            </MobileListCard>
+          </div>
+
+          <div className="hidden md:block">
+  <DataTable
+            columns={columns}
+            data={data}
+            meta={{
+              canEdit,
+              onEdit: handleOpenEditModal,
+              onDelete: handleDelete,
+              onCellEdit: handleCellEdit,
+            }}
+          />
+          </div>
+        </>
       )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -325,14 +348,14 @@ export default function VarlikPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

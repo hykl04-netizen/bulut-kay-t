@@ -116,7 +116,7 @@ export default function KayitOlPage() {
       <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
-            <Wallet className="text-white w-7 h-7" />
+            <Wallet className="text-primary-foreground w-7 h-7" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">FinansApp&apos;e kaydolun</h1>
           <p className="text-muted-foreground text-sm mt-1">İşletmenizin finansını dakikalar içinde toplayın</p>
@@ -195,7 +195,7 @@ export default function KayitOlPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-secondary disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+            className="w-full bg-primary hover:opacity-90 disabled:bg-slate-400 text-primary-foreground font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
           >
             {loading ? 'Hesap oluşturuluyor...' : 'Hesap Oluştur'}
             {!loading && <ArrowRight className="w-4 h-4" />}

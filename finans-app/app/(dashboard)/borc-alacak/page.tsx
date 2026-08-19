@@ -13,6 +13,12 @@ import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
+
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 export default function BorcAlacakPage() {
   const { role, loading: roleLoading } = useTeamRole();
   const canEdit = roleLoading || !role || canEditData(role);
@@ -172,58 +178,84 @@ export default function BorcAlacakPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Borç ve Alacaklar</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Kişi ve kurumlara olan borçlarınızı ve alacaklarınızı buradan yönetin.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <>
-              <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className="btn-outline"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                Excel&apos;den Yapıştır
-              </button>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-              >
-                <Plus className="h-4 w-4" />
-                Yeni Kayıt Ekle
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Borç ve Alacaklar"
+        description="Kişi ve kurumlara olan borçlarınızı ve alacaklarınızı buradan yönetin."
+        actions={
+          <>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="btn-outline"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Excel&apos;den Yapıştır
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Yeni Kayıt Ekle
+                </button>
+              </>
+            )}
+          </div>
+          </>
+        }
+      />
+
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={5} />
       ) : (
-        <DataTable
-          columns={columns}
-          data={debts}
-          meta={{
-            canEdit,
-            onDelete: handleDelete,
-            onToggleStatus: handleToggleStatus,
-            onCellEdit: handleCellEdit,
-          }}
-        />
+        <>
+          {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+              6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+              alışkanlığını bozuyor. */}
+          <div className="md:hidden">
+            <MobileListCard>
+              <MobileList
+                emptyText="Kayıtlı borç veya alacak yok."
+                rows={debts.map((d) => ({
+                  id: d.id,
+                  title: d.counterparty,
+                  subtitle: d.due_date ? `Vade ${new Date(d.due_date + 'T00:00:00').toLocaleDateString('tr-TR')}` : 'Vade yok',
+                  icon: d.direction === 'alacak' ? ArrowDownLeft : ArrowUpRight,
+                  accentColor: d.direction === 'alacak' ? '#059669' : '#e11d48',
+                  value: formatCurrency(d.amount, d.currency),
+                  valueNote: d.direction === 'alacak' ? 'Alacak' : 'Borç',
+                  badge: d.status === 'kapandi' ? (
+                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Kapandı</span>
+                  ) : undefined,
+                }))}
+              />
+            </MobileListCard>
+          </div>
+
+          <div className="hidden md:block">
+  <DataTable
+            columns={columns}
+            data={debts}
+            meta={{
+              canEdit,
+              onDelete: handleDelete,
+              onToggleStatus: handleToggleStatus,
+              onCellEdit: handleCellEdit,
+            }}
+          />
+          </div>
+        </>
       )}
 
       {/* Ekleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">Yeni Borç / Alacak Ekle</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -238,7 +270,7 @@ export default function BorcAlacakPage() {
                     type="button"
                     onClick={() => setDirection('alacak')}
                     className={`rounded-xl py-2 text-sm font-medium transition ${
-                      direction === 'alacak' ? 'bg-emerald-600 text-white shadow' : 'bg-secondary text-muted-foreground dark:bg-secondary dark:text-muted-foreground'
+                      direction === 'alacak' ? 'bg-emerald-600 text-white shadow' : 'bg-secondary text-muted-foreground'
                     }`}
                   >
                     Alacak (Bana Ödenecek)
@@ -247,7 +279,7 @@ export default function BorcAlacakPage() {
                     type="button"
                     onClick={() => setDirection('borc')}
                     className={`rounded-xl py-2 text-sm font-medium transition ${
-                      direction === 'borc' ? 'bg-rose-600 text-white shadow' : 'bg-secondary text-muted-foreground dark:bg-secondary dark:text-muted-foreground'
+                      direction === 'borc' ? 'bg-rose-600 text-white shadow' : 'bg-secondary text-muted-foreground'
                     }`}
                   >
                     Borç (Ben Ödeyeceğim)
@@ -306,14 +338,14 @@ export default function BorcAlacakPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>

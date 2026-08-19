@@ -30,6 +30,7 @@ import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { PageLoading } from '@/components/ui/skeleton';
 /**
  * Faz 5 — fatura oluşturma/düzenleme formu. Hem /faturalar/yeni hem
  * /faturalar/[id] tarafından kullanılır.
@@ -276,10 +277,7 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
@@ -567,7 +565,7 @@ export function InvoiceForm({ invoiceId }: { invoiceId?: string }) {
             <button
               onClick={() => handleSave('gonderildi')}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Gönderildi Olarak Kaydet

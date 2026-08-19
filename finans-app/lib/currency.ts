@@ -78,10 +78,61 @@ export function convertToTRY(amount: number, exchangeRate: number): number {
   return Math.round(amount * exchangeRate * 100) / 100;
 }
 
-export function formatCurrency(amount: number, currency: string): string {
+// ---------------------------------------------------------------------------
+// Para biçimlendirme — TEK KAYNAK
+//
+// Bu üç fonksiyon uygulamadaki tüm tutar gösterimlerinin tek kaynağıdır.
+// Daha önce 19 ayrı dosyada `new Intl.NumberFormat('tr-TR', ...)` kopyası
+// vardı; kuruş gösterimi ve para birimi davranışı dosyadan dosyaya
+// kayıyordu. Yeni kodda doğrudan bunları kullanın, yerel formatter tanımlamayın.
+//
+// Intl.NumberFormat örneği oluşturmak pahalıdır (her çağrıda locale verisi
+// çözümlenir), bu yüzden örnekler anahtara göre önbelleklenir.
+// ---------------------------------------------------------------------------
+
+interface MoneyOptions {
+  /** Varsayılan 2. Rapor/özet kartlarında kuruşu gizlemek için 0 verin. */
+  maximumFractionDigits?: number;
+  minimumFractionDigits?: number;
+}
+
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
+function getFormatter(currency: string, options: MoneyOptions): Intl.NumberFormat {
+  const key = `${currency}|${options.maximumFractionDigits ?? ''}|${options.minimumFractionDigits ?? ''}`;
+  const cached = formatterCache.get(key);
+  if (cached) return cached;
+  const created = new Intl.NumberFormat('tr-TR', { style: 'currency', currency, ...options });
+  formatterCache.set(key, created);
+  return created;
+}
+
+/**
+ * Tutarı Türkçe biçimde, para birimi simgesiyle döndürür.
+ * Geçersiz bir para birimi kodu gelirse (kullanıcı verisinden gelebilir)
+ * Intl hata fırlatır; bu durumda sade bir yedek biçim döneriz.
+ */
+export function formatCurrency(
+  amount: number,
+  currency: string = 'TRY',
+  options: MoneyOptions = {}
+): string {
   try {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount);
+    return getFormatter(currency, options).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${currency}`;
+    return `${amount.toFixed(options.maximumFractionDigits ?? 2)} ${currency}`;
   }
+}
+
+/** `formatCurrency(amount, 'TRY')` kısayolu — en sık kullanılan biçim. */
+export function formatTRY(amount: number): string {
+  return formatCurrency(amount, 'TRY');
+}
+
+/**
+ * Kuruşsuz TL — özet kartları, bütçe ve rapor başlıklarında sayıyı
+ * okunur tutmak için kullanılır (örn. "₺12.480").
+ */
+export function formatTRYWhole(amount: number): string {
+  return formatCurrency(amount, 'TRY', { maximumFractionDigits: 0 });
 }

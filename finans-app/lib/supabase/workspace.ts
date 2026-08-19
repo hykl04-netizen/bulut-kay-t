@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import type { TeamRole } from '@/lib/team';
+import type { WorkspaceType } from '@/lib/workspace-types';
 
 const CURRENT_WORKSPACE_COOKIE = 'finansapp_workspace_id';
 const COOKIE_MAX_AGE_DAYS = 365;
@@ -9,6 +10,8 @@ export interface WorkspaceSummary {
   name: string;
   role: TeamRole;
   isOwner: boolean;
+  /** Faz 11 — hesap tipi. Migration uygulanmamışsa 'sirket'e düşer. */
+  type: WorkspaceType;
 }
 
 /**
@@ -22,14 +25,23 @@ export interface WorkspaceSummary {
 export async function getUserWorkspaces(): Promise<WorkspaceSummary[]> {
   const { data, error } = await supabase.rpc('get_user_workspaces');
   if (error || !data) return [];
-  return (data as Array<{ workspace_id: string; name: string; role: string; is_owner: boolean }>).map(
-    (row) => ({
-      workspaceId: row.workspace_id,
-      name: row.name,
-      role: row.role as TeamRole,
-      isOwner: row.is_owner,
-    })
-  );
+  return (
+    data as Array<{
+      workspace_id: string;
+      name: string;
+      role: string;
+      is_owner: boolean;
+      type?: string | null;
+    }>
+  ).map((row) => ({
+    workspaceId: row.workspace_id,
+    name: row.name,
+    role: row.role as TeamRole,
+    isOwner: row.is_owner,
+    // Faz 11 migration'ı henüz uygulanmadıysa RPC bu kolonu döndürmez;
+    // eski davranış (her şey işletme) korunur.
+    type: (row.type as WorkspaceType | null) ?? 'sirket',
+  }));
 }
 
 function readCookie(name: string): string | null {
@@ -79,13 +91,30 @@ export function setCurrentWorkspaceId(workspaceId: string) {
   writeCookie(CURRENT_WORKSPACE_COOKIE, workspaceId);
 }
 
-/** Yeni bir workspace (işletme) oluşturur ve otomatik olarak aktif seçim yapar. */
-export async function createWorkspace(name: string): Promise<string> {
-  const { data, error } = await supabase.rpc('create_workspace', { p_name: name });
+/**
+ * Yeni bir hesap (workspace) oluşturur ve otomatik olarak aktif seçim yapar.
+ * `type` verilmezse DB tarafındaki varsayılan 'sirket' kullanılır.
+ */
+export async function createWorkspace(name: string, type: WorkspaceType = 'sirket'): Promise<string> {
+  const { data, error } = await supabase.rpc('create_workspace', { p_name: name, p_type: type });
   if (error || !data) {
-    throw new Error(error?.message ?? 'İşletme oluşturulamadı.');
+    throw new Error(error?.message ?? 'Hesap oluşturulamadı.');
   }
   const workspaceId = data as string;
   setCurrentWorkspaceId(workspaceId);
   return workspaceId;
+}
+
+/**
+ * Seçili hesabın tipini döner. Kolon/migration yoksa 'sirket' döner —
+ * yani menü eski haliyle tam görünür, hiçbir ekran kaybolmaz.
+ */
+export async function getWorkspaceType(workspaceId: string): Promise<WorkspaceType> {
+  const { data, error } = await supabase
+    .from('workspaces')
+    .select('type')
+    .eq('id', workspaceId)
+    .maybeSingle();
+  if (error || !data) return 'sirket';
+  return ((data as { type: string | null }).type as WorkspaceType | null) ?? 'sirket';
 }

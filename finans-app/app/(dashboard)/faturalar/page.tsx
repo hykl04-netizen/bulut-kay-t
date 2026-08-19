@@ -9,17 +9,28 @@ import {
   fetchInvoices,
   formatMoney,
   resolveStatus,
-  STATUS_CLASSES,
   STATUS_LABELS,
   type DisplayStatus,
   type InvoiceWithCustomer,
 } from '@/lib/invoices';
 import { toast } from '@/components/ui/toaster';
+import { DataTable } from '@/components/data-table/data-table';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { invoiceColumns } from './columns';
+
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
 
 /**
  * Faz 5 — kesilen faturaların listesi. "Gecikti" durumu saklanmıyor,
  * vade tarihinden türetiliyor (bkz. lib/invoices.ts → resolveStatus).
  */
+
+function formatDate(value: string | null): string {
+  if (!value) return '—';
+  return new Date(`${value}T00:00:00`).toLocaleDateString('tr-TR');
+}
 
 const FILTERS: { key: DisplayStatus | 'hepsi'; label: string }[] = [
   { key: 'hepsi', label: 'Hepsi' },
@@ -29,11 +40,6 @@ const FILTERS: { key: DisplayStatus | 'hepsi'; label: string }[] = [
   { key: 'odendi', label: 'Ödendi' },
   { key: 'iptal', label: 'İptal' },
 ];
-
-function formatDate(value: string | null): string {
-  if (!value) return '—';
-  return new Date(`${value}T00:00:00`).toLocaleDateString('tr-TR');
-}
 
 export default function FaturalarPage() {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
@@ -73,23 +79,20 @@ export default function FaturalarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <FileText className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground">Kesilen Faturalar</h1>
-        </div>
-        <Link
-          href="/faturalar/yeni"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-secondary transition"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Fatura
-        </Link>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Müşterilerinize kestiğiniz satış faturaları. Bu belgeler resmi e-Fatura değildir;
-        PDF olarak indirilip paylaşılabilen ticari faturalardır.
-      </p>
+      <PageHeader
+        icon={FileText}
+        title="Kesilen Faturalar"
+        description="Müşterilerinize kestiğiniz satış faturaları. Bu belgeler resmi e-Fatura değildir; PDF olarak indirilip paylaşılabilen ticari faturalardır."
+        actions={
+          <Link
+            href="/faturalar/yeni"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Fatura
+          </Link>
+        }
+      />
 
       {/* Özet */}
       {!loading && invoices.length > 0 && (
@@ -120,11 +123,7 @@ export default function FaturalarPage() {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              filter === f.key
-                ? 'bg-primary text-white'
-                : 'border border-border bg-card text-muted-foreground hover:bg-muted'
-            }`}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${ filter === f.key ? 'bg-primary text-primary-foreground' : 'border border-border bg-card text-muted-foreground hover:bg-muted' }`}
           >
             {f.label}
           </button>
@@ -132,59 +131,51 @@ export default function FaturalarPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Yükleniyor...</p>
+        <TableSkeleton columns={6} />
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="font-medium text-foreground">
-            {invoices.length === 0 ? 'Henüz fatura kesilmemiş.' : 'Bu filtreye uyan fatura yok.'}
-          </p>
-          {invoices.length === 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Başlamak için önce{' '}
-              <Link href="/cariler" className="text-primary hover:underline">
-                bir cari ekleyin
-              </Link>
-              , sonra fatura oluşturun.
-            </p>
-          )}
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={invoices.length === 0 ? 'Henüz fatura kesilmemiş.' : 'Bu filtreye uyan fatura yok.'}
+          description={
+            invoices.length === 0 ? (
+              <>
+                Başlamak için önce{' '}
+                <Link href="/cariler" className="text-primary hover:underline">
+                  bir cari ekleyin
+                </Link>
+                , sonra fatura oluşturun.
+              </>
+            ) : (
+              'Farklı bir durum filtresi seçmeyi deneyin.'
+            )
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">No</th>
-                <th className="px-4 py-3 font-medium">Cari</th>
-                <th className="px-4 py-3 font-medium">Tarih</th>
-                <th className="px-4 py-3 font-medium">Vade</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
-                <th className="px-4 py-3 text-right font-medium">Tutar</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {visible.map((inv) => (
-                <tr key={inv.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <Link href={`/faturalar/${inv.id}`} className="font-medium text-primary hover:underline">
-                      {inv.invoice_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-foreground">{inv.customers?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(inv.issue_date)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(inv.due_date)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[inv.display]}`}>
-                      {STATUS_LABELS[inv.display]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium text-foreground">
-                    {formatMoney(Number(inv.total), inv.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+              6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+              alışkanlığını bozuyor. */}
+          <div className="md:hidden">
+            <MobileListCard>
+              <MobileList
+                emptyText="Fatura yok."
+                rows={visible.map((inv) => ({
+                  id: inv.id,
+                  title: inv.customers?.name ?? inv.invoice_number,
+                  subtitle: `${inv.invoice_number} · ${formatDate(inv.issue_date)}`,
+                  icon: FileText,
+                  value: formatMoney(Number(inv.total), inv.currency),
+                  valueNote: STATUS_LABELS[inv.display],
+                  href: `/faturalar/${inv.id}`,
+                }))}
+              />
+            </MobileListCard>
+          </div>
+
+          <div className="hidden md:block">
+  <DataTable columns={invoiceColumns} data={visible} />
+          </div>
+        </>
       )}
     </div>
   );

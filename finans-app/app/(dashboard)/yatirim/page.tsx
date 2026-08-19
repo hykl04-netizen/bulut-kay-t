@@ -13,12 +13,13 @@ import { fetchMarketPrice, isMarketPriceError } from '@/lib/market-price';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
+import { formatTRY } from '@/lib/currency';
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
 
+import { formatCurrency } from '@/lib/currency';
 export default function YatirimPage() {
   const { role, loading: roleLoading } = useTeamRole();
   const canEdit = roleLoading || !role || canEditData(role);
@@ -226,86 +227,109 @@ export default function YatirimPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Yatırım Portföyü</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Hisse senetleri, döviz, kripto varlıklar ve kıymetli madenlerinizi buradan takip edin.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <button
-              onClick={handleRefreshAllPrices}
-              disabled={isRefreshingAll || investments.length === 0}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:text-foreground dark:hover:bg-secondary"
-            >
-              {isRefreshingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Tüm Fiyatları Güncelle
-            </button>
-          )}
-          {canEdit && (
-            <>
+      <PageHeader
+        icon={TrendingUp}
+        title="Yatırım Portföyü"
+        description="Hisse senetleri, döviz, kripto varlıklar ve kıymetli madenlerinizi buradan takip edin."
+        actions={
+          <>
+          <div className="flex items-center gap-2">
+            {canEdit && (
               <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className="btn-outline"
+                onClick={handleRefreshAllPrices}
+                disabled={isRefreshingAll || investments.length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-secondary"
               >
-                <ClipboardPaste className="h-4 w-4" />
-                Excel&apos;den Yapıştır
+                {isRefreshingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Tüm Fiyatları Güncelle
               </button>
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setAssetType('hisse');
-                  setSymbol('');
-                  setQuantity('');
-                  setAvgCost('');
-                  setCurrentPrice('');
-                  setCurrency('TRY');
-                  setIsModalOpen(true);
-                }}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-              >
-                <Plus className="h-4 w-4" />
-                Yeni Yatırım Ekle
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+            )}
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="btn-outline"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Excel&apos;den Yapıştır
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setAssetType('hisse');
+                    setSymbol('');
+                    setQuantity('');
+                    setAvgCost('');
+                    setCurrentPrice('');
+                    setCurrency('TRY');
+                    setIsModalOpen(true);
+                  }}
+                  className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Yeni Yatırım Ekle
+                </button>
+              </>
+            )}
+          </div>
+          </>
+        }
+      />
+
 
       {/* Portföy Özet Kartı */}
       <div className="card-static">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Toplam Portföy Değeri</span>
+          <span className="text-sm font-medium text-muted-foreground">Toplam Portföy Değeri</span>
           <TrendingUp className="h-5 w-5 text-blue-500" />
         </div>
-        <div className="mt-2 text-3xl font-bold text-foreground dark:text-foreground">{formatTRY(totalPortfolioValue)}</div>
+        <div className="mt-2 text-3xl font-bold text-foreground">{formatTRY(totalPortfolioValue)}</div>
       </div>
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={6} />
       ) : (
-        <DataTable
-          columns={columns}
-          data={investments}
-          meta={{
-            canEdit,
-            onEdit: handleOpenEditModal,
-            onDelete: handleDelete,
-            onCellEdit: handleCellEdit,
-          }}
-        />
+        <>
+          {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+              6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+              alışkanlığını bozuyor. */}
+          <div className="md:hidden">
+            <MobileListCard>
+              <MobileList
+                emptyText="Kayıtlı yatırım yok."
+                rows={investments.map((iv) => ({
+                  id: iv.id,
+                  title: iv.symbol,
+                  subtitle: `${iv.quantity.toLocaleString('tr-TR', { maximumFractionDigits: 8 })} adet · ${iv.asset_type}`,
+                  icon: TrendingUp,
+                  value: formatCurrency(iv.quantity * (iv.current_price ?? iv.avg_cost ?? 0), iv.currency),
+                  valueNote: iv.current_price === null ? 'Fiyat girilmedi' : undefined,
+                }))}
+              />
+            </MobileListCard>
+          </div>
+
+          <div className="hidden md:block">
+  <DataTable
+            columns={columns}
+            data={investments}
+            meta={{
+              canEdit,
+              onEdit: handleOpenEditModal,
+              onDelete: handleDelete,
+              onCellEdit: handleCellEdit,
+            }}
+          />
+          </div>
+        </>
       )}
 
       {/* Ekleme / Düzenleme Modalı */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'Yatırımı Düzenle' : 'Yeni Yatırım Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -393,7 +417,7 @@ export default function YatirimPage() {
                         setCurrentPrice(result.price.toString());
                         toast.success(`Fiyat çekildi: ${result.price} ${result.currency}${result.note ? ' — ' + result.note : ''}`);
                       }}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-gold hover:text-brand-gold-light disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-gold-light"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-gold hover:text-brand-gold-light disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isFetchingPrice ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                       Piyasadan Çek
@@ -414,14 +438,14 @@ export default function YatirimPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

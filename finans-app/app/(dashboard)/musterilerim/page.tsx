@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Briefcase, ArrowRight, Loader2 } from 'lucide-react';
+import { Briefcase, ArrowRight } from 'lucide-react';
 import {
   getUserWorkspaces,
   getCurrentWorkspaceId,
@@ -10,6 +10,9 @@ import {
 } from '@/lib/supabase/workspace';
 import { supabase } from '@/lib/supabase/client';
 import { ROLE_LABELS } from '@/lib/team';
+import { PageLoading } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 
 /**
  * Faz 6 — muhasebecinin "müşterilerim" görünümü.
@@ -61,30 +64,24 @@ export default function MusterilerimPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Briefcase className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground">Müşterilerim</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Erişiminiz olan işletmeler. Birine geçtiğinizde tüm sayfalar o işletmenin verilerini gösterir.
-      </p>
+      <PageHeader
+        icon={Briefcase}
+        title="Müşterilerim"
+        description="Erişiminiz olan işletmeler. Birine geçtiğinizde tüm sayfalar o işletmenin verilerini gösterir."
+      />
 
       {clients.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="font-medium text-foreground">Henüz başka bir işletmeye davet edilmediniz.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bir müşteriniz sizi muhasebeci olarak eklediğinde işletmesi burada görünür.
-          </p>
-        </div>
+        <EmptyState
+          icon={Briefcase}
+          title="Henüz başka bir işletmeye davet edilmediniz."
+          description="Bir müşteriniz sizi muhasebeci olarak eklediğinde işletmesi burada görünür."
+        />
       ) : (
         <div className="space-y-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -102,7 +99,7 @@ export default function MusterilerimPage() {
                     <p className="mt-0.5 text-xs text-muted-foreground">{ROLE_LABELS[w.role]}</p>
                   </div>
                   {w.workspaceId === currentId ? (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-white">
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
                       Aktif
                     </span>
                   ) : (
@@ -129,7 +126,7 @@ export default function MusterilerimPage() {
                 >
                   <p className="truncate font-medium text-foreground">{w.name}</p>
                   {w.workspaceId === currentId ? (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-white">
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
                       Aktif
                     </span>
                   ) : (

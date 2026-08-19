@@ -6,17 +6,21 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, ClipboardPaste, X } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
+import { TransactionList } from '@/components/finans/transaction-list';
 import { AdvancedFilterBar, applyAdvancedFilter, EMPTY_ADVANCED_FILTER, type AdvancedFilterValue } from '@/components/data-table/advanced-filter';
 import { columns, type Transaction } from './columns';
 import { BulkPasteModal } from './bulk-paste-modal';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { SUPPORTED_CURRENCIES, SupportedCurrency, fetchRateToTRY, convertToTRY, formatCurrency } from '@/lib/currency';
+
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 interface Category {
   id: string;
   name: string;
@@ -310,34 +314,35 @@ export default function GelirGiderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Gelir ve Gider Yönetimi</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Finansal hareketlerinizi profesyonel kategorilerle takip edin, faturalarınızı ekleyin.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <>
-              <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className="btn-outline"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                Excel&apos;den Yapıştır
-              </button>
-              <button
-                onClick={handleOpenAddModal}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-              >
-                <Plus className="h-4 w-4" />
-                Yeni İşlem Ekle
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Gelir ve Gider Yönetimi"
+        description="Finansal hareketlerinizi profesyonel kategorilerle takip edin, faturalarınızı ekleyin."
+        actions={
+          <>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="btn-outline"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Excel&apos;den Yapıştır
+                </button>
+                <button
+                  onClick={handleOpenAddModal}
+                  className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Yeni İşlem Ekle
+                </button>
+              </>
+            )}
+          </div>
+          </>
+        }
+      />
+
 
       {/* Arama ve Gelişmiş Filtreleme */}
       {!loading && (
@@ -352,26 +357,49 @@ export default function GelirGiderPage() {
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={6} />
       ) : (
         <>
           {filteredTransactions.length === 0 && transactions.length > 0 && (
-            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Filtrelere uyan kayıt bulunamadı ({transactions.length} kayıttan 0&apos;ı gösteriliyor).
             </p>
           )}
-          <DataTable
-            columns={columns}
-            data={filteredTransactions}
-            meta={{
-              canEdit,
-              onEdit: handleOpenEditModal,
-              onDelete: handleDelete,
-              onCellEdit: handleCellEdit,
-            }}
-          />
+          {/* Telefonda banka tarzı liste, masaüstünde tablo.
+              6 sütunlu bir tablo 390px'e sığmıyor; yatay kaydırma da
+              tarama alışkanlığını bozuyor. Aynı veri, iki sunum. */}
+          <div className="md:hidden">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+              <TransactionList
+                rows={filteredTransactions.map((t) => ({
+                  id: t.id,
+                  title: t.description || t.category?.name || 'Kayıt',
+                  subtitle: t.category?.name ?? null,
+                  date: t.date,
+                  amount: Number(t.try_equivalent ?? t.amount),
+                  direction: t.type,
+                  accentColor: t.category?.color ?? null,
+                }))}
+                emptyText="Bu filtreye uyan kayıt yok."
+              />
+            </div>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Düzenlemek için geniş ekranda açın veya kaydın üzerine dokunun.
+            </p>
+          </div>
+
+          <div className="hidden md:block">
+            <DataTable
+              columns={columns}
+              data={filteredTransactions}
+              meta={{
+                canEdit,
+                onEdit: handleOpenEditModal,
+                onDelete: handleDelete,
+                onCellEdit: handleCellEdit,
+              }}
+            />
+          </div>
         </>
       )}
 
@@ -379,7 +407,7 @@ export default function GelirGiderPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -396,7 +424,7 @@ export default function GelirGiderPage() {
                     className={`rounded-xl py-2 text-sm font-medium transition ${
                       type === 'gelir'
                         ? 'bg-emerald-600 text-white shadow'
-                        : 'bg-secondary text-muted-foreground dark:bg-secondary dark:text-muted-foreground'
+                        : 'bg-secondary text-muted-foreground'
                     }`}
                   >
                     Gelir
@@ -407,7 +435,7 @@ export default function GelirGiderPage() {
                     className={`rounded-xl py-2 text-sm font-medium transition ${
                       type === 'gider'
                         ? 'bg-rose-600 text-white shadow'
-                        : 'bg-secondary text-muted-foreground dark:bg-secondary dark:text-muted-foreground'
+                        : 'bg-secondary text-muted-foreground'
                     }`}
                   >
                     Gider
@@ -445,7 +473,7 @@ export default function GelirGiderPage() {
                     <select
                       value={currency}
                       onChange={(e) => handleCurrencyChange(e.target.value as SupportedCurrency)}
-                      className="w-24 shrink-0 rounded-xl border border-border bg-transparent px-2 py-2 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+                      className="w-24 shrink-0 rounded-xl border border-border bg-transparent px-2 py-2 text-sm focus:border-accent focus:outline-none dark:text-foreground"
                     >
                       {SUPPORTED_CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code} className="dark:bg-popover dark:text-popover-foreground">{c.code}</option>
@@ -456,9 +484,9 @@ export default function GelirGiderPage() {
               </div>
 
               {currency !== 'TRY' && (
-                <div className="grid grid-cols-2 gap-4 rounded-xl border border-border p-3 dark:border-border">
+                <div className="grid grid-cols-2 gap-4 rounded-xl border border-border p-3">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
                       Kur (1 {currency} = ? TL) {isFetchingRate && <span className="italic">güncelleniyor...</span>}
                     </label>
                     <input
@@ -470,8 +498,8 @@ export default function GelirGiderPage() {
                     />
                   </div>
                   <div className="flex flex-col justify-end">
-                    <span className="text-xs text-muted-foreground dark:text-muted-foreground">TL Karşılığı</span>
-                    <span className="font-medium text-foreground dark:text-foreground">
+                    <span className="text-xs text-muted-foreground">TL Karşılığı</span>
+                    <span className="font-medium text-foreground">
                       {formatCurrency(convertToTRY(parseFloat(amount) || 0, parseFloat(exchangeRate) || 1), 'TRY')}
                     </span>
                   </div>
@@ -502,7 +530,7 @@ export default function GelirGiderPage() {
               </div>
 
               {/* Tekrarlayan işlem otomasyonu */}
-              <div className="rounded-xl border border-border p-3 dark:border-border">
+              <div className="rounded-xl border border-border p-3">
                 <label className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-muted-foreground">
                   <input
                     type="checkbox"
@@ -515,7 +543,7 @@ export default function GelirGiderPage() {
                 {isRecurring && (
                   <div className="mt-3 grid grid-cols-2 gap-4">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Sıklık</label>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Sıklık</label>
                       <select
                         value={recurrencePeriod}
                         onChange={(e) => setRecurrencePeriod(e.target.value)}
@@ -526,7 +554,7 @@ export default function GelirGiderPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
                       <input
                         type="date"
                         value={recurrenceEndDate}
@@ -549,14 +577,14 @@ export default function GelirGiderPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

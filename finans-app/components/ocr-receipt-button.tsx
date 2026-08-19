@@ -71,7 +71,7 @@ export function OcrReceiptButton({ onExtracted, className = '' }: OcrReceiptButt
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isLoading}
-        className={`inline-flex items-center gap-1.5 rounded-lg border border-dashed border-brand-gold/60 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60 dark:text-brand-gold-light ${className}`}
+        className={`inline-flex items-center gap-1.5 rounded-lg border border-dashed border-brand-gold/60 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanLine className="h-3.5 w-3.5" />}
         {isLoading ? 'Fiş okunuyor...' : 'Fişten Otomatik Doldur'}

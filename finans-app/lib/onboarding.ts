@@ -1,4 +1,5 @@
 import { supabase } from './supabase/client';
+import type { WorkspaceType } from './workspace-types';
 
 /**
  * Faz 2 — self-servis kayıt sonrası kurulum sihirbazı.
@@ -26,6 +27,12 @@ export interface BusinessTemplate {
   label: string;
   description: string;
   categories: CategorySeed[];
+  /**
+   * Faz 11 — bu şablonun hangi hesap tiplerinde gösterileceği.
+   * Aile hesabında "Pazaryeri Komisyonu" önermek anlamsız; işletme
+   * hesabında "Okul / Kurs" önermek de öyle.
+   */
+  types: WorkspaceType[];
 }
 
 // Kategori renkleri — /kategoriler sayfasındaki PRESET_COLORS paletiyle aynı
@@ -43,7 +50,26 @@ const GIDER_MALIYET = '#d946ef';
 
 export const BUSINESS_TEMPLATES: BusinessTemplate[] = [
   {
+    key: 'aile',
+    types: ['aile'],
+    label: 'Ev / Aile Bütçesi',
+    description: 'Maaş, kira, market ve faturalar — evin aylık düzeni için hazır set.',
+    categories: [
+      { name: 'Maaş', type: 'gelir', color: GELIR },
+      { name: 'Ek Gelir', type: 'gelir', color: GELIR_ALT },
+      { name: 'Market / Gıda', type: 'gider', color: GIDER_MALIYET },
+      { name: 'Kira / Aidat', type: 'gider', color: GIDER_KIRA },
+      { name: 'Faturalar (Elektrik, Su, Doğalgaz, İnternet)', type: 'gider', color: GIDER_FATURA },
+      { name: 'Ulaşım / Yakıt', type: 'gider', color: GIDER_LOJISTIK },
+      { name: 'Okul / Kurs', type: 'gider', color: GIDER_PERSONEL },
+      { name: 'Sağlık / İlaç', type: 'gider', color: GIDER_PAZARLAMA },
+      { name: 'Giyim', type: 'gider', color: GIDER_DIGER },
+      { name: 'Eğlence / Dışarıda Yemek', type: 'gider', color: GIDER_VERGI },
+    ],
+  },
+  {
     key: 'hizmet',
+    types: ['sirket', 'musavir_ofisi'],
     label: 'Hizmet / Danışmanlık',
     description: 'Proje ve danışmanlık geliri, ofis ve yazılım giderleri.',
     categories: [
@@ -59,6 +85,7 @@ export const BUSINESS_TEMPLATES: BusinessTemplate[] = [
   },
   {
     key: 'eticaret',
+    types: ['sirket', 'musavir_ofisi'],
     label: 'E-ticaret',
     description: 'Ürün satışı, kargo, pazaryeri komisyonu ve reklam giderleri.',
     categories: [
@@ -74,6 +101,7 @@ export const BUSINESS_TEMPLATES: BusinessTemplate[] = [
   },
   {
     key: 'perakende',
+    types: ['sirket', 'musavir_ofisi'],
     label: 'Perakende / Dükkan',
     description: 'Mağaza satışı, mal alımı, dükkan giderleri ve POS komisyonu.',
     categories: [
@@ -88,6 +116,7 @@ export const BUSINESS_TEMPLATES: BusinessTemplate[] = [
   },
   {
     key: 'genel',
+    types: ['sirket', 'musavir_ofisi'],
     label: 'Genel / Serbest Meslek',
     description: 'Her işe uyan sade başlangıç seti.',
     categories: [
@@ -105,6 +134,26 @@ export const BUSINESS_TEMPLATES: BusinessTemplate[] = [
 
 export function getTemplate(key: string): BusinessTemplate | undefined {
   return BUSINESS_TEMPLATES.find((t) => t.key === key);
+}
+
+/** Verilen hesap tipine uygun şablonlar. */
+export function templatesForType(type: WorkspaceType): BusinessTemplate[] {
+  return BUSINESS_TEMPLATES.filter((t) => t.types.includes(type));
+}
+
+/** Hesap tipi seçilir seçilmez ön seçili gelecek şablon. */
+export function defaultTemplateKey(type: WorkspaceType): string {
+  return templatesForType(type)[0]?.key ?? 'genel';
+}
+
+/**
+ * Faz 11 — hesap tipini kaydeder. Sihirbazın ilk adımında çağrılır.
+ * DB tarafında bir tetikleyici, muhasebecisi olan bir hesabın 'aile'ye
+ * çevrilmesini engeller (bkz. 20260826_workspace_types.sql).
+ */
+export async function setWorkspaceType(workspaceId: string, type: WorkspaceType): Promise<void> {
+  const { error } = await supabase.from('workspaces').update({ type }).eq('id', workspaceId);
+  if (error) throw new Error(error.message);
 }
 
 /**

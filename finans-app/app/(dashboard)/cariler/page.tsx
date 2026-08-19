@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Users2, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
+import { Users2, Plus, Loader2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { fetchCustomers, type Customer } from '@/lib/invoices';
@@ -9,6 +9,13 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DataTable } from '@/components/data-table/data-table';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { customerColumns, type CustomerTableMeta } from './columns';
+
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
 
 /**
  * Faz 5 — cari (müşteri) kartları. Fatura keserken alıcı bilgisi buradan
@@ -135,23 +142,25 @@ export default function CarilerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Users2 className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground">Cariler</h1>
-        </div>
-        <button
-          onClick={openNew}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-secondary transition"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Cari
-        </button>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Fatura kestiğiniz müşteri/firma bilgileri. Buraya girdiğiniz vergi numarası ve adres,
-        fatura PDF&apos;ine olduğu gibi yazdırılır.
-      </p>
+      <PageHeader
+        icon={Users2}
+        title="Cariler"
+        description={
+          <>
+            Fatura kestiğiniz müşteri/firma bilgileri. Buraya girdiğiniz vergi numarası ve adres,
+            fatura PDF&apos;ine olduğu gibi yazdırılır.
+          </>
+        }
+        actions={
+          <button
+            onClick={openNew}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Cari
+          </button>
+        }
+      />
 
       {formOpen && (
         <form
@@ -249,7 +258,7 @@ export default function CarilerPage() {
             <button
               type="submit"
               disabled={saving || !form.name.trim()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Kaydet
@@ -259,59 +268,50 @@ export default function CarilerPage() {
       )}
 
       {loading ? (
-        <p className="text-muted-foreground">Yükleniyor...</p>
+        <TableSkeleton columns={4} />
       ) : customers.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-foreground font-medium">Henüz cari eklenmemiş.</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Fatura kesebilmek için önce müşterinizi buraya ekleyin.
-          </p>
-        </div>
+        <EmptyState
+          icon={Users2}
+          title="Henüz cari eklenmemiş."
+          description="Fatura kesebilmek için önce müşterinizi buraya ekleyin."
+          action={
+            <button
+              onClick={openNew}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Yeni Cari
+            </button>
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Ünvan</th>
-                <th className="px-4 py-3 font-medium">Vergi No</th>
-                <th className="px-4 py-3 font-medium">İletişim</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium text-foreground">{customer.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {customer.tax_number ?? '—'}
-                    {customer.tax_office ? ` / ${customer.tax_office}` : ''}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {customer.email ?? customer.phone ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(customer)}
-                        aria-label={`${customer.name} düzenle`}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(customer)}
-                        aria-label={`${customer.name} sil`}
-                        className="rounded p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+              6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+              alışkanlığını bozuyor. */}
+          <div className="md:hidden">
+            <MobileListCard>
+              <MobileList
+                emptyText="Kayıtlı cari yok."
+                rows={customers.map((c) => ({
+                  id: c.id,
+                  title: c.name,
+                  subtitle: c.tax_number ? `VN ${c.tax_number}` : (c.email ?? c.phone ?? 'Bilgi yok'),
+                  icon: Users2,
+                  onClick: () => openEdit(c),
+                }))}
+              />
+            </MobileListCard>
+          </div>
+
+          <div className="hidden md:block">
+  <DataTable
+            columns={customerColumns}
+            data={customers}
+            meta={{ onEdit: openEdit, onDelete: handleDelete } satisfies CustomerTableMeta}
+          />
+          </div>
+        </>
       )}
     </div>
   );

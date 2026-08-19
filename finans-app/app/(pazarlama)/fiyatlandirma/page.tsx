@@ -31,12 +31,10 @@ export default function FiyatlandirmaPage() {
           return (
             <div
               key={plan.key}
-              className={`flex flex-col rounded-2xl border p-6 ${
-                highlighted ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card'
-              }`}
+              className={`flex flex-col rounded-2xl border p-6 ${ highlighted ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card' }`}
             >
               {highlighted && (
-                <span className="mb-3 w-fit rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-white">
+                <span className="mb-3 w-fit rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
                   En çok tercih edilen
                 </span>
               )}
@@ -74,11 +72,7 @@ export default function FiyatlandirmaPage() {
 
               <Link
                 href={plan.monthlyPrice === null ? '/iletisim' : '/kayit-ol'}
-                className={`mt-6 w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium transition ${
-                  highlighted
-                    ? 'bg-primary text-white hover:bg-secondary'
-                    : 'border border-border text-foreground hover:bg-muted'
-                }`}
+                className={`mt-6 w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium transition ${ highlighted ? 'bg-primary text-primary-foreground hover:opacity-90' : 'border border-border text-foreground hover:bg-muted' }`}
               >
                 {plan.monthlyPrice === null ? 'Bize ulaşın' : 'Ücretsiz denemeye başla'}
               </Link>

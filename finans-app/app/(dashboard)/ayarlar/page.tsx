@@ -12,6 +12,9 @@ import { Label } from '@/components/ui/label';
 import { useTeamRole } from '@/lib/use-team-role';
 import { ShieldAlert } from 'lucide-react';
 
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { WorkspaceTypeCard } from '@/components/workspace-type-card';
 const MAX_LOGO_DIMENSION = 240; // px — PDF başlığında küçük bir logo için fazlasıyla yeterli
 
 type BackupFrequency = 'off' | 'weekly' | 'monthly';
@@ -342,19 +345,17 @@ export default function AyarlarPage() {
 
   if (loading || roleLoading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
   if (!canManage) {
     return (
       <div className="max-w-xl space-y-6">
-        <div className="flex items-center gap-3">
-          <Building2 className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Şirket Ayarları</h1>
-        </div>
+        <PageHeader
+          icon={Building2}
+          title="Şirket Ayarları"
+        />
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm">
@@ -367,15 +368,15 @@ export default function AyarlarPage() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Building2 className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Şirket Ayarları</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Burada belirlediğiniz şirket adı ve logo, Raporlar sayfasından indirilen PDF raporların üst kısmında görünür.
-      </p>
+      <PageHeader
+        icon={Building2}
+        title="Şirket Ayarları"
+        description="Burada belirlediğiniz şirket adı ve logo, Raporlar sayfasından indirilen PDF raporların üst kısmında görünür."
+      />
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
+      <WorkspaceTypeCard />
+
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6">
         <div className="space-y-2">
           <Label htmlFor="company-name">Şirket / İşletme Adı</Label>
           <Input
@@ -402,7 +403,7 @@ export default function AyarlarPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={processingLogo}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 dark:text-slate-100 dark:hover:bg-secondary"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 dark:hover:bg-secondary"
               >
                 {processingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
                 {logoDataUrl ? 'Logoyu Değiştir' : 'Logo Yükle'}
@@ -431,10 +432,10 @@ export default function AyarlarPage() {
         </button>
       </div>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-3">
           <CloudUpload className="h-5 w-5 text-brand-gold" />
-          <h2 className="text-lg font-bold text-foreground dark:text-foreground">Otomatik Yedekleme</h2>
+          <h2 className="text-lg font-bold text-foreground">Otomatik Yedekleme</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           Seçtiğiniz sıklıkta, verileriniz otomatik olarak JSON yedeği alınıp güvenli bir şekilde saklanır (indirmeyi
@@ -448,11 +449,7 @@ export default function AyarlarPage() {
               key={freq}
               onClick={() => handleBackupFrequencyChange(freq)}
               disabled={savingBackupFreq}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${
-                backupFrequency === freq
-                  ? 'border-brand-gold bg-brand-gold/10 text-brand-gold dark:text-brand-gold-light'
-                  : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary'
-              }`}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${ backupFrequency === freq ? 'border-brand-gold bg-brand-gold/10 text-brand-gold' : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary' }`}
             >
               {freq === 'off' ? 'Kapalı' : freq === 'weekly' ? 'Haftalık' : 'Aylık'}
             </button>
@@ -460,19 +457,17 @@ export default function AyarlarPage() {
         </div>
 
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-foreground dark:text-slate-100">Geçmiş Yedekler</h3>
+          <h3 className="mb-2 text-sm font-semibold text-foreground">Geçmiş Yedekler</h3>
           {loadingBackups ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-            </div>
+            <PageLoading />
           ) : backups.length === 0 ? (
             <p className="text-sm text-muted-foreground">Henüz otomatik yedek oluşturulmadı.</p>
           ) : (
             <div className="space-y-1">
               {backups.map((b) => (
-                <div key={b.name} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-border">
+                <div key={b.name} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                   <div>
-                    <span className="font-medium text-foreground dark:text-slate-100">{b.name}</span>
+                    <span className="font-medium text-foreground">{b.name}</span>
                     {b.sizeBytes !== null && <span className="ml-2 text-xs text-muted-foreground">{formatBytes(b.sizeBytes)}</span>}
                   </div>
                   <button
@@ -488,10 +483,10 @@ export default function AyarlarPage() {
         </div>
       </div>
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-3">
           <BellRing className="h-5 w-5 text-brand-gold" />
-          <h2 className="text-lg font-bold text-foreground dark:text-foreground">Bildirim Tercihleri</h2>
+          <h2 className="text-lg font-bold text-foreground">Bildirim Tercihleri</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           Özet Paneli&apos;nde hangi hatırlatma widget&apos;larının görüneceğini ve yaklaşan ödemelerin kaç gün
@@ -500,17 +495,13 @@ export default function AyarlarPage() {
 
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm font-medium text-foreground dark:text-slate-100">Yaklaşan Ödemeler widget&apos;ı</div>
+            <div className="text-sm font-medium text-foreground">Yaklaşan Ödemeler widget&apos;ı</div>
             <div className="text-xs text-muted-foreground">Özet Paneli&apos;nde vadesi yaklaşan fatura/borç listesi.</div>
           </div>
           <button
             onClick={() => saveNotificationPrefs({ show_upcoming_payments: !showUpcomingPayments })}
             disabled={savingNotificationPrefs}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${
-              showUpcomingPayments
-                ? 'border-brand-gold bg-brand-gold/10 text-brand-gold dark:text-brand-gold-light'
-                : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary'
-            }`}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${ showUpcomingPayments ? 'border-brand-gold bg-brand-gold/10 text-brand-gold' : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary' }`}
           >
             {showUpcomingPayments ? 'Açık' : 'Kapalı'}
           </button>
@@ -525,11 +516,7 @@ export default function AyarlarPage() {
                   key={d}
                   onClick={() => saveNotificationPrefs({ upcoming_days_threshold: d })}
                   disabled={savingNotificationPrefs}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium disabled:opacity-60 ${
-                    upcomingDaysThreshold === d
-                      ? 'border-brand-gold bg-brand-gold/10 text-brand-gold dark:text-brand-gold-light'
-                      : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary'
-                  }`}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium disabled:opacity-60 ${ upcomingDaysThreshold === d ? 'border-brand-gold bg-brand-gold/10 text-brand-gold' : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary' }`}
                 >
                   {d} gün
                 </button>
@@ -538,28 +525,24 @@ export default function AyarlarPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-4 border-t border-border pt-4 dark:border-border">
+        <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
           <div>
-            <div className="text-sm font-medium text-foreground dark:text-slate-100">Bütçe Aşımları widget&apos;ı</div>
+            <div className="text-sm font-medium text-foreground">Bütçe Aşımları widget&apos;ı</div>
             <div className="text-xs text-muted-foreground">Özet Paneli&apos;nde limiti aşan kategori uyarıları.</div>
           </div>
           <button
             onClick={() => saveNotificationPrefs({ show_budget_alerts: !showBudgetAlerts })}
             disabled={savingNotificationPrefs}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${
-              showBudgetAlerts
-                ? 'border-brand-gold bg-brand-gold/10 text-brand-gold dark:text-brand-gold-light'
-                : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary'
-            }`}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${ showBudgetAlerts ? 'border-brand-gold bg-brand-gold/10 text-brand-gold' : 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary' }`}
           >
             {showBudgetAlerts ? 'Açık' : 'Kapalı'}
           </button>
         </div>
 
-        <div className="border-t border-border pt-4 dark:border-border">
+        <div className="border-t border-border pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Smartphone className="h-4 w-4 text-brand-gold" />
-            <h3 className="text-sm font-bold text-foreground dark:text-slate-100">Mobil Bildirimler (Push)</h3>
+            <h3 className="text-sm font-bold text-foreground">Mobil Bildirimler (Push)</h3>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             Yukarıdaki tercihlere göre, vadesi yaklaşan/geciken ödemeler ve bütçe aşımları için telefonunuza/tarayıcınıza
@@ -572,11 +555,7 @@ export default function AyarlarPage() {
             <button
               onClick={thisDeviceSubscribed ? handleDisablePushOnThisDevice : handleEnablePush}
               disabled={pushBusy}
-              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${
-                thisDeviceSubscribed
-                  ? 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary'
-                  : 'border-brand-gold bg-brand-gold/10 text-brand-gold dark:text-brand-gold-light'
-              }`}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${ thisDeviceSubscribed ? 'border-border text-muted-foreground hover:bg-muted dark:hover:bg-secondary' : 'border-brand-gold bg-brand-gold/10 text-brand-gold' }`}
             >
               {pushBusy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -592,16 +571,14 @@ export default function AyarlarPage() {
           <div className="mt-4">
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bildirime Açık Cihazlar</h4>
             {loadingPushDevices ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-              </div>
+              <PageLoading />
             ) : pushDevices.length === 0 ? (
               <p className="text-sm text-muted-foreground">Henüz hiçbir cihazdan bildirime izin verilmedi.</p>
             ) : (
               <div className="space-y-1">
                 {pushDevices.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm dark:border-border">
-                    <span className="font-medium text-foreground dark:text-slate-100">{d.device_label ?? 'Bilinmeyen cihaz'}</span>
+                  <div key={d.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+                    <span className="font-medium text-foreground">{d.device_label ?? 'Bilinmeyen cihaz'}</span>
                     <button
                       onClick={() => handleRemoveDevice(d.id)}
                       className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline dark:text-rose-400"

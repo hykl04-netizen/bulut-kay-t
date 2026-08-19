@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ArrowRight, ArrowLeft, Building2, Tags, Landmark, Loader2 } from 'lucide-react';
+import { Check, ArrowRight, ArrowLeft, Building2, Tags, Landmark, Loader2, Home, Users2, Calculator } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import {
-  BUSINESS_TEMPLATES,
   getTemplate,
+  templatesForType,
+  defaultTemplateKey,
   insertCategories,
   createFirstBankAccount,
   completeOnboarding,
+  setWorkspaceType,
 } from '@/lib/onboarding';
+import { WORKSPACE_TYPE_OPTIONS, type WorkspaceType } from '@/lib/workspace-types';
 import { toast } from '@/components/ui/toaster';
 
 /**
@@ -19,15 +22,20 @@ import { toast } from '@/components/ui/toaster';
  *
  * Yeni bir workspace'in `onboarded_at` alanı boş olduğu sürece dashboard
  * layout'u kullanıcıyı buraya yönlendirir. Üç adım:
- *   1) İşletme türü  → hazır kategori şablonu belirlenir
- *   2) Kategoriler   → şablon önizlenir, istenmeyenler çıkarılabilir
- *   3) Banka/kasa    → ilk hesap (atlanabilir)
+ *   1) Hesap türü    → Faz 11: aile / işletme / müşavir ofisi.
+ *                      Menünün ve kategori şablonlarının tamamını belirler.
+ *   2) İşletme türü  → hazır kategori şablonu belirlenir
+ *   3) Kategoriler   → şablon önizlenir, istenmeyenler çıkarılabilir
+ *   4) Banka/kasa    → ilk hesap (atlanabilir)
+ *
+ * Hesap türü ADIM 1'de sorulur çünkü sonraki her adımın içeriğini o belirler:
+ * aile seçen biri "Pazaryeri Komisyonu" kategorisi görmemeli.
  *
  * Sihirbaz, sol menü olmadan tam ekran çalışır (bilinçli olarak
  * app/(dashboard) grubunun DIŞINDA duruyor).
  */
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export default function KurulumPage() {
   const router = useRouter();
@@ -37,6 +45,7 @@ export default function KurulumPage() {
   const [workspaceName, setWorkspaceName] = useState('');
 
   const [step, setStep] = useState<Step>(1);
+  const [workspaceType, setWorkspaceTypeState] = useState<WorkspaceType>('sirket');
   const [templateKey, setTemplateKey] = useState<string>('genel');
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
 
@@ -57,11 +66,20 @@ export default function KurulumPage() {
       const id = await getCurrentWorkspaceId(user.id);
       if (cancelled) return;
 
-      const { data } = await supabase.from('workspaces').select('name').eq('id', id).maybeSingle();
+      const { data } = await supabase
+        .from('workspaces')
+        .select('name, type')
+        .eq('id', id)
+        .maybeSingle();
       if (cancelled) return;
 
+      const row = data as { name: string; type: string | null } | null;
+      const existingType = (row?.type as WorkspaceType | null) ?? 'sirket';
+
       setWorkspaceId(id);
-      setWorkspaceName((data as { name: string } | null)?.name ?? 'İşletmem');
+      setWorkspaceName(row?.name ?? 'Hesabım');
+      setWorkspaceTypeState(existingType);
+      setTemplateKey(defaultTemplateKey(existingType));
       setLoading(false);
     })();
     return () => {
@@ -87,11 +105,23 @@ export default function KurulumPage() {
     setExcluded(new Set());
   };
 
+  // Hesap türü değişince şablon listesi tamamen değişir.
+  const chooseType = (type: WorkspaceType) => {
+    setWorkspaceTypeState(type);
+    setTemplateKey(defaultTemplateKey(type));
+    setExcluded(new Set());
+  };
+
+  const visibleTemplates = templatesForType(workspaceType);
+
   const finish = async () => {
     if (!workspaceId) return;
     setSaving(true);
     try {
-      // Şablonun tamamı değil, kullanıcının 2. adımda BIRAKTIĞI kategoriler eklenir.
+      // Hesap türü önce yazılır: menü filtresi ve sonraki oturumlar buna bakar.
+      await setWorkspaceType(workspaceId, workspaceType);
+
+      // Şablonun tamamı değil, kullanıcının BIRAKTIĞI kategoriler eklenir.
       await insertCategories(workspaceId, selectedCategories);
 
       if (accountName.trim()) {
@@ -117,6 +147,9 @@ export default function KurulumPage() {
     if (!workspaceId) return;
     setSaving(true);
     try {
+      // Kurulum atlansa bile hesap türü kaydedilir — menünün doğru
+      // filtrelenmesi için gereken tek bilgi bu.
+      await setWorkspaceType(workspaceId, workspaceType);
       await completeOnboarding(workspaceId);
       router.replace('/');
       router.refresh();
@@ -135,10 +168,13 @@ export default function KurulumPage() {
   }
 
   const steps = [
-    { n: 1 as Step, label: 'İşletme türü', icon: Building2 },
-    { n: 2 as Step, label: 'Kategoriler', icon: Tags },
-    { n: 3 as Step, label: 'Banka / Kasa', icon: Landmark },
+    { n: 1 as Step, label: 'Hesap türü', icon: Home },
+    { n: 2 as Step, label: workspaceType === 'aile' ? 'Bütçe türü' : 'İşletme türü', icon: Building2 },
+    { n: 3 as Step, label: 'Kategoriler', icon: Tags },
+    { n: 4 as Step, label: 'Banka / Kasa', icon: Landmark },
   ];
+
+  const TYPE_ICONS = { aile: Home, sirket: Users2, musavir_ofisi: Calculator } as const;
 
   return (
     <div className="min-h-screen bg-muted py-8 px-4">
@@ -159,13 +195,7 @@ export default function KurulumPage() {
             return (
               <div key={s.n} className="flex items-center gap-2">
                 <div
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                    active
-                      ? 'bg-primary text-white'
-                      : done
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                        : 'bg-card text-muted-foreground border border-border'
-                  }`}
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition ${ active ? 'bg-primary text-primary-foreground' : done ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-card text-muted-foreground border border-border' }`}
                 >
                   {done ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
                   {s.label}
@@ -179,21 +209,56 @@ export default function KurulumPage() {
         <div className="bg-card rounded-2xl shadow-xl border border-border p-6 sm:p-8">
           {step === 1 && (
             <>
-              <h2 className="text-lg font-semibold text-foreground mb-1">İşletmeniz hangisine yakın?</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Bu hesabı ne için kullanacaksınız?</h2>
+              <p className="text-sm text-muted-foreground mb-5">
+                Seçiminiz menüyü belirler. Aile hesabında fatura kesme, cari ve bordro ekranları
+                hiç görünmez. Sonradan hesap ayarlarından değiştirebilirsiniz.
+              </p>
+              <div className="space-y-2.5">
+                {WORKSPACE_TYPE_OPTIONS.map((opt) => {
+                  const Icon = TYPE_ICONS[opt.key];
+                  const active = workspaceType === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => chooseType(opt.key)}
+                      className={`w-full rounded-xl border p-4 text-left transition ${ active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:bg-muted' }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                          <Icon className="h-4.5 w-4.5 text-accent" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground">{opt.label}</p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">{opt.description}</p>
+                        </div>
+                        {active && <Check className="h-5 w-5 shrink-0 text-primary" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <h2 className="text-lg font-semibold text-foreground mb-1">
+                {workspaceType === 'aile'
+                  ? 'Hazır bütçe setiniz'
+                  : 'İşletmeniz hangisine yakın?'}
+              </h2>
               <p className="text-sm text-muted-foreground mb-5">
                 Seçiminize göre hazır bir gelir/gider kategori seti yükleyeceğiz.
               </p>
               <div className="space-y-2.5">
-                {BUSINESS_TEMPLATES.map((t) => (
+                {visibleTemplates.map((t) => (
                   <button
                     key={t.key}
                     type="button"
                     onClick={() => chooseTemplate(t.key)}
-                    className={`w-full text-left rounded-xl border p-4 transition ${
-                      templateKey === t.key
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-border hover:bg-muted'
-                    }`}
+                    className={`w-full text-left rounded-xl border p-4 transition ${ templateKey === t.key ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:bg-muted' }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -208,7 +273,7 @@ export default function KurulumPage() {
             </>
           )}
 
-          {step === 2 && template && (
+          {step === 3 && template && (
             <>
               <h2 className="text-lg font-semibold text-foreground mb-1">Başlangıç kategorileri</h2>
               <p className="text-sm text-muted-foreground mb-5">
@@ -252,7 +317,7 @@ export default function KurulumPage() {
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <h2 className="text-lg font-semibold text-foreground mb-1">İlk banka veya kasa hesabınız</h2>
               <p className="text-sm text-muted-foreground mb-5">
@@ -323,11 +388,11 @@ export default function KurulumPage() {
               </button>
             )}
 
-            {step < 3 ? (
+            {step < 4 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => (s + 1) as Step)}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-secondary transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition"
               >
                 Devam
                 <ArrowRight className="w-4 h-4" />
@@ -337,7 +402,7 @@ export default function KurulumPage() {
                 type="button"
                 onClick={finish}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60 transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60 transition"
               >
                 {saving ? 'Kaydediliyor...' : 'Kurulumu Tamamla'}
                 {!saving && <Check className="w-4 h-4" />}

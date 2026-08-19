@@ -4,6 +4,7 @@ import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { Trash2, Pencil } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
+import { formatCurrency } from '@/lib/currency';
 
 export type Asset = {
   id: string;
@@ -57,7 +58,7 @@ export const columns: ColumnDef<Asset>[] = [
       return (
         <EditableCell
           value={row.original.asset_name}
-          className="font-medium text-foreground dark:text-foreground"
+          className="font-medium text-foreground"
           onSave={(v) => meta!.onCellEdit(row.original.id, 'asset_name', v)}
         />
       );
@@ -68,7 +69,7 @@ export const columns: ColumnDef<Asset>[] = [
     header: "Tür",
     cell: ({ row }) => {
       const type = row.getValue("asset_type") as string | null;
-      return type ? <span className="text-muted-foreground dark:text-muted-foreground text-sm">{type}</span> : <span className="text-muted-foreground dark:text-muted-foreground">-</span>;
+      return type ? <span className="text-muted-foreground text-sm">{type}</span> : <span className="text-muted-foreground">-</span>;
     },
   },
   {
@@ -78,16 +79,13 @@ export const columns: ColumnDef<Asset>[] = [
       const meta = table.options.meta as AssetTableMeta | undefined;
       const value = row.original.current_value;
       const currency = row.original.currency;
-      const formatted = new Intl.NumberFormat("tr-TR", {
-        style: "currency",
-        currency: currency || "TRY",
-      }).format(value);
+      const formatted = formatCurrency(value, currency || "TRY");
       return (
         <EditableCell
           type="number"
           step="0.01"
           value={value}
-          display={<span className="font-semibold text-foreground dark:text-foreground">{formatted}</span>}
+          display={<span className="font-semibold text-foreground">{formatted}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'current_value', v)}
         />
       );
@@ -98,7 +96,7 @@ export const columns: ColumnDef<Asset>[] = [
     header: "Not",
     cell: ({ row }) => {
       const notes = row.getValue("notes") as string | null;
-      return notes ? <span className="text-muted-foreground dark:text-muted-foreground text-sm">{notes}</span> : <span className="text-muted-foreground dark:text-muted-foreground">-</span>;
+      return notes ? <span className="text-muted-foreground text-sm">{notes}</span> : <span className="text-muted-foreground">-</span>;
     },
   },
   {

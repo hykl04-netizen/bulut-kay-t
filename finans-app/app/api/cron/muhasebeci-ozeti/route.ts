@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isEmailConfigured, sendEmail } from '@/lib/email';
+import { formatTRY } from '@/lib/currency';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -21,7 +22,6 @@ export const maxDuration = 60;
  * raporlar. Böylece ortam değişkeni eklenmeden de cron sessizce çalışır.
  */
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
 
 function previousMonthRange(): { start: string; end: string; label: string } {
   const now = new Date();
@@ -46,11 +46,11 @@ function buildHtml(params: {
   const net = params.income - params.expense;
   const netColor = net >= 0 ? '#059669' : '#e11d48';
   const rows = [
-    ['Toplam Gelir', TRY_FORMATTER.format(params.income), '#059669'],
-    ['Toplam Gider', TRY_FORMATTER.format(params.expense), '#e11d48'],
-    ['Net', TRY_FORMATTER.format(net), netColor],
+    ['Toplam Gelir', formatTRY(params.income), '#059669'],
+    ['Toplam Gider', formatTRY(params.expense), '#e11d48'],
+    ['Net', formatTRY(net), netColor],
     ['Kesilen Fatura', `${params.invoiceCount} adet`, '#334155'],
-    ['Tahsil Edilmemiş', TRY_FORMATTER.format(params.unpaidTotal), '#334155'],
+    ['Tahsil Edilmemiş', formatTRY(params.unpaidTotal), '#334155'],
   ]
     .map(
       ([label, value, color]) =>

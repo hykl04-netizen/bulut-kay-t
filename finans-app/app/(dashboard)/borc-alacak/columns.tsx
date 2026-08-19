@@ -5,6 +5,7 @@ import { Trash2, CheckCircle2 } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
 import { DueBadge } from "@/components/due-badge";
+import { formatCurrency } from '@/lib/currency';
 
 export type Debt = {
   id: string;
@@ -88,16 +89,13 @@ export const columns: ColumnDef<Debt>[] = [
       const meta = table.options.meta as DebtTableMeta | undefined;
       const amount = row.original.amount;
       const currency = row.original.currency;
-      const formatted = new Intl.NumberFormat("tr-TR", {
-        style: "currency",
-        currency: currency || "TRY",
-      }).format(amount);
+      const formatted = formatCurrency(amount, currency || "TRY");
       return (
         <EditableCell
           type="number"
           step="0.01"
           value={amount}
-          display={<span className="font-medium text-foreground dark:text-foreground">{formatted}</span>}
+          display={<span className="font-medium text-foreground">{formatted}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'amount', v)}
         />
       );
@@ -114,7 +112,7 @@ export const columns: ColumnDef<Debt>[] = [
           <EditableCell
             type="date"
             value={date ?? ''}
-            display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
+            display={date ? new Date(date).toLocaleDateString("tr-TR") : <span className="text-muted-foreground">-</span>}
             onSave={(v) => meta!.onCellEdit(row.original.id, 'due_date', v)}
           />
           <DueBadge dueDate={date} isSettled={row.original.status === 'kapandi'} />
@@ -131,7 +129,7 @@ export const columns: ColumnDef<Debt>[] = [
       return (
         <EditableCell
           value={notes ?? ''}
-          display={notes ? notes : <span className="text-muted-foreground dark:text-muted-foreground">-</span>}
+          display={notes ? notes : <span className="text-muted-foreground">-</span>}
           placeholder="Not ekle..."
           onSave={(v) => meta!.onCellEdit(row.original.id, 'notes', v)}
         />
@@ -145,7 +143,7 @@ export const columns: ColumnDef<Debt>[] = [
       const status = row.getValue("status") as string;
       return (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          status === 'acik' ? 'bg-amber-100 text-amber-700' : 'bg-secondary dark:bg-secondary text-muted-foreground dark:text-muted-foreground'
+          status === 'acik' ? 'bg-amber-100 text-amber-700' : 'bg-secondary text-muted-foreground'
         }`}>
           {status === 'acik' ? 'Açık' : 'Kapandı'}
         </span>

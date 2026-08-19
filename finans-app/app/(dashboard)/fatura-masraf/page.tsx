@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Plus, ClipboardPaste, X } from 'lucide-react';
+import { Plus, ClipboardPaste, X, Receipt } from 'lucide-react';
 import { FileUpload } from '@/components/file-upload';
 import { DataTable } from '@/components/data-table/data-table';
 import { AdvancedFilterBar, applyAdvancedFilter, EMPTY_ADVANCED_FILTER, type AdvancedFilterValue } from '@/components/data-table/advanced-filter';
@@ -18,6 +18,11 @@ import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { useTeamRole } from '@/lib/use-team-role';
 import { canEditData } from '@/lib/team';
 
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { MobileList, MobileListCard } from '@/components/finans/mobile-list';
+
+import { formatCurrency } from '@/lib/currency';
 interface Category {
   id: string;
   name: string;
@@ -267,34 +272,35 @@ export default function FaturaMasrafPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Fatura ve Masraflar</h1>
-          <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-            Kurumsal faturalarınızı, aboneliklerinizi ve ödeme vadelerinizi buradan yönetin.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <>
-              <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className="btn-outline"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-                Excel&apos;den Yapıştır
-              </button>
-              <button
-                onClick={handleOpenAddModal}
-                className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-secondary dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
-              >
-                <Plus className="h-4 w-4" />
-                Yeni Fatura/Masraf Ekle
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Fatura ve Masraflar"
+        description="Kurumsal faturalarınızı, aboneliklerinizi ve ödeme vadelerinizi buradan yönetin."
+        actions={
+          <>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="btn-outline"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                  Excel&apos;den Yapıştır
+                </button>
+                <button
+                  onClick={handleOpenAddModal}
+                  className="btn-gold-cta inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Yeni Fatura/Masraf Ekle
+                </button>
+              </>
+            )}
+          </div>
+          </>
+        }
+      />
+
 
       {/* Arama ve Gelişmiş Filtreleme */}
       {!loading && (
@@ -309,27 +315,52 @@ export default function FaturaMasrafPage() {
 
       {/* Liste Tablosu — inline düzenlenebilir hücrelerle (çift tıkla → düzenle) */}
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={6} />
       ) : (
         <>
           {filteredBills.length === 0 && bills.length > 0 && (
-            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Filtrelere uyan kayıt bulunamadı ({bills.length} kayıttan 0&apos;ı gösteriliyor).
             </p>
           )}
-          <DataTable
-            columns={columns}
-            data={filteredBills}
-            meta={{
-              canEdit,
-              onEdit: handleOpenEditModal,
-              onDelete: handleDelete,
-              onToggleStatus: handleToggleStatus,
-              onCellEdit: handleCellEdit,
-            }}
-          />
+          <>
+            {/* Telefonda liste, masaüstünde tablo — aynı veri, iki sunum.
+                6 sütunlu tablo 390px'e sığmıyor; yatay kaydırma da tarama
+                alışkanlığını bozuyor. */}
+            <div className="md:hidden">
+              <MobileListCard>
+                <MobileList
+                  emptyText="Bu filtreye uyan kayıt yok."
+                  rows={filteredBills.map((b) => ({
+                    id: b.id,
+                    title: b.title,
+                    subtitle: b.due_date ? `Vade ${new Date(b.due_date + 'T00:00:00').toLocaleDateString('tr-TR')}` : 'Vade yok',
+                    icon: Receipt,
+                    accentColor: b.status === 'odendi' ? '#059669' : '#e11d48',
+                    value: formatCurrency(b.amount),
+                    valueNote: b.status === 'odendi' ? 'Ödendi' : 'Ödenmedi',
+                    badge: b.is_recurring ? (
+                      <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">Tekrarlı</span>
+                    ) : undefined,
+                  }))}
+                />
+              </MobileListCard>
+            </div>
+
+            <div className="hidden md:block">
+  <DataTable
+              columns={columns}
+              data={filteredBills}
+              meta={{
+                canEdit,
+                onEdit: handleOpenEditModal,
+                onDelete: handleDelete,
+                onToggleStatus: handleToggleStatus,
+                onCellEdit: handleCellEdit,
+              }}
+            />
+            </div>
+          </>
         </>
       )}
 
@@ -337,7 +368,7 @@ export default function FaturaMasrafPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-2xl dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-border pb-4 dark:border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-lg font-bold">{editingId ? 'Faturayı Düzenle' : 'Yeni Fatura / Masraf Ekle'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-muted-foreground dark:hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -425,7 +456,7 @@ export default function FaturaMasrafPage() {
               </div>
 
               {/* Tekrarlayan fatura otomasyonu */}
-              <div className="rounded-xl border border-border p-3 dark:border-border">
+              <div className="rounded-xl border border-border p-3">
                 <label className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-muted-foreground">
                   <input
                     type="checkbox"
@@ -438,7 +469,7 @@ export default function FaturaMasrafPage() {
                 {isRecurring && (
                   <div className="mt-3 grid grid-cols-2 gap-4">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Sıklık</label>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Sıklık</label>
                       <select
                         value={recurrencePeriod}
                         onChange={(e) => setRecurrencePeriod(e.target.value)}
@@ -449,7 +480,7 @@ export default function FaturaMasrafPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Bitiş Tarihi (Opsiyonel)</label>
                       <input
                         type="date"
                         value={recurrenceEndDate}
@@ -459,7 +490,7 @@ export default function FaturaMasrafPage() {
                     </div>
                   </div>
                 )}
-                <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Vade tarihi geçtiğinde bir sonraki dönemin faturası otomatik olarak oluşturulur.
                 </p>
               </div>
@@ -471,14 +502,14 @@ export default function FaturaMasrafPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary"
+                  className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-secondary disabled:opacity-50 dark:bg-secondary dark:text-foreground dark:hover:bg-slate-200"
+                  className="btn-gold-cta rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet'}
                 </button>

@@ -35,16 +35,12 @@ import {
   ReportTransaction,
   ReportInvestment,
 } from '@/lib/reports';
+import { formatTRYWhole } from '@/lib/currency';
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
-
-function formatTRY(value: number) {
-  return TRY_FORMATTER.format(value);
-}
-
+import { PageHeader } from '@/components/ui/page-header';
 function tooltipValueFormatter(value: unknown) {
   const num = Array.isArray(value) ? Number(value[0]) : Number(value);
-  return Number.isFinite(num) ? formatTRY(num) : String(value ?? '');
+  return Number.isFinite(num) ? formatTRYWhole(num) : String(value ?? '');
 }
 
 function ChartCard({
@@ -63,17 +59,17 @@ function ChartCard({
   actions?: React.ReactNode;
 }) {
   return (
-    <div id={id} className="print-card bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
+    <div id={id} className="print-card bg-card rounded-xl shadow-sm border border-border p-6">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
+        <h2 className="text-lg font-bold text-foreground">{title}</h2>
         <div className="flex items-center gap-2 print:hidden">
           {actions}
           <ReportShareButton targetElementId={id} reportTitle={title} />
         </div>
       </div>
-      {subtitle && <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-muted-foreground mt-1 mb-4">{subtitle}</p>}
       {empty ? (
-        <div className="flex items-center justify-center h-64 text-muted-foreground dark:text-muted-foreground text-sm">
+        <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
           Gösterilecek yeterli veri yok.
         </div>
       ) : (
@@ -116,11 +112,11 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function ComparisonCard({ title, subtitle, data }: { title: string; subtitle: string; data: PeriodComparison | null }) {
   return (
-    <div className="print-card bg-card rounded-xl shadow-sm border border-border dark:border-border p-6">
-      <h2 className="text-lg font-bold text-foreground dark:text-foreground">{title}</h2>
-      <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1 mb-4">{subtitle}</p>
+    <div className="print-card bg-card rounded-xl shadow-sm border border-border p-6">
+      <h2 className="text-lg font-bold text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground mt-1 mb-4">{subtitle}</p>
       {data === null ? (
-        <div className="flex items-center justify-center h-32 text-muted-foreground dark:text-muted-foreground text-sm text-center px-4">
+        <div className="flex items-center justify-center h-32 text-muted-foreground text-sm text-center px-4">
           Karşılaştırma için yeterli geçmiş veri yok (önceki dönemde kayıt bulunamadı).
         </div>
       ) : (
@@ -133,12 +129,12 @@ function ComparisonCard({ title, subtitle, data }: { title: string; subtitle: st
             <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 dark:border-border px-4 py-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</div>
-                <div className="mt-0.5 text-sm text-foreground dark:text-slate-100">
-                  <span className="font-bold">{formatTRY(row.curr)}</span>
+                <div className="mt-0.5 text-sm text-foreground">
+                  <span className="font-bold">{formatTRYWhole(row.curr)}</span>
                   <span className="ml-2 text-xs text-muted-foreground">({data.currentLabel})</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {formatTRY(row.prev)} <span className="opacity-70">({data.previousLabel})</span>
+                  {formatTRYWhole(row.prev)} <span className="opacity-70">({data.previousLabel})</span>
                 </div>
               </div>
               <DeltaBadge pct={row.pct} />
@@ -247,12 +243,13 @@ export default function RaporlarPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
-        </div>
-        <div className="bg-card rounded-xl shadow-sm border border-border dark:border-border p-6 flex items-center justify-center h-40">
-          <p className="text-muted-foreground dark:text-muted-foreground">Veriler yükleniyor...</p>
+        <PageHeader
+          icon={BarChart3}
+          title="Raporlar"
+          description="Finansal durumunuzun grafiklerle özeti."
+        />
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center h-40">
+          <p className="text-muted-foreground">Veriler yükleniyor...</p>
         </div>
       </div>
     );
@@ -260,37 +257,41 @@ export default function RaporlarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Raporlar</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground mt-1">Finansal durumunuzun grafiklerle özeti.</p>
-        </div>
-        <div className="flex items-center gap-2 print:hidden">
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
-          >
-            <Printer className="h-4 w-4" />
-            Yazdır
-          </button>
-          <button
-            onClick={handleExportPdf}
-            disabled={exportingPdf}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
-          >
-            <FileDown className="h-4 w-4" />
-            {exportingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}
-          </button>
-          <button
-            onClick={handleExportExcel}
-            disabled={exportingExcel}
-            className="inline-flex items-center gap-2 rounded-xl border border-border dark:border-border bg-card px-4 py-2 text-xs font-medium text-foreground dark:text-slate-200 shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            {exportingExcel ? 'Hazırlanıyor...' : 'Excel İndir'}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={BarChart3}
+        title="Raporlar"
+        description="Finansal durumunuzun grafiklerle özeti."
+        actions={
+          <>
+          <div className="flex items-center gap-2 print:hidden">
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary"
+            >
+              <Printer className="h-4 w-4" />
+              Yazdır
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            >
+              <FileDown className="h-4 w-4" />
+              {exportingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}
+            </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted dark:hover:bg-secondary disabled:opacity-50"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {exportingExcel ? 'Hazırlanıyor...' : 'Excel İndir'}
+            </button>
+          </div>
+          </>
+        }
+      />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 print:gap-4">
         <ComparisonCard
@@ -316,7 +317,7 @@ export default function RaporlarPage() {
             <BarChart data={monthlyCashFlow} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: tickFill }} />
-              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} width={80} />
+              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRYWhole(v)} width={80} />
               <Tooltip formatter={tooltipValueFormatter} labelStyle={tooltipLabelStyle} contentStyle={tooltipContentStyle} />
               <Legend />
               <Bar dataKey="gelir" name="Gelir" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -335,7 +336,7 @@ export default function RaporlarPage() {
             <LineChart data={cumulativeNet} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: tickFill }} />
-              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} width={80} />
+              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRYWhole(v)} width={80} />
               <Tooltip formatter={tooltipValueFormatter} labelStyle={tooltipLabelStyle} contentStyle={tooltipContentStyle} />
               <Line type="monotone" dataKey="cumulative" name="Birikimli Bakiye" stroke={lineStroke} strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
@@ -352,7 +353,7 @@ export default function RaporlarPage() {
             <LineChart data={cashFlowForecast} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="monthLabel" tick={{ fontSize: 12, fill: tickFill }} />
-              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} width={80} />
+              <YAxis tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRYWhole(v)} width={80} />
               <Tooltip formatter={tooltipValueFormatter} labelStyle={tooltipLabelStyle} contentStyle={tooltipContentStyle} />
               <Legend />
               <Line type="monotone" dataKey="gelir" name="Gelir" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
@@ -397,17 +398,13 @@ export default function RaporlarPage() {
           subtitle="Giderlerin kategorilere göre kırılımı (ilk 8 kategori)."
           empty={expenseByCategory.length === 0}
           actions={
-            <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5 dark:border-border">
+            <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
               <button
                 type="button"
                 onClick={() => setExpenseChartMode('bar')}
                 aria-label="Çubuk grafik göster"
                 title="Çubuk grafik"
-                className={`rounded-md p-1.5 transition ${
-                  expenseChartMode === 'bar'
-                    ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
-                    : 'text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-secondary'
-                }`}
+                className={`rounded-md p-1.5 transition ${ expenseChartMode === 'bar' ? 'bg-primary text-primary-foreground ' : 'text-muted-foreground hover:bg-muted dark:hover:opacity-90' }`}
               >
                 <BarChart3 className="h-4 w-4" />
               </button>
@@ -416,11 +413,7 @@ export default function RaporlarPage() {
                 onClick={() => setExpenseChartMode('pie')}
                 aria-label="Pasta grafik göster"
                 title="Pasta grafik"
-                className={`rounded-md p-1.5 transition ${
-                  expenseChartMode === 'pie'
-                    ? 'bg-primary text-white dark:bg-secondary dark:text-foreground'
-                    : 'text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-secondary'
-                }`}
+                className={`rounded-md p-1.5 transition ${ expenseChartMode === 'pie' ? 'bg-primary text-primary-foreground ' : 'text-muted-foreground hover:bg-muted dark:hover:opacity-90' }`}
               >
                 <PieChartIcon className="h-4 w-4" />
               </button>
@@ -431,7 +424,7 @@ export default function RaporlarPage() {
             {expenseChartMode === 'bar' ? (
               <BarChart data={expenseByCategory} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis type="number" tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRY(v)} />
+                <XAxis type="number" tick={{ fontSize: 12, fill: tickFill }} tickFormatter={(v) => formatTRYWhole(v)} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: tickFill }} width={100} />
                 <Tooltip formatter={tooltipValueFormatter} contentStyle={tooltipContentStyle} />
                 <Bar dataKey="value" name="Harcama" radius={[0, 4, 4, 0]}>

@@ -174,12 +174,12 @@ export function EditableCell({
           className={`w-full px-2 py-1 pr-7 rounded-lg border text-sm focus:outline-none focus:ring-2 ${
             error
               ? 'border-rose-400 focus:ring-rose-300'
-              : 'border-border dark:border-border focus:ring-accent dark:focus:ring-accent dark:bg-secondary dark:text-foreground'
+              : 'border-border dark:border-slate-600 focus:ring-accent dark:bg-secondary dark:text-slate-100'
           } ${saving ? 'opacity-60' : ''}`}
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
           {saving && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground dark:text-muted-foreground" aria-label="Kaydediliyor" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" aria-label="Kaydediliyor" />
           )}
           {!saving && justSaved && (
             <Check className="w-3.5 h-3.5 text-emerald-500" aria-label="Kaydedildi" />
@@ -196,7 +196,7 @@ export function EditableCell({
     <div
       onDoubleClick={startEditing}
       title="Düzenlemek için çift tıklayın"
-      className={`cursor-text rounded-lg px-2 py-1 -mx-2 -my-1 hover:bg-secondary dark:hover:bg-secondary/70 transition-colors ${className}`}
+      className={`cursor-text rounded-lg px-2 py-1 -mx-2 -my-1 hover:bg-secondary dark:hover:bg-slate-700 transition-colors ${className}`}
     >
       {display ?? value}
     </div>

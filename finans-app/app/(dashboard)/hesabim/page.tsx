@@ -9,6 +9,8 @@ import { buildBackupPayload } from '@/lib/backup';
 import { toast } from '@/components/ui/toaster';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 
 /**
  * Öneri 8 — KVKK m.11 hakları: veri taşınabilirliği ve unutulma hakkı.
@@ -103,23 +105,17 @@ export default function HesabimPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <ShieldCheck className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground">Hesabım ve Verilerim</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        KVKK kapsamındaki haklarınız: verilerinizin bir kopyasını indirebilir veya hesabınızı
-        tamamen silebilirsiniz.
-      </p>
+      <PageHeader
+        icon={ShieldCheck}
+        title="Hesabım ve Verilerim"
+        description="KVKK kapsamındaki haklarınız: verilerinizin bir kopyasını indirebilir veya hesabınızı tamamen silebilirsiniz."
+      />
 
       <div className="rounded-xl border border-border bg-card p-5">
         <p className="text-sm text-muted-foreground">Hesap</p>
@@ -140,7 +136,7 @@ export default function HesabimPage() {
         <button
           onClick={handleExport}
           disabled={exporting || owned.length === 0}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60"
+          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           Verilerimi İndir

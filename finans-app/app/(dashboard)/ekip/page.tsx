@@ -18,7 +18,9 @@ import {
 } from '@/lib/team';
 import { useSubscription } from '@/lib/use-subscription';
 import { effectivePlan, getPlan } from '@/lib/plans';
+import { PageHeader } from '@/components/ui/page-header';
 
+import { PageLoading } from '@/components/ui/skeleton';
 export default function EkipPage() {
   const { role, loading: roleLoading } = useTeamRole();
   const { subscription, loading: subLoading } = useSubscription();
@@ -138,10 +140,7 @@ export default function EkipPage() {
   if (!roleLoading && !canManage) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Users className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
-        </div>
+        <PageHeader icon={Users} title="Ekip Yönetimi" />
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm">
@@ -154,15 +153,11 @@ export default function EkipPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Users className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Ekip Yönetimi</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        İşletmenize başka kullanıcılar davet edin ve yetkilerini belirleyin. Yönetici sizinle eşit yetkiye sahiptir,
-        muhasebeci kayıt ekleyip düzenleyebilir ama ekip yönetemez, salt görüntüleme ise sadece bakabilir (bordro
-        hariç).
-      </p>
+      <PageHeader
+        icon={Users}
+        title="Ekip Yönetimi"
+        description="İşletmenize başka kullanıcılar davet edin ve yetkilerini belirleyin. Yönetici sizinle eşit yetkiye sahiptir, muhasebeci kayıt ekleyip düzenleyebilir ama ekip yönetemez, salt görüntüleme ise sadece bakabilir (bordro hariç)."
+      />
 
       {/* Plan bazlı koltuk sayacı */}
       {!subLoading && (
@@ -183,7 +178,7 @@ export default function EkipPage() {
           {seatsFull && (
             <Link
               href="/abonelik"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-secondary transition"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition"
             >
               <CreditCard className="h-3.5 w-3.5" />
               Planı Yükselt
@@ -195,7 +190,7 @@ export default function EkipPage() {
       {/* Davet formu */}
       <form
         onSubmit={handleInvite}
-        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 dark:border-border sm:flex-row sm:items-end"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-end"
       >
         <div className="flex-1 space-y-1.5">
           <Label htmlFor="invite-email">E-posta</Label>
@@ -237,11 +232,9 @@ export default function EkipPage() {
 
       {/* Üye listesi */}
       {isLoading ? (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-        </div>
+        <PageLoading />
       ) : members.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
           Henüz davet edilmiş bir ekip üyesi yok.
         </div>
       ) : (
@@ -249,13 +242,13 @@ export default function EkipPage() {
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
             >
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground dark:text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {member.invited_email}
                     </span>
                     {member.status !== 'aktif' && (

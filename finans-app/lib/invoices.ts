@@ -1,4 +1,5 @@
 import { supabase } from './supabase/client';
+import { formatCurrency } from './currency';
 
 /**
  * Faz 5 — satış faturası (fatura kesme) modülü.
@@ -105,10 +106,12 @@ export function calcInvoiceTotals(items: Pick<InvoiceItem, 'net_total' | 'vat_am
   };
 }
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' });
+/**
+ * Fatura ekranlarının alıştığı ad — biçimlendirme mantığı lib/currency.ts'te
+ * tek noktada toplandı; bu yalnızca geriye dönük uyumluluk için ince bir sarmalayıcı.
+ */
 export function formatMoney(value: number, currency = 'TRY'): string {
-  if (currency === 'TRY') return TRY_FORMATTER.format(value);
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(value);
+  return formatCurrency(value, currency);
 }
 
 // ---------------------------------------------------------------------------

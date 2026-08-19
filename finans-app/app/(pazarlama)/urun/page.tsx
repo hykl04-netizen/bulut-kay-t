@@ -1,16 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import {
-  ArrowRightLeft,
-  Receipt,
-  FilePlus2,
-  Landmark,
-  BarChart3,
-  Users,
-  ShieldCheck,
-  Smartphone,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRightLeft, Receipt, FilePlus2, Landmark, BarChart3, Users, ShieldCheck, Smartphone, ArrowRight, PlayCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'FinansApp — Küçük işletmeler için finans yönetimi',
@@ -68,19 +58,30 @@ export default function UrunPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/kayit-ol"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-white hover:bg-secondary transition"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
             >
               14 gün ücretsiz deneyin
               <ArrowRight className="h-4 w-4" />
             </Link>
+            {/* Demo, kayıt duvarının önüne geçer: ürünü görmek için hesap
+                açmak zorunda bırakmak dönüşümü düşüren en büyük sürtünme. */}
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3 font-medium text-foreground transition hover:bg-muted"
+            >
+              <PlayCircle className="h-4 w-4" />
+              Kayıtsız canlı demoyu gezin
+            </Link>
             <Link
               href="/fiyatlandirma"
-              className="inline-flex items-center rounded-lg border border-border px-6 py-3 font-medium text-foreground hover:bg-muted transition"
+              className="inline-flex items-center rounded-lg px-6 py-3 font-medium text-muted-foreground transition hover:text-foreground"
             >
               Fiyatları gör
             </Link>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">Kart bilgisi istemiyoruz.</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Kart bilgisi istemiyoruz. Demo örnek verilerle çalışır, kayıt gerekmez.
+          </p>
         </div>
       </section>
 
@@ -137,7 +138,7 @@ export default function UrunPage() {
           </div>
           <Link
             href="/kayit-ol"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-white hover:bg-secondary transition"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
           >
             Ücretsiz hesap oluştur
             <ArrowRight className="h-4 w-4" />

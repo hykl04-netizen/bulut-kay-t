@@ -41,7 +41,7 @@ export default function ErrorBoundary({
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <button
             onClick={reset}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-secondary"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             <RotateCw className="h-4 w-4" />
             Tekrar dene

@@ -14,6 +14,9 @@ const PUBLIC_PREFIXES = [
   '/sifre-guncelle',
   '/auth', // e-posta doğrulama dönüş route'u (/auth/callback)
   // Faz 7-8: pazarlama sitesi ve yardım merkezi — oturum gerektirmez.
+  // Faz 12: girişsiz ürün turu. Veritabanına HİÇ dokunmaz (veri bellekte
+  // üretilir), bu yüzden oturum aramanın anlamı yok.
+  '/demo',
   '/urun',
   '/fiyatlandirma',
   '/sss',

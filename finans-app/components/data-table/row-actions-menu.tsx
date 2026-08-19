@@ -46,9 +46,9 @@ export function RowActionsMenu({ children }: { children: (close: () => void) => 
       <button
         ref={buttonRef}
         onClick={() => (open ? close() : openMenu())}
-        className="p-2 hover:bg-secondary dark:hover:bg-secondary rounded-lg transition-colors"
+        className="p-2 hover:bg-secondary rounded-lg transition-colors"
       >
-        <MoreHorizontal className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
+        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
       </button>
       {open &&
         coords &&
@@ -58,7 +58,7 @@ export function RowActionsMenu({ children }: { children: (close: () => void) => 
             <div className="fixed inset-0 z-40" onClick={close} />
             <div
               style={{ position: 'fixed', top: coords.top, left: coords.left }}
-              className="w-44 bg-card dark:bg-card border border-border dark:border-border rounded-lg shadow-lg z-50"
+              className="w-44 bg-card border border-border rounded-lg shadow-lg z-50"
             >
               {children(close)}
             </div>

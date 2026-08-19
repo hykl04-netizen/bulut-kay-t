@@ -59,15 +59,15 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border dark:border-border p-8">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border p-8">
         
         {/* Logo ve Başlık */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
-            <Wallet className="text-white w-7 h-7" />
+            <Wallet className="text-primary-foreground w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">FinansApp</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground text-sm mt-1">Kurumsal hesabınıza giriş yapın</p>
+          <h1 className="text-2xl font-bold text-foreground">FinansApp</h1>
+          <p className="text-muted-foreground text-sm mt-1">Kurumsal hesabınıza giriş yapın</p>
         </div>
 
         {/* Hata Mesajı */}
@@ -88,7 +88,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="ornek@mail.com"
               required
             />
@@ -101,7 +101,7 @@ function LoginForm() {
               </label>
               <Link
                 href="/sifremi-unuttum"
-                className="text-xs font-medium text-primary hover:underline dark:text-brand-gold-light"
+                className="text-xs font-medium text-primary hover:underline"
               >
                 Şifremi Unuttum
               </Link>
@@ -110,7 +110,7 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border dark:border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
               placeholder="••••••••"
               required
             />
@@ -119,7 +119,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-secondary disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+            className="w-full bg-primary hover:opacity-90 disabled:bg-slate-400 text-primary-foreground font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
           >
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             {!loading && <ArrowRight className="w-4 h-4" />}
@@ -127,6 +127,10 @@ function LoginForm() {
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
+          <Link href="/demo" className="font-medium text-primary hover:underline">
+            Önce demoyu inceleyin
+          </Link>
+          <span className="mx-2 text-border">·</span>
           Hesabınız yok mu?{' '}
           <Link href="/kayit-ol" className="font-medium text-primary hover:underline">
             Ücretsiz kaydolun

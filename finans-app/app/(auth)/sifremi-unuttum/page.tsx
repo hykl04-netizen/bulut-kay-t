@@ -2,13 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, AlertCircle, MailCheck } from 'lucide-react';
+import { Wallet, ArrowLeft, AlertCircle, MailCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { Logo } from '@/components/logo';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export default function SifremiUnuttumPage() {
   const [email, setEmail] = useState('');
@@ -39,19 +34,20 @@ export default function SifremiUnuttumPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
-      <ThemeToggle className="absolute right-4 top-4" />
-
-      <div className="w-full max-w-md card-surface">
-        <div className="mb-8 flex flex-col items-center">
-          <Logo size="lg" className="mb-5" />
-          <p className="text-sm text-muted-foreground">Şifrenizi sıfırlayın</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border p-8">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-4">
+            <Wallet className="text-primary-foreground w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">FinansApp</h1>
+          <p className="text-muted-foreground text-sm mt-1">Şifrenizi sıfırlayın</p>
         </div>
 
         {sent ? (
           <div className="space-y-6">
-            <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-400">
-              <MailCheck className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-start gap-3 text-sm">
+              <MailCheck className="w-5 h-5 shrink-0 mt-0.5" />
               <p>
                 <strong>{email}</strong> adresine kayıtlıysa, şifre sıfırlama bağlantısı gönderildi.
                 Gelen kutunuzu (ve spam klasörünü) kontrol edin.
@@ -59,44 +55,50 @@ export default function SifremiUnuttumPage() {
             </div>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline dark:text-brand-gold-light"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="w-4 h-4" />
               Giriş sayfasına dön
             </Link>
           </div>
         ) : (
           <>
             {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
+              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4" />
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">E-posta Adresi</Label>
-                <Input
-                  id="email"
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-muted-foreground mb-1">
+                  E-posta Adresi
+                </label>
+                <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-500 dark:bg-secondary dark:text-slate-100 focus:border-transparent transition-all"
                   placeholder="ornek@mail.com"
                   required
                   autoFocus
                 />
               </div>
 
-              <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:opacity-90 disabled:bg-slate-400 text-primary-foreground font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+              >
                 {loading ? 'Gönderiliyor...' : 'Sıfırlama Bağlantısı Gönder'}
-              </Button>
+              </button>
 
               <Link
                 href="/login"
-                className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground dark:hover:text-slate-200 transition-colors"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="w-4 h-4" />
                 Giriş sayfasına dön
               </Link>
             </form>

@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { HandCoins, AlertTriangle, Loader2 } from 'lucide-react';
+import { HandCoins, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
 import { fetchInvoices, formatMoney, resolveStatus, type InvoiceWithCustomer } from '@/lib/invoices';
@@ -15,6 +15,9 @@ import {
   type CustomerAging,
 } from '@/lib/receivables';
 import { toast } from '@/components/ui/toaster';
+import { PageLoading } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 
 /**
  * Öneri 6 — alacak yaşlandırma tablosu.
@@ -52,10 +55,7 @@ export default function AlacaklarPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
@@ -75,25 +75,25 @@ export default function AlacaklarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <HandCoins className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground">Alacak Yaşlandırma</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Gönderilmiş ama henüz tahsil edilmemiş faturalarınız. Taslak ve iptal edilen faturalar
-        alacak sayılmaz.
-      </p>
+      <PageHeader
+        icon={HandCoins}
+        title="Alacak Yaşlandırma"
+        description="Gönderilmiş ama henüz tahsil edilmemiş faturalarınız. Taslak ve iptal edilen faturalar alacak sayılmaz."
+      />
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="font-medium text-foreground">Tahsil edilmemiş faturanız yok.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            <Link href="/faturalar" className="text-primary hover:underline">
-              Kesilen faturalar
-            </Link>{' '}
-            sayfasından yeni fatura oluşturabilirsiniz.
-          </p>
-        </div>
+        <EmptyState
+          icon={HandCoins}
+          title="Tahsil edilmemiş faturanız yok."
+          description={
+            <>
+              <Link href="/faturalar" className="text-primary hover:underline">
+                Kesilen faturalar
+              </Link>{' '}
+              sayfasından yeni fatura oluşturabilirsiniz.
+            </>
+          }
+        />
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2">

@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { summarizeUserAgent } from '@/lib/user-agent';
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface SessionRow {
   id: string;
@@ -88,34 +90,28 @@ export default function OturumlarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <MonitorSmartphone className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Oturum Yönetimi</h1>
-        </div>
-        {otherSessionsCount > 0 && (
-          <button
-            onClick={handleRevokeOthers}
-            disabled={revokingOthers}
-            className="inline-flex items-center gap-2 rounded-xl border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
-          >
-            {revokingOthers ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldX className="h-4 w-4" />}
-            Diğer Tüm Oturumlardan Çıkış Yap
-          </button>
-        )}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Hesabınıza giriş yapılmış cihaz ve tarayıcıların listesi. Tanımadığınız bir oturum görürseniz hemen sonlandırın
-        ve şifrenizi değiştirin.
-      </p>
+      <PageHeader
+        icon={MonitorSmartphone}
+        title="Oturum Yönetimi"
+        description="Hesabınıza giriş yapılmış cihaz ve tarayıcıların listesi. Tanımadığınız bir oturum görürseniz hemen sonlandırın ve şifrenizi değiştirin."
+        actions={
+          otherSessionsCount > 0 ? (
+            <button
+              onClick={handleRevokeOthers}
+              disabled={revokingOthers}
+              className="inline-flex items-center gap-2 rounded-lg border border-rose-300 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/40"
+            >
+              {revokingOthers ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldX className="h-4 w-4" />}
+              Diğer Tüm Oturumlardan Çıkış Yap
+            </button>
+          ) : null
+        }
+      />
 
       {loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-        </div>
+        <PageLoading />
       ) : sessions.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground dark:border-border">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
           Oturum bilgisi bulunamadı.
         </div>
       ) : (
@@ -123,13 +119,13 @@ export default function OturumlarPage() {
           {sessions.map((session) => (
             <div
               key={session.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 dark:border-border"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
             >
               <div className="flex items-center gap-3">
                 <MonitorSmartphone className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground dark:text-foreground">
+                    <span className="text-sm font-semibold text-foreground">
                       {summarizeUserAgent(session.user_agent)}
                     </span>
                     {session.is_current && (

@@ -9,6 +9,9 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLoading } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 
 /**
  * Faz 6 — "Muhasebecinizi davet edin".
@@ -101,10 +104,7 @@ export default function MuhasebeciPage() {
   if (!roleLoading && !canManage) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Calculator className="h-7 w-7 text-brand-gold" />
-          <h1 className="text-3xl font-bold text-foreground">Muhasebeci Erişimi</h1>
-        </div>
+        <PageHeader icon={Calculator} title="Muhasebeci Erişimi" />
         <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm">Bu sayfa için sahip veya yönetici rolü gerekiyor.</p>
@@ -115,15 +115,11 @@ export default function MuhasebeciPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Calculator className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground">Muhasebeci Erişimi</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Mali müşavirinize kendi girişini verin — kayıtlarınızı görebilir ve düzenleyebilir, ama
-        ekip yönetemez ve abonelik ayarlarınıza dokunamaz. Her ayın başında ona bir önceki ayın
-        özetini otomatik e-postayla göndeririz.
-      </p>
+      <PageHeader
+        icon={Calculator}
+        title="Muhasebeci Erişimi"
+        description="Mali müşavirinize kendi girişini verin — kayıtlarınızı görebilir ve düzenleyebilir, ama ekip yönetemez ve abonelik ayarlarınıza dokunamaz. Her ayın başında ona bir önceki ayın özetini otomatik e-postayla göndeririz."
+      />
 
       <form
         onSubmit={handleInvite}
@@ -143,7 +139,7 @@ export default function MuhasebeciPage() {
         <button
           type="submit"
           disabled={inviting || !email.trim()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-secondary disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
           {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
           Davet Gönder
@@ -153,11 +149,9 @@ export default function MuhasebeciPage() {
       <div className="space-y-2">
         <h2 className="font-semibold text-foreground">Yetkili muhasebeciler</h2>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+          <PageLoading />
         ) : accountants.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Henüz muhasebeci davet edilmemiş.
-          </div>
+          <EmptyState icon={Calculator} title="Henüz muhasebeci davet edilmemiş." />
         ) : (
           <ul className="divide-y divide-border rounded-xl border border-border">
             {accountants.map((m) => (

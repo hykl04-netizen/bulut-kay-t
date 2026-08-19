@@ -70,30 +70,26 @@ export function AdvancedFilterBar({
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground dark:text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             ref={searchInputRef}
             type="text"
             value={value.search}
             onChange={(e) => update({ search: e.target.value })}
             placeholder={searchPlaceholder ?? 'Ara... ( / )'}
-            className="w-full rounded-xl border border-border bg-transparent py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+            className="w-full rounded-xl border border-border bg-transparent py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none dark:text-white"
           />
         </div>
 
         <button
           type="button"
           onClick={() => setPanelOpen((o) => !o)}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium shadow-sm transition ${
-            panelOpen || advancedActiveCount > 0
-              ? 'border-primary bg-primary/10 text-primary dark:border-brand-gold dark:bg-secondary dark:text-brand-gold-light'
-              : 'border-border text-foreground hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-secondary'
-          }`}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium shadow-sm transition ${ panelOpen || advancedActiveCount > 0 ? 'border-primary bg-primary/10 text-primary dark:border-brand-gold' : 'border-border text-foreground hover:bg-muted dark:hover:opacity-90' }`}
         >
           <SlidersHorizontal className="h-4 w-4" />
           Filtrele
           {advancedActiveCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white dark:bg-brand-gold dark:text-accent-foreground">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground dark:bg-brand-gold dark:text-accent-foreground">
               {advancedActiveCount}
             </span>
           )}
@@ -103,7 +99,7 @@ export function AdvancedFilterBar({
           <button
             type="button"
             onClick={clearAll}
-            className="inline-flex shrink-0 items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground sm:self-auto"
+            className="inline-flex shrink-0 items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground sm:self-auto"
           >
             <X className="h-3.5 w-3.5" />
             Temizle
@@ -112,31 +108,31 @@ export function AdvancedFilterBar({
       </div>
 
       {panelOpen && (
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-4 dark:border-border dark:bg-card sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Başlangıç Tarihi
             </label>
             <input
               type="date"
               value={value.dateFrom}
               onChange={(e) => update({ dateFrom: e.target.value })}
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:text-white"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Bitiş Tarihi
             </label>
             <input
               type="date"
               value={value.dateTo}
               onChange={(e) => update({ dateTo: e.target.value })}
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:text-white"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Min. Tutar
             </label>
             <input
@@ -145,11 +141,11 @@ export function AdvancedFilterBar({
               value={value.amountMin}
               onChange={(e) => update({ amountMin: e.target.value })}
               placeholder="0"
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:text-white"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Maks. Tutar
             </label>
             <input
@@ -158,13 +154,13 @@ export function AdvancedFilterBar({
               value={value.amountMax}
               onChange={(e) => update({ amountMax: e.target.value })}
               placeholder="∞"
-              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-border dark:text-foreground"
+              className="w-full rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:text-white"
             />
           </div>
 
           {categories.length > 0 && (
             <div className="sm:col-span-2 lg:col-span-4">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground dark:text-muted-foreground">
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Kategoriler
               </label>
               <div className="flex flex-wrap gap-1.5">
@@ -175,11 +171,7 @@ export function AdvancedFilterBar({
                       key={cat.id}
                       type="button"
                       onClick={() => toggleCategory(cat.id)}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                        active
-                          ? 'border-primary bg-primary text-white dark:border-brand-gold dark:bg-brand-gold dark:text-accent-foreground'
-                          : 'border-border text-muted-foreground hover:bg-muted dark:border-border dark:text-muted-foreground dark:hover:bg-secondary'
-                      }`}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${ active ? 'border-primary bg-primary text-primary-foreground dark:border-brand-gold dark:bg-brand-gold dark:text-accent-foreground' : 'border-border text-muted-foreground hover:bg-muted dark:hover:opacity-90' }`}
                     >
                       {cat.name}
                     </button>

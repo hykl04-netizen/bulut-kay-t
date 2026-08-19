@@ -16,7 +16,6 @@ import {
   BarChart3,
   FileText,
   LogOut,
-  Menu,
   X,
   DownloadCloud,
   Target,
@@ -36,6 +35,7 @@ import {
   LifeBuoy,
   ReceiptText,
   ShieldCheck,
+  ChevronDown,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CalculatorWidget } from '@/components/calculator-widget';
@@ -50,10 +50,13 @@ import { toast } from '@/components/ui/toaster';
 import { useKeyboardShortcut } from '@/lib/use-keyboard-shortcut';
 import { useTeamRole } from '@/lib/use-team-role';
 import { ROLE_LABELS } from '@/lib/team';
-import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
+import { getCurrentWorkspaceId, getWorkspaceType } from '@/lib/supabase/workspace';
 import { isOnboardingPending } from '@/lib/onboarding';
 import { useSubscription } from '@/lib/use-subscription';
 import { accessState, hasFeature, trialDaysLeft } from '@/lib/plans';
+import { roleLabelFor, type WorkspaceType } from '@/lib/workspace-types';
+import { BottomNav, type BottomNavItem } from '@/components/finans/bottom-nav';
+import { MobileTopBar } from '@/components/finans/mobile-top-bar';
 
 interface NavItem {
   href: string;
@@ -69,11 +72,30 @@ interface NavItem {
   // kilit rozetiyle görünür ve tıklanınca /abonelik sayfasına götürür.
   // Asıl kısıtlama DB'de (RLS) — bu sadece arayüz göstergesi.
   requiresFeature?: 'bordro';
+  /**
+   * Faz 11 — bu öğenin görüneceği hesap tipleri. Belirtilmezse her tipte
+   * görünür. Aile hesabında "Cari", "Bordro", "Fatura Künyesi" gibi
+   * muhasebe terimlerinin GÖRÜNMEMESİ kritik: kullanıcı bunlardan birini
+   * görürse uygulamanın kendisi için olmadığına karar veriyor.
+   */
+  types?: WorkspaceType[];
+  /** Aynı ekranın tipe göre farklı adlandırılması (örn. Ekip → Aile Üyeleri). */
+  labelByType?: Partial<Record<WorkspaceType, string>>;
 }
 
 interface NavGroup {
   title: string;
   items: NavItem[];
+  /**
+   * Katlanabilir grup. Varsayılan olarak kapalı gelir; kullanıcı o gruptaki bir
+   * sayfadayken kendiliğinden açılır. Menüde 25 bağlantı vardı ve tek bir
+   * "Kurumsal" başlığı altında 13'ü birden duruyordu — günde bir kez girilen
+   * ayar sayfaları, her gün kullanılan Gelir/Gider ile aynı görsel ağırlıktaydı.
+   */
+  collapsible?: boolean;
+  /** Grubun tamamının görüneceği hesap tipleri. */
+  types?: WorkspaceType[];
+  titleByType?: Partial<Record<WorkspaceType, string>>;
 }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -84,10 +106,17 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/gelir-gider', label: 'Gelir/Gider', icon: ArrowRightLeft },
       { href: '/borc-alacak', label: 'Borç/Alacak', icon: HandCoins },
       { href: '/fatura-masraf', label: 'Fatura/Masraf', icon: Receipt },
+      { href: '/butce', label: 'Bütçe', icon: Target },
+    ],
+  },
+  {
+    // Fatura kesme / cari / alacak takibi yalnızca ticari defterde anlamlı.
+    title: 'Satış ve Cari',
+    types: ['sirket', 'musavir_ofisi'],
+    items: [
       { href: '/faturalar', label: 'Kesilen Faturalar', icon: FilePlus2 },
       { href: '/cariler', label: 'Cariler', icon: Users2 },
       { href: '/alacaklar', label: 'Alacak Yaşlandırma', icon: HandCoins },
-      { href: '/butce', label: 'Bütçe', icon: Target },
     ],
   },
   {
@@ -96,36 +125,139 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/banka-hesaplari', label: 'Banka Hesapları', icon: Landmark },
       { href: '/yatirim', label: 'Yatırımlar', icon: TrendingUp },
       { href: '/varlik', label: 'Varlıklar', icon: PiggyBank },
-      { href: '/bordro', label: 'Bordro/Maaş', icon: Wallet, hideForViewer: true, requiresFeature: 'bordro' },
+      {
+        href: '/bordro',
+        label: 'Bordro/Maaş',
+        icon: Wallet,
+        hideForViewer: true,
+        requiresFeature: 'bordro',
+        types: ['sirket', 'musavir_ofisi'],
+      },
     ],
   },
   {
-    title: 'Kurumsal',
+    title: 'Raporlar ve Arşiv',
     items: [
       { href: '/raporlar', label: 'Raporlar', icon: BarChart3 },
-      { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
       { href: '/belgeler', label: 'Belgeler & Arşiv', icon: FileText },
-      { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History },
-      { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
+      { href: '/aktivite-gecmisi', label: 'Aktivite Geçmişi', icon: History, types: ['sirket', 'musavir_ofisi'] },
+    ],
+  },
+  {
+    title: 'İşletme',
+    titleByType: { aile: 'Hesabım' },
+    items: [
+      { href: '/musterilerim', label: 'Müşterilerim', icon: Briefcase, types: ['sirket', 'musavir_ofisi'] },
+      {
+        href: '/ekip',
+        label: 'Ekip Yönetimi',
+        icon: Users,
+        managerOnly: true,
+        labelByType: { aile: 'Aile Üyeleri' },
+      },
+      {
+        href: '/muhasebeci',
+        label: 'Muhasebeci Erişimi',
+        icon: Calculator,
+        managerOnly: true,
+        // KVKK: aile bütçesine mali müşavir erişimi DB tetikleyicisiyle de
+        // engelli (bkz. 20260826_workspace_types.sql).
+        types: ['sirket', 'musavir_ofisi'],
+      },
       { href: '/abonelik', label: 'Abonelik', icon: CreditCard, managerOnly: true },
-      { href: '/ayarlar', label: 'Şirket Ayarları', icon: Building2, managerOnly: true },
-      { href: '/fatura-kunyesi', label: 'Fatura Künyesi', icon: ReceiptText, managerOnly: true },
-      { href: '/donem-kilitleme', label: 'Dönem Kilitleme', icon: Lock, managerOnly: true },
-      { href: '/muhasebeci', label: 'Muhasebeci Erişimi', icon: Calculator, managerOnly: true },
-      { href: '/ekip', label: 'Ekip Yönetimi', icon: Users, managerOnly: true },
-      { href: '/musterilerim', label: 'Müşterilerim', icon: Briefcase },
+    ],
+  },
+  {
+    title: 'Ayarlar',
+    collapsible: true,
+    items: [
+      {
+        href: '/ayarlar',
+        label: 'Şirket Ayarları',
+        icon: Building2,
+        managerOnly: true,
+        labelByType: { aile: 'Hesap Ayarları' },
+      },
+      {
+        href: '/fatura-kunyesi',
+        label: 'Fatura Künyesi',
+        icon: ReceiptText,
+        managerOnly: true,
+        types: ['sirket', 'musavir_ofisi'],
+      },
+      { href: '/kategoriler', label: 'Kategoriler', icon: Tags },
+      {
+        href: '/donem-kilitleme',
+        label: 'Dönem Kilitleme',
+        icon: Lock,
+        managerOnly: true,
+        types: ['sirket', 'musavir_ofisi'],
+      },
+      { href: '/oturumlar', label: 'Oturum Yönetimi', icon: MonitorSmartphone },
       { href: '/hesabim', label: 'Hesabım ve Verilerim', icon: ShieldCheck },
     ],
   },
 ];
 
+/**
+ * Faz 12 — mobil alt menü sekmeleri.
+ *
+ * Sol menüdeki 25 bağlantının hepsi telefonda gerekmiyor; günlük kullanılan
+ * dört ekran alta iner, gerisi hamburger menüsünde kalır. Dörtten fazla
+ * sekme dokunma hedefini 44px'in altına düşürür.
+ */
+const BOTTOM_NAV: Record<WorkspaceType, BottomNavItem[]> = {
+  aile: [
+    { href: '/', label: 'Özet', icon: LayoutDashboard },
+    { href: '/gelir-gider', label: 'Hareketler', icon: ArrowRightLeft },
+    { href: '/butce', label: 'Bütçe', icon: Target },
+    { href: '/raporlar', label: 'Rapor', icon: BarChart3 },
+  ],
+  sirket: [
+    { href: '/', label: 'Özet', icon: LayoutDashboard },
+    { href: '/gelir-gider', label: 'Hareketler', icon: ArrowRightLeft },
+    { href: '/faturalar', label: 'Faturalar', icon: FilePlus2, matchPrefix: true },
+    { href: '/cariler', label: 'Cariler', icon: Users2 },
+  ],
+  musavir_ofisi: [
+    { href: '/', label: 'Özet', icon: LayoutDashboard },
+    { href: '/musterilerim', label: 'Mükellef', icon: Briefcase },
+    { href: '/gelir-gider', label: 'Hareketler', icon: ArrowRightLeft },
+    { href: '/raporlar', label: 'Rapor', icon: BarChart3 },
+  ],
+};
+
+/**
+ * Mobil üst çubuğun başlıkları. NAV_GROUPS tek doğruluk kaynağı olduğu
+ * için elle ikinci bir liste tutulmuyor — menüde adı değişen ekranın
+ * başlığı da kendiliğinden değişir.
+ */
+function buildTitleMap(type: WorkspaceType): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      map[item.href] = item.labelByType?.[type] ?? item.label;
+    }
+  }
+  // Menüde yeri olmayan alt ekranlar
+  map['/faturalar/yeni'] = 'Yeni Fatura';
+  map['/kurulum'] = 'Kurulum';
+  return map;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Katlanabilir menü gruplarının elle değiştirilmiş durumu (bkz. NAV_GROUPS).
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const { role, loading: roleLoading } = useTeamRole();
+  // Faz 11 — aktif hesabın tipi. Yüklenene kadar 'sirket' varsayılır ki
+  // menü hiçbir zaman eksik başlayıp sonradan büyümesin (zıplama olmaz);
+  // aile hesabında birkaç öğe kaybolur, tersi olsa yeni öğeler belirirdi.
+  const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('sirket');
   const canManageTeamNav = roleLoading || role === 'sahip' || role === 'yonetici';
   const canViewPayrollNav = roleLoading || !role || role !== 'salt_gorunum';
 
@@ -182,7 +314,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const workspaceId = await getCurrentWorkspaceId(user.id);
       if (cancelled) return;
       const pending = await isOnboardingPending(workspaceId);
-      if (!cancelled && pending) router.replace('/kurulum');
+      if (!cancelled && pending) {
+        router.replace('/kurulum');
+        return;
+      }
+      // Faz 11 — menü filtresi için hesap tipi. Aynı effect içinde okunuyor
+      // ki ekstra bir getCurrentWorkspaceId turu daha atılmasın.
+      const type = await getWorkspaceType(workspaceId);
+      if (!cancelled) setWorkspaceType(type);
     })();
     return () => {
       cancelled = true;
@@ -238,7 +377,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Logo />
         {!roleLoading && role && role !== 'sahip' && (
           <span className="ml-[3.25rem] w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
-            {ROLE_LABELS[role]}
+            {roleLabelFor(workspaceType, role, ROLE_LABELS[role])}
           </span>
         )}
       </div>
@@ -249,20 +388,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <nav className="flex-1 px-3 pb-2 space-y-5 overflow-y-auto">
         {NAV_GROUPS.map((group) => {
+          // Grup bütünüyle başka bir hesap tipine aitse hiç çizilmez.
+          if (group.types && !group.types.includes(workspaceType)) return null;
+
           const visibleItems = group.items.filter(
-            (item) => (!item.managerOnly || canManageTeamNav) && (!item.hideForViewer || canViewPayrollNav)
+            (item) =>
+              (!item.managerOnly || canManageTeamNav) &&
+              (!item.hideForViewer || canViewPayrollNav) &&
+              (!item.types || item.types.includes(workspaceType))
           );
           if (visibleItems.length === 0) return null;
 
+          const groupTitle = group.titleByType?.[workspaceType] ?? group.title;
+
+          // Katlanabilir gruplar: kullanıcı elle açıp kapatmadıysa, o gruptaki
+          // bir sayfadaysa açık gelir.
+          const hasActiveChild = visibleItems.some((item) => item.href === pathname);
+          const isOpen = !group.collapsible || (openGroups[group.title] ?? hasActiveChild);
+
           return (
             <div key={group.title}>
-              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.title}
-              </p>
-              <div className="space-y-0.5">
+              {group.collapsible ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenGroups((prev) => ({ ...prev, [group.title]: !isOpen }))
+                  }
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center gap-1 rounded px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 transition hover:text-foreground"
+                >
+                  {groupTitle}
+                  <ChevronDown
+                    aria-hidden
+                    className={`h-3.5 w-3.5 transition-transform ${isOpen ? '' : '-rotate-90'}`}
+                  />
+                </button>
+              ) : (
+                <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {groupTitle}
+                </p>
+              )}
+              <div className={`space-y-0.5 ${isOpen ? '' : 'hidden'}`}>
                 {visibleItems.map((item) => {
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
+                  const label = item.labelByType?.[workspaceType] ?? item.label;
 
                   if (item.disabled) {
                     return (
@@ -272,7 +442,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/40 cursor-not-allowed select-none"
                       >
                         <Icon className="w-[18px] h-[18px]" />
-                        {item.label}
+                        {label}
                         <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted-foreground/10">
                           Kapalı
                         </span>
@@ -291,7 +461,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground transition"
                       >
                         <Icon className="w-[18px] h-[18px]" />
-                        {item.label}
+                        {label}
                         <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/15 text-accent">
                           Pro
                         </span>
@@ -308,7 +478,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }`}
                     >
                       <Icon className="w-[18px] h-[18px]" />
-                      {item.label}
+                      {label}
                     </Link>
                   );
                 })}
@@ -360,17 +530,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {navContent}
       </aside>
 
-      {/* Mobil üst çubuk — md altında, sidebar'ın yerini alır */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-card border-b border-border px-4 h-16 md:hidden print:hidden">
-        <Logo size="md" showSubtitle={false} />
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          aria-label="Menüyü aç"
-          className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      </div>
+      {/* Mobil üst çubuk — kök ekranda logo+menü, alt ekranda geri oku +
+          başlık. Tam ekran PWA'da tarayıcının geri düğmesi olmadığı için
+          uygulamanın kendi geri oku zorunlu. */}
+      <MobileTopBar
+        rootPaths={BOTTOM_NAV[workspaceType].map((i) => i.href)}
+        titles={buildTitleMap(workspaceType)}
+        onMenuClick={() => setMobileNavOpen(true)}
+      />
 
       {/* Mobil kayan menü paneli + karartma */}
       {mobileNavOpen && (
@@ -392,8 +559,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
+      {/* Mobil alt menü — md altında. Hamburger menüsü tam listeyi taşımaya
+          devam ediyor; buradaki dört sekme günlük kullanım için. */}
+      <div className="md:hidden print:hidden">
+        <BottomNav
+          items={BOTTOM_NAV[workspaceType]}
+          primaryLabel="Hızlı kayıt"
+          onPrimaryAction={() => router.push('/gelir-gider?hizli=1')}
+        />
+      </div>
+
       {/* Ana İçerik Alanı */}
-      <main className="flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:p-8 overflow-y-auto print:p-0 print:pt-0 print:overflow-visible">
+      {/* key={pathname}: React alt ağacı yeniden bağlar, böylece
+          .app-page animasyonu her gezinmede baştan oynar. */}
+      <main
+        key={pathname}
+        className="app-page flex-1 overflow-y-auto px-4 pb-24 pt-[4.25rem] sm:px-6 md:p-8 md:pb-8 print:overflow-visible print:p-0 print:pt-0"
+      >
         {/* Abonelik uyarı şeridi (Faz 3). Yazma kısıtı asıl olarak RLS'te
             uygulanıyor; bu şerit kullanıcının NEDEN kayıt ekleyemediğini
             görmesini sağlıyor. */}

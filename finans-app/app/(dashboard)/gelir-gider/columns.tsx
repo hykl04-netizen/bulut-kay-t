@@ -4,6 +4,7 @@ import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { Pencil, Trash2, ExternalLink, Repeat } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
+import { formatTRY } from '@/lib/currency';
 
 export type Transaction = {
   id: string;
@@ -85,7 +86,7 @@ export const columns: ColumnDef<Transaction>[] = [
             onSave={(v) => meta!.onCellEdit(row.original.id, 'description', v)}
           />
           {row.original.is_recurring && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground dark:text-muted-foreground shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0" title={`Tekrarlayan: ${row.original.recurrence_period ?? ''}`}>
               <Repeat className="w-3 h-3" />
             </span>
           )}
@@ -98,7 +99,7 @@ export const columns: ColumnDef<Transaction>[] = [
     header: "Kategori",
     cell: ({ row }) => {
       const category = row.original.category;
-      if (!category) return <span className="text-muted-foreground dark:text-muted-foreground text-sm">-</span>;
+      if (!category) return <span className="text-muted-foreground text-sm">-</span>;
       return (
         <span
           className="px-2 py-1 rounded-full text-xs font-medium"
@@ -114,7 +115,7 @@ export const columns: ColumnDef<Transaction>[] = [
     header: "Belge",
     cell: ({ row }) => {
       const url = row.original.receipt_url;
-      if (!url) return <span className="text-xs text-muted-foreground dark:text-muted-foreground">-</span>;
+      if (!url) return <span className="text-xs text-muted-foreground">-</span>;
       return (
         <a
           href={url}
@@ -138,7 +139,7 @@ export const columns: ColumnDef<Transaction>[] = [
       const isForeign = currency !== 'TRY';
       let formatted: string;
       try {
-        formatted = new Intl.NumberFormat("tr-TR", { style: "currency", currency }).format(amount);
+        formatted = formatTRY(amount);
       } catch {
         formatted = amount.toFixed(2);
       }
@@ -154,8 +155,8 @@ export const columns: ColumnDef<Transaction>[] = [
                 {type === 'gelir' ? '+' : '-'}{formatted}
               </span>
               {isForeign && (
-                <span className="font-mono text-xs text-muted-foreground dark:text-muted-foreground">
-                  ≈ {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(tryEquivalent)}
+                <span className="font-mono text-xs text-muted-foreground">
+                  ≈ {formatTRY(tryEquivalent)}
                 </span>
               )}
             </div>

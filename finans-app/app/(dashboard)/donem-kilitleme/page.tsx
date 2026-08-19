@@ -8,6 +8,8 @@ import { toast } from '@/components/ui/toaster';
 import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLoading } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default function DonemKilitlemePage() {
   const [lockedBefore, setLockedBefore] = useState<string | null>(null);
@@ -112,25 +114,19 @@ export default function DonemKilitlemePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor...
-      </div>
+      <PageLoading />
     );
   }
 
   return (
     <div className="max-w-xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Lock className="h-7 w-7 text-brand-gold" />
-        <h1 className="text-3xl font-bold text-foreground dark:text-foreground">Dönem Kilitleme</h1>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Belirlediğiniz tarihten önceki gelir/gider, fatura/masraf ve borç/alacak kayıtları artık değiştirilemez veya
-        silinemez — kapanmış bir dönemin yanlışlıkla bozulmasını önler. Kilit, bu sayfadan istediğiniz zaman
-        kaldırılabilir.
-      </p>
+      <PageHeader
+        icon={Lock}
+        title="Dönem Kilitleme"
+        description="Belirlediğiniz tarihten önceki gelir/gider, fatura/masraf ve borç/alacak kayıtları artık değiştirilemez veya silinemez — kapanmış bir dönemin yanlışlıkla bozulmasını önler. Kilit, bu sayfadan istediğiniz zaman kaldırılabilir."
+      />
 
-      <div className="space-y-5 rounded-xl border border-border bg-card p-6 dark:border-border">
+      <div className="space-y-5 rounded-xl border border-border bg-card p-6">
         {lockedBefore && (
           <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
             <Lock className="h-4 w-4" />

@@ -94,7 +94,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
       {!uploadedUrl ? (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted py-6 transition-colors hover:bg-secondary dark:border-border dark:bg-secondary dark:hover:bg-secondary"
+          className="relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted py-6 transition-colors hover:opacity-90"
         >
           {isUploading ? (
             <div className="flex flex-col items-center text-emerald-600">
@@ -102,7 +102,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
               <span className="text-sm font-medium">Yükleniyor...</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-muted-foreground dark:text-muted-foreground">
+            <div className="flex flex-col items-center text-muted-foreground">
               <UploadCloud className="mb-2 h-6 w-6" />
               <span className="text-sm">Tıklayın veya dokunun</span>
               <span className="text-xs mt-1">PNG, JPG, PDF (Max. 50MB)</span>
@@ -138,7 +138,7 @@ export function FileUpload({ onUploadSuccess, label = "Fiş / Fatura Fotoğrafı
             <button
               type="button"
               onClick={() => setUploadedUrl(null)}
-              className="text-xs font-semibold text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               Değiştir
             </button>

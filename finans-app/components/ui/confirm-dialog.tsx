@@ -71,7 +71,7 @@ export function ConfirmDialogHost() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl dark:border-border dark:bg-card"
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
       >
         <div className="flex items-center gap-3">
           <div
@@ -83,30 +83,26 @@ export function ConfirmDialogHost() {
           >
             <Icon className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-bold text-foreground dark:text-foreground">
+          <h3 className="text-base font-bold text-foreground dark:text-white">
             {state.title ?? 'Emin misiniz?'}
           </h3>
         </div>
 
-        <p className="mt-3 text-sm text-muted-foreground dark:text-muted-foreground leading-relaxed">
+        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
           {state.message}
         </p>
 
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => close(false)}
-            className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary dark:text-muted-foreground dark:hover:bg-secondary transition"
+            className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition"
           >
             {state.cancelLabel ?? 'Vazgeç'}
           </button>
           <button
             onClick={() => close(true)}
             autoFocus
-            className={`btn-gold-cta rounded-xl px-4 py-2 text-sm font-medium text-white transition ${
-              state.danger
-                ? 'bg-rose-600 hover:bg-rose-700'
-                : 'bg-primary hover:bg-primary/90 dark:bg-secondary dark:text-foreground dark:hover:bg-secondary/70'
-            }`}
+            className={`btn-gold-cta rounded-xl px-4 py-2 text-sm font-medium text-primary-foreground transition ${ state.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-primary hover:opacity-90 ' }`}
           >
             {state.confirmLabel ?? 'Onayla'}
           </button>

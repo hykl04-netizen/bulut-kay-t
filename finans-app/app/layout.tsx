@@ -39,7 +39,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10142b",
+  /* Tam ekran PWA'da Android'in durum çubuğu bu rengi alır. Tek sabit
+     renk verilirse koyu temada açık (veya tersi) bir şerit kalıyor ve
+     "uygulamanın parçası değil" hissi veriyor; iki mod ayrı ayrı
+     tanımlandı ve uygulamanın arka planıyla birebir eşleşiyor. */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef0f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#10142b" },
+  ],
+  /* Çentikli ekranlarda içerik kenara kadar uzansın; güvenli alan
+     boşluklarını CSS'teki .safe-top / .safe-bottom veriyor. */
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

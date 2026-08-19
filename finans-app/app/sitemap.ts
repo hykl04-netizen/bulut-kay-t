@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPaths = [
     { path: '/urun', priority: 1 },
+    { path: '/demo', priority: 0.95 },
     { path: '/fiyatlandirma', priority: 0.9 },
     { path: '/sss', priority: 0.7 },
     { path: '/yardim', priority: 0.7 },

@@ -5,12 +5,8 @@
  */
 
 import type { MonthlyCashFlow, DistributionSlice } from '@/lib/reports';
+import { formatTRY } from '@/lib/currency';
 
-const TRY_FORMATTER = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
-
-function formatTRY(value: number): string {
-  return TRY_FORMATTER.format(value);
-}
 
 export interface ReportExportData {
   monthlyCashFlow: MonthlyCashFlow[];

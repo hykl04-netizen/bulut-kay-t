@@ -4,6 +4,7 @@ import { ColumnDef, Row, Table } from "@tanstack/react-table";
 import { Trash2, Pencil } from "lucide-react";
 import { EditableCell } from "@/components/data-table/editable-cell";
 import { RowActionsMenu } from "@/components/data-table/row-actions-menu";
+import { formatCurrency } from '@/lib/currency';
 
 export type Investment = {
   id: string;
@@ -72,7 +73,7 @@ export const columns: ColumnDef<Investment>[] = [
     cell: ({ row }) => {
       const type = row.getValue("asset_type") as string;
       return (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${assetTypeColors[type] ?? 'bg-secondary dark:bg-secondary text-muted-foreground dark:text-muted-foreground'}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${assetTypeColors[type] ?? 'bg-secondary text-muted-foreground'}`}>
           {assetTypeLabels[type] ?? type}
         </span>
       );
@@ -81,7 +82,7 @@ export const columns: ColumnDef<Investment>[] = [
   {
     accessorKey: "symbol",
     header: "Sembol",
-    cell: ({ row }) => <span className="font-medium text-foreground dark:text-foreground">{row.getValue("symbol")}</span>,
+    cell: ({ row }) => <span className="font-medium text-foreground">{row.getValue("symbol")}</span>,
   },
   {
     accessorKey: "quantity",
@@ -112,7 +113,7 @@ export const columns: ColumnDef<Investment>[] = [
           step="0.01"
           value={cost ?? ''}
           placeholder="Gir"
-          display={cost === null ? <span className="text-muted-foreground dark:text-muted-foreground">-</span> : <span className="text-muted-foreground dark:text-muted-foreground">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(cost)}</span>}
+          display={cost === null ? <span className="text-muted-foreground">-</span> : <span className="text-muted-foreground">{formatCurrency(cost, row.original.currency || "TRY")}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'avg_cost', v)}
         />
       );
@@ -130,7 +131,7 @@ export const columns: ColumnDef<Investment>[] = [
           step="0.01"
           value={price ?? ''}
           placeholder="Gir"
-          display={price === null ? <span className="text-muted-foreground dark:text-muted-foreground">Girilmedi</span> : <span className="font-medium text-foreground dark:text-foreground">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(price)}</span>}
+          display={price === null ? <span className="text-muted-foreground">Girilmedi</span> : <span className="font-medium text-foreground">{formatCurrency(price, row.original.currency || "TRY")}</span>}
           onSave={(v) => meta!.onCellEdit(row.original.id, 'current_price', v)}
         />
       );
@@ -142,9 +143,9 @@ export const columns: ColumnDef<Investment>[] = [
     cell: ({ row }) => {
       const quantity = row.original.quantity;
       const price = row.original.current_price;
-      if (price === null) return <span className="text-muted-foreground dark:text-muted-foreground">-</span>;
+      if (price === null) return <span className="text-muted-foreground">-</span>;
       const total = quantity * price;
-      return <span className="font-semibold text-foreground dark:text-foreground">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: row.original.currency || "TRY" }).format(total)}</span>;
+      return <span className="font-semibold text-foreground">{formatCurrency(total, row.original.currency || "TRY")}</span>;
     },
   },
   {

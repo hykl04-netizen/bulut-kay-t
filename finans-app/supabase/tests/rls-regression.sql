@@ -268,6 +268,52 @@ begin
     perform pg_temp.kontrol('Davet: kayıt olunca davet otomatik aktifleşir', v_cnt, 1);
   end;
 
+  -- ============================================================
+  -- 10) FAZ 11 — HESAP TİPİ (aile / şirket / müşavir ofisi)
+  -- ============================================================
+  -- Aile hesabı, EV BÜTÇESİ demektir; oraya bir mali müşavirin erişmesi
+  -- ciddi bir kişisel veri ihlali olur. Davet akışı service role ile
+  -- çalıştığı (RLS'i atladığı) için kısıt DB tetikleyicisinde — bu testler
+  -- o tetikleyicinin regresyona uğramadığını doğrular.
+  perform pg_temp.yonetici();
+  declare
+    v_aile uuid;
+    v_tip text;
+  begin
+    insert into public.workspaces (owner_id, name, type)
+    values (v_sahip_a, 'Test Ailem', 'aile') returning id into v_aile;
+
+    perform pg_temp.kontrol('Tip: aile hesabı oluşturulabilir', (v_aile is not null), true);
+
+    select type into v_tip from public.workspaces where id = v_ws_b;
+    perform pg_temp.kontrol('Tip: mevcut hesaplar varsayılan olarak şirket', v_tip, 'sirket'::text);
+
+    perform pg_temp.engellenmeli(
+      'Tip: aile hesabına MUHASEBECİ davet edilemez (KVKK)',
+      format('insert into public.team_members (workspace_id, invited_email, role, status, invited_by) values (%L, ''musavir@example.test'', ''muhasebeci'', ''beklemede'', %L)', v_aile, v_sahip_a)
+    );
+
+    -- Aile üyesi (eş/çocuk) daveti serbest olmalı — kısıt yalnızca muhasebeci içindir.
+    insert into public.team_members (workspace_id, invited_email, role, status, invited_by)
+    values (v_aile, 'esim@example.test', 'yonetici', 'beklemede', v_sahip_a);
+    select count(*) into v_cnt from public.team_members
+      where workspace_id = v_aile and role = 'yonetici';
+    perform pg_temp.kontrol('Tip: aile hesabına aile üyesi davet EDİLEBİLİR', v_cnt, 1);
+
+    -- Ters yol: şirketi muhasebeciliyken aile'ye çevirmek de engellenmeli.
+    insert into public.team_members (workspace_id, invited_email, role, status, invited_by)
+    values (v_ws_b, 'musavir2@example.test', 'muhasebeci', 'beklemede', v_sahip_b);
+    perform pg_temp.engellenmeli(
+      'Tip: muhasebecisi olan hesap AİLE''ye çevrilemez',
+      format('update public.workspaces set type = ''aile'' where id = %L', v_ws_b)
+    );
+
+    perform pg_temp.engellenmeli(
+      'Tip: geçersiz hesap tipi reddedilir',
+      format('insert into public.workspaces (owner_id, name, type) values (%L, ''Hatalı'', ''holding'')', v_sahip_a)
+    );
+  end;
+
   perform pg_temp.yonetici();
 end $$;
 

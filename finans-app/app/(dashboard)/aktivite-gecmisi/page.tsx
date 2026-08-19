@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { History, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCurrentWorkspaceId } from '@/lib/supabase/workspace';
+import { formatTRY } from '@/lib/currency';
 
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 interface AuditLogRow {
   id: number;
   table_name: string;
@@ -44,7 +48,7 @@ function summarizeRow(row: AuditLogRow): string {
     if (typeof data[key] === 'string' && (data[key] as string).trim()) return data[key] as string;
   }
   if (typeof data.amount === 'number') {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(data.amount as number);
+    return formatTRY(data.amount as number);
   }
   return row.record_id ?? '-';
 }
@@ -68,7 +72,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
   const ActionIcon = actionMeta.icon;
 
   return (
-    <div className="rounded-xl border border-border bg-card dark:border-border">
+    <div className="rounded-xl border border-border bg-card">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -81,7 +85,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
           <span className="shrink-0 text-xs font-semibold text-muted-foreground">
             {TABLE_LABELS[row.table_name] ?? row.table_name}
           </span>
-          <span className="truncate text-sm text-foreground dark:text-slate-100">{summarizeRow(row)}</span>
+          <span className="truncate text-sm text-foreground">{summarizeRow(row)}</span>
         </div>
         <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
           <span>{new Date(row.created_at).toLocaleString('tr-TR')}</span>
@@ -90,7 +94,7 @@ function DiffRow({ row }: { row: AuditLogRow }) {
       </button>
 
       {open && changedFields.length > 0 && (
-        <div className="border-t border-border px-4 py-3 dark:border-border">
+        <div className="border-t border-border px-4 py-3">
           <table className="w-full text-xs">
             <thead>
               <tr className="text-left text-muted-foreground">
@@ -101,8 +105,8 @@ function DiffRow({ row }: { row: AuditLogRow }) {
             </thead>
             <tbody>
               {changedFields.map((f) => (
-                <tr key={f.key} className="border-t border-border/60 dark:border-border/60">
-                  <td className="py-1 pr-4 font-medium text-foreground dark:text-slate-200">{f.key}</td>
+                <tr key={f.key} className="border-t border-border/60">
+                  <td className="py-1 pr-4 font-medium text-foreground">{f.key}</td>
                   <td className="py-1 pr-4 text-rose-600 dark:text-rose-400">{String(f.before ?? '—')}</td>
                   <td className="py-1 text-emerald-600 dark:text-emerald-400">{String(f.after ?? '—')}</td>
                 </tr>
@@ -168,21 +172,17 @@ export default function AktiviteGecmisiPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-foreground dark:text-foreground">
-          <History className="h-7 w-7 text-brand-gold" />
-          Aktivite Geçmişi
-        </h1>
-        <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-          Kayıtlarınızda kim ne zaman ne değiştirdi — tüm ekleme, güncelleme ve silme işlemleri burada.
-        </p>
-      </div>
+      <PageHeader
+        icon={History}
+        title="Aktivite Geçmişi"
+        description="Kayıtlarınızda kim ne zaman ne değiştirdi — tüm ekleme, güncelleme ve silme işlemleri burada."
+      />
 
       <div className="flex flex-wrap gap-3">
         <select
           value={tableFilter}
           onChange={(e) => { setTableFilter(e.target.value); setPage(0); }}
-          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-foreground"
+          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:text-foreground"
         >
           <option value="all" className="dark:bg-popover dark:text-popover-foreground">Tüm Tablolar</option>
           {Object.entries(TABLE_LABELS).map(([key, label]) => (
@@ -192,7 +192,7 @@ export default function AktiviteGecmisiPage() {
         <select
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
-          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:border-border dark:text-foreground"
+          className="rounded-xl border border-border bg-transparent px-3 py-2 text-sm dark:text-foreground"
         >
           <option value="all" className="dark:bg-popover dark:text-popover-foreground">Tüm İşlemler</option>
           <option value="INSERT" className="dark:bg-popover dark:text-popover-foreground">Eklendi</option>
@@ -202,14 +202,13 @@ export default function AktiviteGecmisiPage() {
       </div>
 
       {loading ? (
-        <div className="card-empty-state">
-          Yükleniyor...
-        </div>
+        <TableSkeleton columns={3} />
       ) : logs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card py-12 text-center text-muted-foreground shadow-sm dark:border-border">
-          Henüz kayıtlı aktivite yok. (Bu sayfa çalışmıyorsa `supabase/migrations/20260816_audit_log.sql`
-          dosyasını Supabase SQL Editor&apos;de çalıştırdığınızdan emin olun.)
-        </div>
+        <EmptyState
+          icon={History}
+          title="Henüz kayıtlı aktivite yok."
+          description="Bu sayfa hiç dolmuyorsa supabase/migrations/20260816_audit_log.sql dosyasını Supabase SQL Editor&apos;de çalıştırdığınızdan emin olun."
+        />
       ) : (
         <>
           <div className="space-y-2">
@@ -223,7 +222,7 @@ export default function AktiviteGecmisiPage() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="rounded-lg border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border"
+                className="rounded-lg border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Önceki
               </button>
@@ -231,7 +230,7 @@ export default function AktiviteGecmisiPage() {
               <button
                 onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
                 disabled={page >= pageCount - 1}
-                className="rounded-lg border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border"
+                className="rounded-lg border border-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Sonraki
               </button>
