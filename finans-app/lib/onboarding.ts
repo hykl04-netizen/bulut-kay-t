@@ -157,6 +157,22 @@ export async function setWorkspaceType(workspaceId: string, type: WorkspaceType)
 }
 
 /**
+ * Hesabın adını değiştirir.
+ *
+ * NEDEN GEREKLİ: kayıt olurken hesaba otomatik olarak "İşletmem" adı
+ * veriliyor (create_default_workspace_for_new_user). Aile kullanıcısı
+ * sihirbazda "Ailem / kendim için" seçse bile hesabının adı "İşletmem"
+ * kalıyordu — yan menüde, hesap seçicide ve indirdiği PDF raporların
+ * başlığında. Sihirbaz artık adı da soruyor.
+ */
+export async function setWorkspaceName(workspaceId: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const { error } = await supabase.from('workspaces').update({ name: trimmed }).eq('id', workspaceId);
+  if (error) throw new Error(error.message);
+}
+
+/**
  * Verilen kategorileri workspace'e ekler ve eklenen sayıyı döner.
  *
  * Sihirbazda kullanıcı şablondan kategori çıkarabildiği için buraya şablonun

@@ -13,6 +13,7 @@ import {
   createFirstBankAccount,
   completeOnboarding,
   setWorkspaceType,
+  setWorkspaceName,
 } from '@/lib/onboarding';
 import { WORKSPACE_TYPE_OPTIONS, type WorkspaceType } from '@/lib/workspace-types';
 import { toast } from '@/components/ui/toaster';
@@ -42,7 +43,16 @@ export default function KurulumPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
-  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceName, setWorkspaceNameState] = useState('');
+  // Kayıtta otomatik verilen adlar. Kullanıcı bunlardan birindeyse ad
+  // "seçilmemiş" sayılır ve hesap türüne göre daha uygun bir öneriyle
+  // değiştirilir; kendi yazdığı bir ada asla dokunulmaz.
+  const OTOMATIK_ADLAR = ['İşletmem', 'Hesabım'];
+  const ONERILEN_AD: Record<WorkspaceType, string> = {
+    aile: 'Ailem',
+    sirket: 'İşletmem',
+    musavir_ofisi: 'Ofisim',
+  };
 
   const [step, setStep] = useState<Step>(1);
   const [workspaceType, setWorkspaceTypeState] = useState<WorkspaceType>('sirket');
@@ -77,7 +87,7 @@ export default function KurulumPage() {
       const existingType = (row?.type as WorkspaceType | null) ?? 'sirket';
 
       setWorkspaceId(id);
-      setWorkspaceName(row?.name ?? 'Hesabım');
+      setWorkspaceNameState(row?.name ?? 'Hesabım');
       setWorkspaceTypeState(existingType);
       setTemplateKey(defaultTemplateKey(existingType));
       setLoading(false);
@@ -110,6 +120,10 @@ export default function KurulumPage() {
     setWorkspaceTypeState(type);
     setTemplateKey(defaultTemplateKey(type));
     setExcluded(new Set());
+    // Ad hâlâ otomatik verilmiş adlardan biriyse türe uygun olanla değiştir.
+    setWorkspaceNameState((prev) =>
+      OTOMATIK_ADLAR.includes(prev.trim()) ? ONERILEN_AD[type] : prev
+    );
   };
 
   const visibleTemplates = templatesForType(workspaceType);
@@ -120,6 +134,7 @@ export default function KurulumPage() {
     try {
       // Hesap türü önce yazılır: menü filtresi ve sonraki oturumlar buna bakar.
       await setWorkspaceType(workspaceId, workspaceType);
+      await setWorkspaceName(workspaceId, workspaceName);
 
       // Şablonun tamamı değil, kullanıcının BIRAKTIĞI kategoriler eklenir.
       await insertCategories(workspaceId, selectedCategories);
@@ -180,7 +195,10 @@ export default function KurulumPage() {
     <div className="min-h-screen bg-muted py-8 px-4">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-foreground">{workspaceName} kurulumu</h1>
+          {/* Başlık eskiden hesabın OTOMATİK adını ("İşletmem") kullanıyordu;
+              aile hesabı kuracak kişi daha ilk saniyede ticari bir kelimeyle
+              karşılaşıyordu. Ad artık 2. adımda soruluyor. */}
+          <h1 className="text-2xl font-bold text-foreground">Hesabınızı hazırlayalım</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Birkaç adımda hazır olun — hepsini sonradan değiştirebilirsiniz.
           </p>
@@ -252,6 +270,31 @@ export default function KurulumPage() {
               <p className="text-sm text-muted-foreground mb-5">
                 Seçiminize göre hazır bir gelir/gider kategori seti yükleyeceğiz.
               </p>
+
+              {/* Hesap adı: yan menüde, hesap seçicide ve PDF raporların
+                  başlığında görünür. Sorulmadığı sürece "İşletmem" olarak
+                  kalıyordu — aile kullanıcısı için yanlış. */}
+              <div className="mb-6">
+                <label htmlFor="hesap-adi" className="mb-1.5 block text-sm font-medium text-foreground">
+                  {workspaceType === 'aile' ? 'Bu hesaba ne diyelim?' : 'İşletmenizin adı'}
+                </label>
+                <input
+                  id="hesap-adi"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceNameState(e.target.value)}
+                  placeholder={
+                    workspaceType === 'aile'
+                      ? 'Örn. Yılmaz Ailesi'
+                      : workspaceType === 'musavir_ofisi'
+                        ? 'Örn. Demir Mali Müşavirlik'
+                        : 'Örn. Yıldız Teknoloji A.Ş.'
+                  }
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Raporların üstünde bu ad görünür. Sonradan ayarlardan değiştirebilirsiniz.
+                </p>
+              </div>
               <div className="space-y-2.5">
                 {visibleTemplates.map((t) => (
                   <button
