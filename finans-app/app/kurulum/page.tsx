@@ -184,7 +184,13 @@ export default function KurulumPage() {
 
   const steps = [
     { n: 1 as Step, label: 'Hesap türü', icon: Home },
-    { n: 2 as Step, label: workspaceType === 'aile' ? 'Bütçe türü' : 'İşletme türü', icon: Building2 },
+    {
+      n: 2 as Step,
+      // Aile hesabı kuran kişiye "Bütçe türü" adımında bina ikonu
+      // gösteriliyordu; metin uyarlanmışken simge ticari kalıyordu.
+      label: workspaceType === 'aile' ? 'Bütçe türü' : 'İşletme türü',
+      icon: workspaceType === 'aile' ? Home : Building2,
+    },
     { n: 3 as Step, label: 'Kategoriler', icon: Tags },
     { n: 4 as Step, label: 'Banka / Kasa', icon: Landmark },
   ];
