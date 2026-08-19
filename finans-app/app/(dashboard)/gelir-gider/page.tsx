@@ -337,6 +337,21 @@ export default function GelirGiderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEdit]);
 
+  // Alt çubuktaki "+" ile aynı sayfadayken de form açılsın (bkz. layout.tsx).
+  useEffect(() => {
+    if (!canEdit) return;
+    const ac = () => {
+      handleOpenAddModal();
+      const params = new URLSearchParams(window.location.search);
+      params.delete('hizli');
+      const rest = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+    };
+    window.addEventListener('finansapp:hizli-kayit', ac);
+    return () => window.removeEventListener('finansapp:hizli-kayit', ac);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit]);
+
   useKeyboardShortcut('n', () => handleOpenAddModal(), [], { enabled: canEdit && !isModalOpen && !isBulkModalOpen });
   useKeyboardShortcut('/', () => searchInputRef.current?.focus(), []);
 

@@ -565,7 +565,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <BottomNav
           items={BOTTOM_NAV[workspaceType]}
           primaryLabel="Hızlı kayıt"
-          onPrimaryAction={() => router.push('/gelir-gider?hizli=1')}
+          onPrimaryAction={() => {
+            // İKİ YOL BİRDEN gerekiyor:
+            //  - Başka bir ekrandaysak router.push ile /gelir-gider'a gidilir
+            //    ve orada mount anında ?hizli=1 okunup form açılır.
+            //  - ZATEN /gelir-gider'daysak React bileşeni yeniden bağlamaz,
+            //    mount effect'i çalışmaz; sadece adres çubuğu değişir ve
+            //    düğme hiçbir şey yapmamış gibi görünür. Bu yüzden ayrıca
+            //    bir olay yayınlanıyor, sayfa onu dinliyor.
+            router.push('/gelir-gider?hizli=1');
+            window.dispatchEvent(new CustomEvent('finansapp:hizli-kayit'));
+          }}
         />
       </div>
 
