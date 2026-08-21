@@ -8,6 +8,13 @@ interface TeamRoleState {
   workspaceId: string | null;
   isOwner: boolean;
   loading: boolean;
+  /**
+   * Rol SORGULANAMADI mı? Güvenli varsayılan hâlâ 'salt_gorunum' — ama
+   * bunu sessizce yapmak, hesabın sahibine hiçbir açıklama olmadan
+   * "Salt Görüntüleme" rozeti gösterip bütün ekleme düğmelerini
+   * kilitliyordu. Arayüz bu bayrağa bakıp "yetki doğrulanamadı" diyebilsin.
+   */
+  hata: boolean;
 }
 
 /**
@@ -23,6 +30,7 @@ export function useTeamRole(): TeamRoleState {
     workspaceId: null,
     isOwner: false,
     loading: true,
+    hata: false,
   });
 
   useEffect(() => {
@@ -33,12 +41,18 @@ export function useTeamRole(): TeamRoleState {
         if (!res.ok) throw new Error('rol alınamadı');
         const data = await res.json();
         if (cancelled) return;
-        setState({ role: data.role, workspaceId: data.workspaceId, isOwner: data.isOwner, loading: false });
+        setState({
+          role: data.role,
+          workspaceId: data.workspaceId,
+          isOwner: data.isOwner,
+          loading: false,
+          hata: false,
+        });
       } catch {
         if (cancelled) return;
         // Hata durumunda en kısıtlı role düş — sahip/yönetici gerektiren
         // hiçbir arayüz yanlışlıkla gösterilmesin.
-        setState({ role: 'salt_gorunum', workspaceId: null, isOwner: false, loading: false });
+        setState({ role: 'salt_gorunum', workspaceId: null, isOwner: false, loading: false, hata: true });
       }
     })();
     return () => {

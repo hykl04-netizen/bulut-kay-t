@@ -1,7 +1,7 @@
 // app/(dashboard)/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import {
@@ -17,6 +17,7 @@ import {
   Target,
   Clock,
   FileText,
+  ChevronDown,
 } from 'lucide-react';
 import { getDueInfo } from '@/lib/due-date';
 import { buildBudgetRows, BudgetRow } from '@/lib/budget';
@@ -135,6 +136,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('sirket');
   const [summary, setSummary] = useState<SummaryData>(EMPTY);
+  // Analiz bölümü geniş ekranda açık, telefonda kapalı başlar.
+  //
+  // useState + useEffect yerine useSyncExternalStore: effect içinde setState
+  // çağırmak fazladan bir render turu doğuruyor ve React bunu haklı olarak
+  // uyarıyor. Burada okunan şey zaten React dışında bir kaynak (medya
+  // sorgusu); doğru araç bu. Sunucu anlık görüntüsü `false` döndüğü için
+  // hydration uyuşmazlığı da olmuyor.
+  const genisEkran = useSyncExternalStore(
+    (bildir) => {
+      const mq = window.matchMedia('(min-width: 1024px)');
+      mq.addEventListener('change', bildir);
+      return () => mq.removeEventListener('change', bildir);
+    },
+    () => window.matchMedia('(min-width: 1024px)').matches,
+    () => false
+  );
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -655,33 +672,60 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* Kategori dağılımı */}
-          {summary.categorySlices.length > 0 && (
-            <section className="rounded-2xl border border-border bg-card p-4">
-              <h2 className="mb-3 text-sm font-semibold text-foreground">
-                Bu ayki giderler — nereye gitti?
-              </h2>
-              <CategoryBreakdown slices={summary.categorySlices} />
-            </section>
-          )}
         </div>
       </div>
 
-      {/* Aylık net */}
-      {summary.monthlyIncome.some((v) => v > 0) && (
-        <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold text-foreground">Aylık net — son 12 ay</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Gelir eksi gider. Yeşil sütun o ay artıda, kırmızı eksidesiniz demek.
-            </p>
+      {/* ANALİZ BÖLÜMÜ — telefonda KAPALI başlar.
+          Geri bildirim: "panel çok kalabalık geliyor ve göz yoruyor".
+          Haklı: telefonda hero + hesaplar + 4 kart + hareketler + yaklaşan
+          ödemeler + bütçe + dağılım + 12 aylık grafik alt alta yedi ekran
+          boyu sürüyordu. Günlük soru "ne kadar kaldı, ne harcadım" — grafikler
+          o sorunun cevabı değil, ayın sonunda bakılacak şeyler.
+          Silmiyoruz, bir dokunuş arkasına alıyoruz. Geniş ekranda yer bol,
+          orada açık geliyor (`sm:open` yerine `open` + CSS ile yönetmek
+          yerine details/summary'yi olduğu gibi bırakıp masaüstünde de tek
+          tıkla açılır tutmak, iki farklı düzen bakmaktan daha öngörülebilir). */}
+      {(summary.categorySlices.length > 0 || summary.monthlyIncome.some((v) => v > 0)) && (
+        <details className="group rounded-2xl border border-border bg-card" open={genisEkran}>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
+            <span className="text-sm font-semibold text-foreground">Grafikler ve dağılım</span>
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="group-open:hidden">Göster</span>
+              <span className="hidden group-open:inline">Gizle</span>
+              <ChevronDown
+                aria-hidden
+                className="h-4 w-4 transition-transform group-open:rotate-180"
+              />
+            </span>
+          </summary>
+
+          <div className="space-y-6 border-t border-border p-4 sm:p-6">
+            {summary.categorySlices.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">
+                  Bu ayki giderler — nereye gitti?
+                </h2>
+                <CategoryBreakdown slices={summary.categorySlices} />
+              </section>
+            )}
+
+            {summary.monthlyIncome.some((v) => v > 0) && (
+              <section>
+                <div className="mb-4">
+                  <h2 className="text-sm font-semibold text-foreground">Aylık net — son 12 ay</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Gelir eksi gider. Yeşil sütun o ay artıda, kırmızı eksidesiniz demek.
+                  </p>
+                </div>
+                <MonthlyNetChart
+                  income={summary.monthlyIncome}
+                  expense={summary.monthlyExpense}
+                  endDate={today}
+                />
+              </section>
+            )}
           </div>
-          <MonthlyNetChart
-            income={summary.monthlyIncome}
-            expense={summary.monthlyExpense}
-            endDate={today}
-          />
-        </section>
+        </details>
       )}
     </div>
   );

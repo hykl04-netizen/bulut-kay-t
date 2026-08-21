@@ -1,13 +1,32 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { TeamRole } from '@/lib/team';
-import { getSelectedWorkspaceId } from '@/lib/supabase/workspace-server';
 
 export const runtime = 'nodejs';
 
-// Oturum açan kullanıcının bağlı olduğu hesabı ve o hesaptaki rolünü döner.
-// Hesap sahibiyse role = 'sahip'. 2. yarıdaki arayüz, bu bilgiye göre
-// düzenleme/silme butonlarını ve "Ekip" sayfasına erişimi gizler/gösterir.
+const CURRENT_WORKSPACE_COOKIE = 'finansapp_workspace_id';
+
+/**
+ * Oturum açan kullanıcının seçili hesabını ve o hesaptaki rolünü döner.
+ *
+ * NEDEN YENİDEN YAZILDI: eski sürüm hesabı `get_account_id_for_user()` ile
+ * buluyordu; o fonksiyon hiçbir şey bulamayınca KULLANICI ID'sini geri
+ * veriyordu — "workspace id = kullanıcı id" varsayımı Faz 1 öncesinden
+ * kalmaydı ve artık yanlış. Yeni açılan her hesapta workspace id rastgele
+ * olduğu için bu dallanma "sahip değil" sonucunu üretiyor, oradan da
+ * team_members'ta kayıt bulunamayınca role 'salt_gorunum'a düşüyordu.
+ * Sonuç: her yeni kullanıcı kendi hesabında salt görüntüleme oluyor ve
+ * ekleme düğmeleri sessizce çalışmıyordu.
+ *
+ * Artık rol, istemcinin de kullandığı TEK kaynaktan geliyor:
+ * `get_user_workspaces()`. Sahip için zaten 'sahip' döndürüyor. Böylece
+ * sunucu ile istemci farklı sonuçlara varamaz.
+ *
+ * Seçim sırası istemcideki `getCurrentWorkspaceId` ile birebir aynı:
+ * geçerliyse cookie, yoksa sahip olunan ilk hesap, o da yoksa erişilen
+ * herhangi biri.
+ */
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -18,36 +37,30 @@ export async function GET() {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor.' }, { status: 401 });
   }
 
-  const workspaceId = await getSelectedWorkspaceId(supabase, user.id);
-  if (!workspaceId) {
-    return NextResponse.json({ error: 'İşletme bilgisi alınamadı.' }, { status: 500 });
+  const { data, error } = await supabase.rpc('get_user_workspaces');
+  if (error) {
+    return NextResponse.json({ error: 'Hesap bilgisi alınamadı.' }, { status: 500 });
   }
 
-  // Sahiplik artık workspaces.owner_id üzerinden belirleniyor — Faz 1'den
-  // sonra bir workspace'in id'si sahibinin auth id'sine eşit olmak zorunda
-  // değil (create_workspace() rastgele id üretir).
-  const { data: ownerRow } = await supabase
-    .from('workspaces')
-    .select('owner_id')
-    .eq('id', workspaceId)
-    .maybeSingle();
-  const isOwner = (ownerRow as { owner_id: string } | null)?.owner_id === user.id;
+  const rows = (data ?? []) as {
+    workspace_id: string;
+    role: string;
+    is_owner: boolean;
+  }[];
 
-  let role: TeamRole = 'sahip';
-  if (!isOwner) {
-    const { data: memberRow } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('member_user_id', user.id)
-      .eq('status', 'aktif')
-      .maybeSingle();
-    role = (memberRow?.role as TeamRole) ?? 'salt_gorunum';
+  if (rows.length === 0) {
+    return NextResponse.json({ error: 'Erişebildiğiniz bir hesap yok.' }, { status: 404 });
   }
+
+  const cookieStore = await cookies();
+  const secilen = cookieStore.get(CURRENT_WORKSPACE_COOKIE)?.value;
+
+  const hedef =
+    rows.find((r) => r.workspace_id === secilen) ?? rows.find((r) => r.is_owner) ?? rows[0];
 
   return NextResponse.json({
-    workspaceId,
-    role,
-    isOwner,
+    workspaceId: hedef.workspace_id,
+    role: hedef.role as TeamRole,
+    isOwner: hedef.is_owner,
   });
 }

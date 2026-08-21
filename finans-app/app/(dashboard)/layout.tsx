@@ -254,7 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const { role, loading: roleLoading } = useTeamRole();
+  const { role, loading: roleLoading, hata: roleHatasi } = useTeamRole();
   // Faz 11 — aktif hesabın tipi. Yüklenene kadar 'sirket' varsayılır ki
   // menü hiçbir zaman eksik başlayıp sonradan büyümesin (zıplama olmaz);
   // aile hesabında birkaç öğe kaybolur, tersi olsa yeni öğeler belirirdi.
@@ -376,7 +376,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <>
       <div className="p-5 flex flex-col gap-1.5">
         <Logo />
-        {!roleLoading && role && role !== 'sahip' && (
+        {/* Rol sorgulanamadıysa "Salt Görüntüleme" yazmak yanıltıcı: kullanıcı
+            kendi hesabının sahibi olabilir. Sebebi söyleyip yenilemeye
+            yönlendiriyoruz. */}
+        {!roleLoading && roleHatasi && (
+          <span className="ml-[3.25rem] w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+            Yetki doğrulanamadı — sayfayı yenileyin
+          </span>
+        )}
+        {!roleLoading && !roleHatasi && role && role !== 'sahip' && (
           <span className="ml-[3.25rem] w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
             {roleLabelFor(workspaceType, role, ROLE_LABELS[role])}
           </span>
@@ -548,7 +556,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {mobileNavOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div
-            className="absolute inset-0 bg-primary/50"
+            /* bg-primary/50 idi: menü açılınca ekranın tamamı MAVİ bir
+               perdeyle kaplanıyordu — arkadaki içerik okunmuyor, göz
+               yoruyordu. Karartma nötr olmalı; renk taşıyan tek şey
+               menünün kendisi. Sheet bileşeniyle aynı ton. */
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setMobileNavOpen(false)}
           />
           <aside className="relative w-72 bg-card text-muted-foreground flex flex-col h-full shadow-xl">
